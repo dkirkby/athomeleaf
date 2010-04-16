@@ -35,5 +35,3 @@
 
 #define NORDIC_CE        8
 #define NORDIC_IRQ       7
-
-#define STROBE_PIN       4 /* same as BLUE LED for now */

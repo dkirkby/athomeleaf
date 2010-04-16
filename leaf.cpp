@@ -33,11 +33,12 @@ unsigned long temperatureSum;
 // =====================================================================
 
 void setup() {
+    // setup our digital outputs
     pinMode(AMBER_LED_PIN,OUTPUT);
     pinMode(GREEN_LED_PIN,OUTPUT);
-    pinMode(STROBE_PIN,OUTPUT);
-    pinMode(PIEZO_PIN,OUTPUT);
     pinMode(RED_LED_PIN,OUTPUT);
+    pinMode(BLUE_LED_PIN,OUTPUT);
+    pinMode(PIEZO_PIN,OUTPUT);
 
     // tell the world we are alive
     cricket();
@@ -75,10 +76,10 @@ void loop() {
     noInterrupts();
     do {
         // toggle pin13 to allow scope timing measurements
-        digitalWrite(STROBE_PIN, HIGH);
+        digitalWrite(BLUE_LED_PIN, HIGH);
         *bufptr++ = TCNT0;
         *bufptr++ = analogRead(LIGHTING_PIN);
-        digitalWrite(STROBE_PIN, LOW);
+        digitalWrite(BLUE_LED_PIN, LOW);
         // insert some idle delay (borrowed from delayMicroseconds() in wiring.c)
         delayCycles = 328; // 4 CPU cycles = 0.25us per iteration
         __asm__ __volatile__ (
@@ -134,10 +135,10 @@ void loop() {
     noInterrupts();
     do {
         // toggle pin13 to allow scope timing measurements
-        digitalWrite(STROBE_PIN, HIGH);
+        digitalWrite(BLUE_LED_PIN, HIGH);
         *bufptr++ = TCNT0;
         *bufptr++ = analogRead(ACPOWER_PIN);
-        digitalWrite(STROBE_PIN, LOW);
+        digitalWrite(BLUE_LED_PIN, LOW);
         // insert some idle delay (borrowed from delayMicroseconds() in wiring.c)
         delayCycles = 328; // 4 CPU cycles = 0.25us per iteration
         __asm__ __volatile__ (
