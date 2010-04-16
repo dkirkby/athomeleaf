@@ -17,7 +17,7 @@ TARGET = leaf
 # Select 'spi' to program an AVR directly via its ISP port using an avrisp2
 # Select 'tiny' to program an AVR directly via its ISP port using a usbtiny
 # --------------------------------------------------------------------------
-METHOD = usb
+METHOD = tiny
 
 # --------------------------------------------------------------------------
 # The MCU architecture to build for
