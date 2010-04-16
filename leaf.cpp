@@ -39,16 +39,27 @@ void setup() {
     pinMode(RED_LED_PIN,OUTPUT);
     pinMode(BLUE_LED_PIN,OUTPUT);
     pinMode(PIEZO_PIN,OUTPUT);
-
-    // tell the world we are alive
+    
+    // run-through the outputs once to show we are alive (and also provide
+    // an audio-visual self-test of each output)
+    digitalWrite(BLUE_LED_PIN,HIGH);
+    delay(500);
+    digitalWrite(BLUE_LED_PIN,LOW);
+    digitalWrite(RED_LED_PIN,HIGH);
+    delay(500);
+    digitalWrite(RED_LED_PIN,LOW);
+    digitalWrite(AMBER_LED_PIN,HIGH);
+    delay(500);
+    digitalWrite(AMBER_LED_PIN,LOW);
+    digitalWrite(GREEN_LED_PIN,HIGH);
+    delay(500);
+    digitalWrite(GREEN_LED_PIN,LOW);
     cricket();
     delay(250);
-    cricket();
-    delay(250);
 
-    // startup the serial port
-    Serial.begin(9600);
-    Serial.println("Leaf starting...");
+    // startup the serial port for talking to an optional debugging LCD
+    LCDinit();
+    LCDprint("uci@home ready");
     
     // nordic wireless initialization
     initNordic(0);

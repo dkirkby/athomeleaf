@@ -44,6 +44,23 @@ void _printFloat() {
 }
 
 // =====================================================================
+// Initializes an optional 16x2 serial LCD. There is no way to know
+// if one is connected since the device is write-only.
+// =====================================================================
+void LCDinit() {
+    Serial.begin(9600);
+}
+
+// =====================================================================
+// Clears the optional LCD display and writes the specified messages.
+// =====================================================================
+void LCDprint(const char *line1, const char *line2) {
+    Serial.write(0x01);
+    Serial.print(line1);
+    if(0 != line2) Serial.print(line2);
+}
+
+// =====================================================================
 // Delays for about 1ms and generates an audible and visible "Geiger"
 // click at pseudo-random intervals with an average rate controlled
 // by the value of the clickThreshold global.

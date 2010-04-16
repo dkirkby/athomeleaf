@@ -20,6 +20,10 @@ extern float floatToPrint;
 extern unsigned long multiplier;
 extern void _printFloat(void);
 
+// Support for optional 16x2 LCD
+void LCDinit();
+void LCDprint(const char *line1, const char *line2 = 0);
+
 // Geiger-clicking support 
 
 extern unsigned long clickThreshold;
