@@ -21,7 +21,7 @@ extern unsigned long multiplier;
 extern void _printFloat(void);
 
 // Support for optional 16x2 LCD
-void LCDinit(byte backlightLevel = 15); // range is 0 (off) to 29 (max)
+void LCDinit(byte backlightLevel = 5); // range is 0 (off) to 29 (max)
 void LCDprint(const char *line1, const char *line2 = 0);
 void LCDclear();
 void LCDpos(byte row, byte col=0);
