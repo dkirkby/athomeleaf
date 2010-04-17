@@ -212,6 +212,39 @@ void loop() {
 
         Mirf.powerUpRx(); // return to Rx mode
     }
+    
+    //----------------------------------------------------------------------
+    // Display readings on the optional LCD
+    //----------------------------------------------------------------------
+    LCDclear();
+    Serial.print(packet.data[0],DEC);
+    LCDpos(0,5);
+    Serial.print('/');
+    Serial.print(packet.data[1],DEC);
+    // sequence number $00-$FF in hex
+    LCDpos(0,14);
+    if(packet.sequenceNumber < 0x10) {
+        Serial.print('0'); // zero pad
+    }
+    Serial.print(packet.sequenceNumber,HEX);
+    // power reading
+    LCDpos(1,0);
+    Serial.print(packet.data[2],DEC);
+    // temperature reading
+    LCDpos(1,7);
+    Serial.print(packet.data[3]/100,DEC);
+    Serial.print('.');
+    uintValue = packet.data[3]%100;
+    if(uintValue < 10) {
+        Serial.print('0');
+    }
+    Serial.print(uintValue,DEC);
+    // status byte in hex
+    LCDpos(1,14);
+    if(packet.status < 0x10) {
+        Serial.print('0');
+    }
+    Serial.print(packet.status,HEX);
 }
 
 int main(void) {

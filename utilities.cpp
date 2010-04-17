@@ -79,6 +79,31 @@ void LCDprint(const char *line1, const char *line2) {
 }
 
 // =====================================================================
+// Clears the optional LCD display
+// =====================================================================
+void LCDclear() {
+    Serial.write(0xfe);
+    Serial.write(0x01);
+    delay(100);    
+}
+
+// =====================================================================
+// Positions the (invisible) cursor on the optional LCD.
+// row = 0 is the top line, row = 1 is the bottom line.
+// valid col values are 0 (leftmost) to 15.
+// =====================================================================
+void LCDpos(byte row, byte col) {
+    Serial.write(0xfe);
+    if(row == 0) {
+        Serial.write((byte)(0x80 | (col & 0x0f)));
+    }
+    else {
+        Serial.write((byte)(0xc0 | (col & 0x0f)));
+    }
+    //delay(100);
+}
+
+// =====================================================================
 // Delays for about 1ms and generates an audible and visible "Geiger"
 // click at pseudo-random intervals with an average rate controlled
 // by the value of the clickThreshold global.
