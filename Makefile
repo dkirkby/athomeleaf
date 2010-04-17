@@ -103,7 +103,7 @@ AVRDUDE_WRITE_FLASH = -U flash:w:$(BUILD_DIR)/$(TARGET).hex
 # Add -V option for faster turnaround: eliminates verify cycle, but can add
 # suprious fuse verify errors (which are safe to ignore if there is a final "Fuses OK")
 
-AVRDUDE_FLAGS = -v -F -C $(INSTALL_DIR)/hardware/tools/avr/etc/avrdude.conf \
+AVRDUDE_FLAGS = -v -V -F -C $(INSTALL_DIR)/hardware/tools/avr/etc/avrdude.conf \
 	-p $(MCU) -P $(AVRDUDE_PORT) -c $(AVRDUDE_PROGRAMMER) $(AVRDUDE_BAUDRATE)
 
 # ==========================================================================

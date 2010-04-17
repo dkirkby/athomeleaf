@@ -47,11 +47,16 @@ void _printFloat() {
 // Initializes an optional 16x2 serial LCD. There is no way to know
 // if one is connected since the device is write-only.
 // =====================================================================
-void LCDinit() {
+void LCDinit(byte backlightLevel) {
     Serial.begin(9600);
     // turn cursor off
     Serial.write(0xfe);
     Serial.write(0x0c);
+    delay(100); // needed to allow LCD serial decoder to keep up?
+    // turn backlight off
+    Serial.write(0x7c);
+    Serial.write((byte)(0x80 | (backlightLevel % 30)));
+    delay(100); // needed to allow LCD serial decoder to keep up?
 }
 
 // =====================================================================
