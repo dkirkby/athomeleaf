@@ -29,7 +29,12 @@ void setup() {
     Serial.println("Hub Starting...");
 
     initNordic(1);
-    Serial.println("Nordic configured");
+    if(nordicOK) {
+        Serial.println("Nordic configured");
+    }
+    else {
+        Serial.println("Nordic config ERROR!");
+    }
 }
 
 void loop() {

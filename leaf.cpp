@@ -59,11 +59,15 @@ void setup() {
 
     // startup the serial port for talking to an optional debugging LCD
     LCDinit();
-    LCDprint("uci@home ready");
     
     // nordic wireless initialization
     initNordic(0);
-    Serial.println("Nordic configured");
+    if(nordicOK) {        
+        LCDprint("uci@home","wireless ok");
+    }
+    else {
+        LCDprint("uci@home","no wireless");
+    }
     
     // initialize wireless packet
     packet.deviceID = 0xbeef;
@@ -194,13 +198,14 @@ void loop() {
             if(byteValue & (1 << MAX_RT)) {
                 // flash the red LED and play a low tone to signal the communications error
                 digitalWrite(RED_LED_PIN,HIGH);
-                tone(2273,110);
+                //tone(2273,110);
+                delay(250);
                 digitalWrite(RED_LED_PIN,LOW);
                 break;
             }
             // was the transmission acknowledged by the receiver?
             if(byteValue & (1 << TX_DS)) {
-                cricket();
+                //cricket();
                 break;
             }
         }

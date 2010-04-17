@@ -49,15 +49,28 @@ void _printFloat() {
 // =====================================================================
 void LCDinit() {
     Serial.begin(9600);
+    // turn cursor off
+    Serial.write(0xfe);
+    Serial.write(0x0c);
 }
 
 // =====================================================================
 // Clears the optional LCD display and writes the specified messages.
+// The caller is responsible for ensuring that the message strings
+// are no more than 16 characters long.
 // =====================================================================
 void LCDprint(const char *line1, const char *line2) {
+    // clear the display
+    Serial.write(0xfe);
     Serial.write(0x01);
+    // show the first line
     Serial.print(line1);
-    if(0 != line2) Serial.print(line2);
+    if(0 != line2) {
+        // move to the second line
+        Serial.write(0xfe);
+        Serial.write(0xc0);
+        Serial.print(line2);
+    }
 }
 
 // =====================================================================
@@ -282,8 +295,9 @@ void powerAnalysis() {
 }
 
 // =====================================================================
-// Initializes the Nordic nRF24L01+ transciever
-// Generates a high(ok) or low(failed) tone.
+// Initializes the Nordic nRF24L01+ transciever. Sets the value of
+// the global nordicOK byte to either 1 (true) or 0 (false) to indicate
+// if the initialization was successful.
 // =====================================================================
 
 byte nordicOK;
@@ -310,19 +324,9 @@ void initNordic(byte isHub) {
     uint8_t rv;
 	Mirf.readRegister(RX_PW_P1,&rv,1);
 	if(rv == sizeof(Packet)) {
-        // looks good: play a high tone with green LED flash
-        digitalWrite(GREEN_LED_PIN,HIGH);
-        delay(250);
-        //tone(568,110); // 125 ms at 880 Hz	    
-        digitalWrite(GREEN_LED_PIN,LOW);
         nordicOK = 1;
 	}
 	else {
-        // uh-oh! play a low tone with red LED flash
-        digitalWrite(RED_LED_PIN,HIGH);
-        delay(250);
-        //tone(2273,110); // 500 ms at 220 Hz	    
-        digitalWrite(RED_LED_PIN,LOW);
         nordicOK = 0;
 	}
 }
