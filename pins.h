@@ -35,3 +35,5 @@
 
 #define NORDIC_CE        8
 #define NORDIC_IRQ       7
+
+#define STROBE_PIN       9

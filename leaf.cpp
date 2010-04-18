@@ -27,6 +27,8 @@ Packet packet;
 byte whichLED;
 unsigned int temperatureIndex;
 unsigned long temperatureSum;
+unsigned short temperatureMax = 8000; // degF x 100
+unsigned short temperatureMin = 7400; // degF x 100
 
 // =====================================================================
 // The setup() function is called once on startup.
@@ -39,6 +41,10 @@ void setup() {
     pinMode(RED_LED_PIN,OUTPUT);
     pinMode(BLUE_LED_PIN,OUTPUT);
     pinMode(PIEZO_PIN,OUTPUT);
+    pinMode(STROBE_PIN,OUTPUT);
+    
+    // configure the nordic interrupt line
+    //pinMode(NORDIC_IRQ,INPUT);
     
     // run-through the outputs once to show we are alive (and also provide
     // an audio-visual self-test of each output)
@@ -78,6 +84,8 @@ void setup() {
 }
 
 void loop() {
+    // update our packet counter (which cycles from $00-$ff)
+    packet.sequenceNumber++;
 
     // LEDs off during light measurements
     digitalWrite(AMBER_LED_PIN,LOW);
@@ -91,10 +99,10 @@ void loop() {
     noInterrupts();
     do {
         // toggle pin13 to allow scope timing measurements
-        digitalWrite(BLUE_LED_PIN, HIGH);
+        digitalWrite(STROBE_PIN, HIGH);
         *bufptr++ = TCNT0;
         *bufptr++ = analogRead(LIGHTING_PIN);
-        digitalWrite(BLUE_LED_PIN, LOW);
+        digitalWrite(STROBE_PIN, LOW);
         // insert some idle delay (borrowed from delayMicroseconds() in wiring.c)
         delayCycles = 328; // 4 CPU cycles = 0.25us per iteration
         __asm__ __volatile__ (
@@ -150,10 +158,10 @@ void loop() {
     noInterrupts();
     do {
         // toggle pin13 to allow scope timing measurements
-        digitalWrite(BLUE_LED_PIN, HIGH);
+        digitalWrite(STROBE_PIN, HIGH);
         *bufptr++ = TCNT0;
         *bufptr++ = analogRead(ACPOWER_PIN);
-        digitalWrite(BLUE_LED_PIN, LOW);
+        digitalWrite(STROBE_PIN, LOW);
         // insert some idle delay (borrowed from delayMicroseconds() in wiring.c)
         delayCycles = 328; // 4 CPU cycles = 0.25us per iteration
         __asm__ __volatile__ (
@@ -185,7 +193,25 @@ void loop() {
     }
     packet.data[3] = (unsigned int)(100*temperatureSum*ADC2DEGF);
     
-    packet.sequenceNumber++;
+    //----------------------------------------------------------------------
+    // Use the red/blue LEDs to indicate if the temperature is beyond the
+    // comfort level. Only flash every 8th reading.
+    //----------------------------------------------------------------------
+    if(packet.sequenceNumber % 8 == 0) {
+        if(packet.data[3] > temperatureMax) {
+            digitalWrite(RED_LED_PIN,HIGH);
+        }
+        else if(packet.data[3] < temperatureMin) {
+            digitalWrite(BLUE_LED_PIN,HIGH);
+        }
+    }
+    delay(20);
+    digitalWrite(RED_LED_PIN,LOW);
+    digitalWrite(BLUE_LED_PIN,LOW);
+    
+    //----------------------------------------------------------------------
+    // Transmit our data via the nordic interface
+    //----------------------------------------------------------------------
     if(nordicOK) {
         // Append the nordic transmit observer register contents to our packet
         Mirf.readRegister(OBSERVE_TX,(byte*)&(packet.status),1);
@@ -196,16 +222,10 @@ void loop() {
             byteValue = Mirf.getStatus();
             // did we reach the max retransmissions limit?
             if(byteValue & (1 << MAX_RT)) {
-                // flash the red LED and play a low tone to signal the communications error
-                digitalWrite(RED_LED_PIN,HIGH);
-                //tone(2273,110);
-                delay(250);
-                digitalWrite(RED_LED_PIN,LOW);
                 break;
             }
             // was the transmission acknowledged by the receiver?
             if(byteValue & (1 << TX_DS)) {
-                //cricket();
                 break;
             }
         }
