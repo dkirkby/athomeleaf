@@ -173,7 +173,8 @@ ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
 # --------------------------------------------------------------------------
 # Default target.
 # --------------------------------------------------------------------------
-all: $(BUILD_DIR) sizeafter
+all: $(BUILD_DIR)
+	$(SIZE) --target=$(FORMAT) $(BUILD_DIR)/$(TARGET).hex
 
 # --------------------------------------------------------------------------
 # Special target to initialize MCU fuses
@@ -239,16 +240,6 @@ $(BUILD_DIR)/core.a: $(HEADERS)
 # Program the device.  
 upload: $(BUILD_DIR)/$(TARGET).hex
 	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FLASH)
-
-
-	# Display size of file.
-HEXSIZE = $(SIZE) --target=$(FORMAT) $(BUILD_DIR)/$(TARGET).hex
-ELFSIZE = $(SIZE)  $(BUILD_DIR)/$(TARGET).elf
-sizebefore:
-	@if [ -f $(BUILD_DIR)/$(TARGET).elf ]; then echo; echo $(MSG_SIZE_BEFORE); $(HEXSIZE); echo; fi
-
-sizeafter:
-	@if [ -f $(BUILD_DIR)/$(TARGET).elf ]; then echo; echo $(MSG_SIZE_AFTER); $(HEXSIZE); echo; fi
 
 
 # Convert ELF to COFF for use in debugging / simulating in AVR Studio or VMLAB.
@@ -330,4 +321,4 @@ depend:
 		>> $(MAKEFILE); \
 	$(CC) -M -mmcu=$(MCU) $(CDEFS) $(CINCS) $(SRC) $(ASRC) >> $(MAKEFILE)
 
-.PHONY:	all $(BUILD_DIR) elf hex eep lss sym program coff extcoff clean depend sizebefore sizeafter
+.PHONY:	all $(BUILD_DIR) elf hex eep lss sym program coff extcoff clean depend
