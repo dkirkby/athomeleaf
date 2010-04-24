@@ -6,7 +6,7 @@
 byte byteValue;
 unsigned int uintValue;
 float floatValue;
-Packet packet;
+Packet packet,dumpPacket;
 
 // =====================================================================
 // Print a floating point value as a fixed-precision decimal.
@@ -143,32 +143,25 @@ byte counter = 0;
 
 // ---------------------------------------------------------------------
 // Dump the buffer contents via the wireless interface.
-// Assumes that a global packet object already exists and is
-// initialized with our device ID.
 // ---------------------------------------------------------------------
 void dumpBuffer(byte dumpType) {
-    // set the high bit in our ID to signal that this is not a normal
-    // measurement packet
-    packet.deviceID |= 0x8000;
     // record the type of dump in the status byte
-    packet.status = dumpType;
+    dumpPacket.status = dumpType;
     // loop over buffer samples
-    packet.sequenceNumber = 0;
+    dumpPacket.sequenceNumber = 0;
     uintValue = BUFFER_SIZE/2;
     counter = 0;
     bufptr = buffer;
     while(--uintValue) { // loop over pairs of buffer bytes to write
-        packet.data[counter++] = (*bufptr++) << 8 | (*bufptr++);
+        dumpPacket.data[counter++] = (*bufptr++) << 8 | (*bufptr++);
         if(counter == PACKET_VALUES || uintValue == 0) {
             // send the current packet contents
             // ...
             // get ready for the next packet
-            packet.sequenceNumber++;
+            dumpPacket.sequenceNumber++;
             counter = 0;
         }
     }
-    // clear the high ID bit to return to normal packets
-    packet.deviceID &= 0x7fff;
 }
 
 // ---------------------------------------------------------------------

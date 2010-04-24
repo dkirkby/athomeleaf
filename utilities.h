@@ -11,7 +11,7 @@
 extern byte byteValue;
 extern unsigned int uintValue;
 extern float floatValue;
-extern Packet packet;
+extern Packet packet,dumpPacket;
 
 // Printing support for float values
 

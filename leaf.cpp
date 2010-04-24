@@ -1,6 +1,11 @@
 #include "utilities.h"
 
 // ---------------------------------------------------------------------
+// Define this device's 16-bit ID
+// ---------------------------------------------------------------------
+#define MY_ID 0x00ED
+
+// ---------------------------------------------------------------------
 // Temperature monitoring parameters
 // ---------------------------------------------------------------------
 #define NTEMPSUM        2048
@@ -83,12 +88,16 @@ void setup() {
         LCDprint("uci@home","no wireless");
     }
     
-    // initialize wireless packet
-    packet.deviceID = 0x00ED;
+    // initialize wireless packets
+    packet.deviceID = MY_ID & 0x7fff; // make sure the MSB is clear
     packet.sequenceNumber = 0;
     for(byteValue = 0; byteValue < PACKET_VALUES; byteValue++) {
         packet.data[byteValue] = 0;
     }
+    // Set the MSB in the dump packet to distinguish it from a normal
+    // measurement packet. The status byte encodes what type of special
+    // packet this is.
+    dumpPacket.deviceID = packet.deviceID | 0x8000;
 }
 
 void loop() {
