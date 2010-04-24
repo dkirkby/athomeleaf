@@ -84,7 +84,7 @@ void setup() {
     }
     
     // initialize wireless packet
-    packet.deviceID = 0xbeef;
+    packet.deviceID = 0x00ED;
     packet.sequenceNumber = 0;
     for(byteValue = 0; byteValue < PACKET_VALUES; byteValue++) {
         packet.data[byteValue] = 0;
