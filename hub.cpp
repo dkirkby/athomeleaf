@@ -1,13 +1,6 @@
 #include "utilities.h"
 
 // =====================================================================
-// Global variable declarations. All variables must fit within 2K
-// of SRAM, including any variables allocated on the stack at runtime.
-// =====================================================================
-
-Packet packet;
-
-// =====================================================================
 // The setup() function is called once on startup.
 // =====================================================================
 
@@ -26,14 +19,29 @@ void setup() {
     
     // startup the serial port
     Serial.begin(115200);
-    Serial.println("Hub Starting...");
+    
+    // print out the hub configuration on one line
+    Serial.print("HUB ");
+    Serial.print((const char*)HUB_ADDRESS);
+    Serial.print(" CH ");
+    Serial.print(RADIO_CHANNEL,DEC);
+    Serial.print(" SIZE ");
+    Serial.print(sizeof(Packet),DEC);
+    Serial.println();
 
+    // try to initialize the wireless interface and print the result
     initNordic(1);
     if(nordicOK) {
-        Serial.println("Nordic configured");
+        Serial.println("READY");
     }
     else {
-        Serial.println("Nordic config ERROR!");
+        Serial.println("ERROR");
+    }
+    // flush any pending data before we start looping
+    while(Mirf.dataReady()) {
+        do {
+            Mirf.getData((byte*)&packet);
+        } while(!Mirf.rxFifoEmpty());
     }
 }
 
