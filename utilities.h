@@ -34,7 +34,7 @@ extern void tick(void);
 
 // Synchronous sampling
 
-extern unsigned int buffer[],*bufptr,delayCycles;
+extern unsigned short buffer[],*bufptr,delayCycles;
 extern byte counter;
 extern void dumpBuffer(byte dumpType);
 

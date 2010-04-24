@@ -136,7 +136,7 @@ void tick() {
 // Globals used for 60/120 Hz waveform captures (lighting + AC power)
 // ---------------------------------------------------------------------
 #define BUFFER_SIZE 512
-unsigned int buffer[BUFFER_SIZE],*bufptr,delayCycles;
+unsigned short buffer[BUFFER_SIZE],*bufptr,delayCycles;
 byte counter = 0;
 
 #define WAVEDATA(K) buffer[(((K)+6)<<1)|1]
@@ -151,18 +151,18 @@ void dumpBuffer(byte dumpType) {
     dumpPacket.status = dumpType;
     // loop over buffer samples
     dumpPacket.sequenceNumber = 0;
-    uintValue = (unsigned int)BUFFER_SIZE/2;
+    uintValue = BUFFER_SIZE;
     counter = 0;
     bufptr = buffer;
     while(--uintValue) { // loop over pairs of buffer bytes to write
-        dumpPacket.data[counter++] = ((*bufptr++) << 8) | (*bufptr++);
+        dumpPacket.data[counter++] = *bufptr++;
         if(counter == PACKET_VALUES || uintValue == 0) {
             // send the current packet contents
             Mirf.send((byte*)&dumpPacket);
             // get ready for the next packet
             dumpPacket.sequenceNumber++;
             counter = 0;
-            delay(100);
+            delay(20);
         }
     }
     // wait for the last packet to finish sending and return to listen mode
