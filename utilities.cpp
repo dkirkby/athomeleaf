@@ -151,20 +151,21 @@ void dumpBuffer(byte dumpType) {
     dumpPacket.status = dumpType;
     // loop over buffer samples
     dumpPacket.sequenceNumber = 0;
-    uintValue = BUFFER_SIZE/2;
+    uintValue = (unsigned int)BUFFER_SIZE/2;
     counter = 0;
     bufptr = buffer;
     while(--uintValue) { // loop over pairs of buffer bytes to write
-        dumpPacket.data[counter++] = (*bufptr++) << 8 | (*bufptr++);
+        dumpPacket.data[counter++] = ((*bufptr++) << 8) | (*bufptr++);
         if(counter == PACKET_VALUES || uintValue == 0) {
             // send the current packet contents
             Mirf.send((byte*)&dumpPacket);
             // get ready for the next packet
             dumpPacket.sequenceNumber++;
             counter = 0;
+            delay(100);
         }
     }
-    // wait until we have finished sending the last packet
+    // wait for the last packet to finish sending and return to listen mode
     while(Mirf.isSending()) ;
 }
 

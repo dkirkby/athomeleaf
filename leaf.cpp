@@ -133,7 +133,7 @@ void loop() {
     lightingAnalysis();
     
     // Dump every 16th lighting waveform
-    if(packet.sequenceNumber & 0x0f == 0) dumpBuffer(PACKET_DUMP_LIGHTING);
+    if((packet.sequenceNumber & 0x03) == 0) dumpBuffer(PACKET_DUMP_LIGHTING);
     
     packet.data[0] = lightingMean;
     packet.data[1] = lighting120Hz;
