@@ -10,4 +10,9 @@ typedef struct {
     unsigned short data[PACKET_VALUES];
 } Packet;
 
+// When the MSB of deviceID is set, the status byte identifies one of
+// the following special packet types
+
+#define PACKET_DUMP_LIGHTING 0x01
+
 #endif

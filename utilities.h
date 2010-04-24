@@ -36,7 +36,7 @@ extern void tick(void);
 
 extern unsigned int buffer[],*bufptr,delayCycles;
 extern byte counter;
-extern void dumpBuffer();
+extern void dumpBuffer(byte dumpType);
 
 // Lighting analysis
 
