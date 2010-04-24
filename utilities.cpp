@@ -142,7 +142,9 @@ byte counter = 0;
 #define WAVEDATA(K) buffer[(((K)+6)<<1)|1]
 
 // ---------------------------------------------------------------------
-// Dump the buffer contents via the wireless interface.
+// Dump the buffer contents via the wireless interface. In case of a
+// final packet that is only partially used, the unused payload values
+// are not zeroed out.
 // ---------------------------------------------------------------------
 void dumpBuffer(byte dumpType) {
     // record the type of dump in the status byte
@@ -156,12 +158,14 @@ void dumpBuffer(byte dumpType) {
         dumpPacket.data[counter++] = (*bufptr++) << 8 | (*bufptr++);
         if(counter == PACKET_VALUES || uintValue == 0) {
             // send the current packet contents
-            // ...
+            Mirf.send((byte*)&dumpPacket);
             // get ready for the next packet
             dumpPacket.sequenceNumber++;
             counter = 0;
         }
     }
+    // wait until we have finished sending the last packet
+    while(Mirf.isSending()) ;
 }
 
 // ---------------------------------------------------------------------
