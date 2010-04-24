@@ -26,7 +26,6 @@
 // of SRAM, including any variables allocated on the stack at runtime.
 // =====================================================================
 
-Packet packet;
 unsigned short cycleCount = 0; // counts the number of completed 256-packet sequences
 
 // ---------------------------------------------------------------------

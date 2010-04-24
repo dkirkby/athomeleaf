@@ -11,6 +11,7 @@
 extern byte byteValue;
 extern unsigned int uintValue;
 extern float floatValue;
+extern Packet packet;
 
 // Printing support for float values
 
@@ -35,6 +36,7 @@ extern void tick(void);
 
 extern unsigned int buffer[],*bufptr,delayCycles;
 extern byte counter;
+extern void dumpBuffer();
 
 // Lighting analysis
 
