@@ -162,7 +162,10 @@ void dumpBuffer(byte dumpType) {
             // get ready for the next packet
             dumpPacket.sequenceNumber++;
             counter = 0;
-            delay(20);
+            // If this delay is removed, the transmission is still ok
+            // (i.e., no dropped packets), but the hub can't keep up.
+            // TODO: debug this... is the hub serial buffer overrunning?
+            delay(10);
         }
     }
     // wait for the last packet to finish sending and return to listen mode
@@ -361,8 +364,6 @@ void powerAnalysis() {
 // =====================================================================
 
 byte nordicOK;
-
-#define RADIO_CHANNEL 0
 
 void initNordic(unsigned short id, byte isHub) {
     

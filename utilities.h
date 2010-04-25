@@ -49,6 +49,8 @@ extern void powerAnalysis(void);
 
 // Wireless
 
+#define RADIO_CHANNEL 0
+
 extern byte nordicOK;
 extern void initNordic(unsigned short id, byte isHub);
 
