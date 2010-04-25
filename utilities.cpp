@@ -362,6 +362,8 @@ void powerAnalysis() {
 
 byte nordicOK;
 
+#define RADIO_CHANNEL 0
+
 void initNordic(unsigned short id, byte isHub) {
     
     // 3-byte hub address is hard-wired here
