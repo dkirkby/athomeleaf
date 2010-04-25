@@ -1,7 +1,6 @@
 #include "WProgram.h"
 #include <math.h>
 #include "pins.h"
-#include "config.h"
 #include "mirf.h"
 #include "packet.h"
 

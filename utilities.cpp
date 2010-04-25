@@ -366,35 +366,52 @@ byte nordicOK;
 
 void initNordic(unsigned short id, byte isHub) {
     
-    // 3-byte hub address is hard-wired here
-    // byte hubAddress[3] = { 0xAA, 0xAA, 0xAA };
-    byte hubAddress[5] = { '@','h','o','m','e' };
+    // 3-byte hub address is hard-wired here. Addresses with a single level
+    // shift or with alternating bits are most prone to false address matches.
+    // The chosen address has 10 level changes of varying durations (1-4 cycles)
+    byte hubAddress[3] = { 0xC8, 0x4E, 0xF3 };
+    //byte hubAddress[5] = { '@','h','o','m','e' };
     
     // nordic wireless initialization
     Mirf.csnPin = SPI_SSEL;
     Mirf.cePin = NORDIC_CE;
     Mirf.init();
+    
+    // Select a data rate of 250 kbps (the lowest possible) and a transmit
+    // power of 0dB (the largest possible) for maximum receiver sensitivity.
+    // At this data rate, aintaining <1% saturation with 16
+    // transmitters requires a packet length < 250000/1600 = 156 bits.
+    // With a 3-byte address and 1-byte CRC, the framing overhead is
+    // 6*8+1=49 bits so the maximum payload size is 13*8 = 104 < 107.
+    Mirf.configRegister(RF_SETUP,0x26);
 
     // Use the maximum number of retries (16) and pick one of 4 different
     // retransmit delays based on the low-order bits of the device ID:
     // 1250,1500,1750,2000us. These delays allow a payload size up to
     // 24 bytes at 250 kbps (with no size limits at higher speeds)
     Mirf.configRegister(SETUP_RETR, 0x4f | ((byte)(id & 3) << 4));
+    
+    // Use a 1-byte CRC which catches all error bursts that last for no
+    // more than 8 bits (32us at 250 kbps) and catches 255/256 = 99.61%
+    // of any longer error burst (assuming random packet bits?).
+    // A 2-byte CRC would reduce the undetected error rate but increase
+    // the packet length and therefore collision rate.
+
+    //...this is set by a #define mirf_CONFIG in mirf.h...
 
     // Use 3-byte addressing to minimize the packet length
-    //Mirf.configRegister(SETUP_AW,0x01);
-    Mirf.configRegister(SETUP_AW,0x11); // 5 bytes
-
+    Mirf.configRegister(SETUP_AW,0x01);
+    
     // Set the device addresses (with Rx/Tx disabled via CE)
     // Mirf.ceLow(); // don't need this before Mirf.config() ?
     if(isHub) {
-        Mirf.setRADDR(hubAddress); // hard-coded for 5-byte address
-        //Mirf.writeRegister(RX_ADDR_P1,hubAddress,3); // 3-byte address
+        //Mirf.setRADDR(hubAddress); // hard-coded for 5-byte address
+        Mirf.writeRegister(RX_ADDR_P1,hubAddress,3); // 3-byte address
     }
     else {
-        Mirf.setTADDR(hubAddress); // hard-coded for 5-byte address
-        //Mirf.writeRegister(RX_ADDR_P0,hubAddress,3);
-    	//Mirf.writeRegister(TX_ADDR,hubAddress,3);
+        //Mirf.setTADDR(hubAddress); // hard-coded for 5-byte address
+        Mirf.writeRegister(RX_ADDR_P0,hubAddress,3);
+    	Mirf.writeRegister(TX_ADDR,hubAddress,3);
     }
     // Mirf.ceHigh(); // don't need this before Mirf.config() ?
 
