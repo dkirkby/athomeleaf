@@ -21,11 +21,7 @@ void setup() {
     Serial.begin(115200);
     
     // print out the hub configuration on one line
-    Serial.print("HUB ");
-    Serial.print((const char*)HUB_ADDRESS);
-    Serial.print(" CH ");
-    Serial.print(RADIO_CHANNEL,DEC);
-    Serial.print(" SIZE ");
+    Serial.print("HUB SIZE ");
     Serial.print(sizeof(Packet),DEC);
     Serial.println();
 

@@ -364,30 +364,42 @@ byte nordicOK;
 
 void initNordic(unsigned short id, byte isHub) {
     
+    // 3-byte hub address is hard-wired here
+    // byte hubAddress[3] = { 0xAA, 0xAA, 0xAA };
+    byte hubAddress[5] = { '@','h','o','m','e' };
+    
     // nordic wireless initialization
     Mirf.csnPin = SPI_SSEL;
     Mirf.cePin = NORDIC_CE;
     Mirf.init();
 
-    // Use the maximum number of retries (16) and set a retransmit delay
-    // of 750us (even-numbered devices) or 1000us (odd-numbered devices).
-    // We pick these two delays since they allow 2 (odd) or 3 (even)
-    // collision-free retransmits after a collision occurs.
-    if(id % 2 == 0) {
-        Mirf.configRegister(SETUP_RETR,0x2f); // 750us delay
-    }
-    else {
-        Mirf.configRegister(SETUP_RETR,0x3f); // 1000us delay
-    }
-    
+    // Use the maximum number of retries (16) and pick one of 4 different
+    // retransmit delays based on the low-order bits of the device ID:
+    // 1250,1500,1750,2000us. These delays allow a payload size up to
+    // 24 bytes at 250 kbps (with no size limits at higher speeds)
+    Mirf.configRegister(SETUP_RETR, 0x4f | ((byte)(id & 3) << 4));
+
+    // Use 3-byte addressing to minimize the packet length
+    //Mirf.configRegister(SETUP_AW,0x01);
+    Mirf.configRegister(SETUP_AW,0x11); // 5 bytes
+
+    // Set the device addresses (with Rx/Tx disabled via CE)
+    // Mirf.ceLow(); // don't need this before Mirf.config() ?
     if(isHub) {
-        Mirf.setRADDR(HUB_ADDRESS);
+        Mirf.setRADDR(hubAddress); // hard-coded for 5-byte address
+        //Mirf.writeRegister(RX_ADDR_P1,hubAddress,3); // 3-byte address
     }
     else {
-        Mirf.setTADDR(HUB_ADDRESS);
+        Mirf.setTADDR(hubAddress); // hard-coded for 5-byte address
+        //Mirf.writeRegister(RX_ADDR_P0,hubAddress,3);
+    	//Mirf.writeRegister(TX_ADDR,hubAddress,3);
     }
+    // Mirf.ceHigh(); // don't need this before Mirf.config() ?
+
+    // set the payload size and radio channel
     Mirf.payload = sizeof(Packet);
     Mirf.channel = RADIO_CHANNEL;
+    
     Mirf.config();
         
     // read back the payload size to check that we really are talking
