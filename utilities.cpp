@@ -164,7 +164,8 @@ void dumpBuffer(byte dumpType) {
             counter = 0;
             // If this delay is removed, the transmission is still ok
             // (i.e., no dropped packets), but the hub can't keep up.
-            // TODO: debug this... is the hub serial buffer overrunning?
+            // TODO: debug this... is either the hub serial buffer
+            // or its Rx FIFO overrunning?
             delay(10);
         }
     }
@@ -371,7 +372,6 @@ void initNordic(unsigned short id, byte isHub) {
     // shift or with alternating bits are most prone to false address matches.
     // The chosen address has 10 level changes of varying durations (1-4 cycles)
     byte hubAddress[3] = { 0xC8, 0x4E, 0xF3 };
-    //byte hubAddress[5] = { '@','h','o','m','e' };
     
     // nordic wireless initialization
     Mirf.csnPin = SPI_SSEL;
@@ -380,8 +380,8 @@ void initNordic(unsigned short id, byte isHub) {
     
     // Select a data rate of 250 kbps (the lowest possible) and a transmit
     // power of 0dB (the largest possible) for maximum receiver sensitivity.
-    // At this data rate, aintaining <1% saturation with 16
-    // transmitters requires a packet length < 250000/1600 = 156 bits.
+    // At this data rate, aintaining <1% saturation with 16 packets sent
+    // per second requires a packet length < 250000/1600 = 156 bits.
     // With a 3-byte address and 1-byte CRC, the framing overhead is
     // 6*8+1=49 bits so the maximum payload size is 13*8 = 104 < 107.
     Mirf.configRegister(RF_SETUP,0x26);
