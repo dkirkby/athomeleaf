@@ -362,13 +362,24 @@ void powerAnalysis() {
 
 byte nordicOK;
 
-void initNordic(byte isHub) {
+void initNordic(unsigned short id, byte isHub) {
     
     // nordic wireless initialization
     Mirf.csnPin = SPI_SSEL;
     Mirf.cePin = NORDIC_CE;
     Mirf.init();
 
+    // Use the maximum number of retries (16) and set a retransmit delay
+    // of 750us (even-numbered devices) or 1000us (odd-numbered devices).
+    // We pick these two delays since they allow 2 (odd) or 3 (even)
+    // collision-free retransmits after a collision occurs.
+    if(id % 2 == 0) {
+        Mirf.configRegister(SETUP_RETR,0x2f); // 750us delay
+    }
+    else {
+        Mirf.configRegister(SETUP_RETR,0x3f); // 1000us delay
+    }
+    
     if(isHub) {
         Mirf.setRADDR(HUB_ADDRESS);
     }
@@ -378,7 +389,7 @@ void initNordic(byte isHub) {
     Mirf.payload = sizeof(Packet);
     Mirf.channel = RADIO_CHANNEL;
     Mirf.config();
-    
+        
     // read back the payload size to check that we really are talking
     // to a Nordic transceiver
     uint8_t rv;

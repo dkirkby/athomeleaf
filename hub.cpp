@@ -30,7 +30,7 @@ void setup() {
     Serial.println();
 
     // try to initialize the wireless interface and print the result
-    initNordic(1);
+    initNordic(0,1);
     if(nordicOK) {
         Serial.println("READY");
     }

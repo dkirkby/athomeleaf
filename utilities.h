@@ -51,7 +51,7 @@ extern void powerAnalysis(void);
 // Wireless
 
 extern byte nordicOK;
-extern void initNordic(byte);
+extern void initNordic(unsigned short id, byte isHub);
 
 // Signalling
 

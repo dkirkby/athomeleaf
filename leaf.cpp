@@ -1,7 +1,8 @@
 #include "utilities.h"
 
 // ---------------------------------------------------------------------
-// Define this device's 16-bit ID
+// Define this device's 16-bit ID. MSB must be clear so there are
+// 2^15 = 32,768 choices.
 // ---------------------------------------------------------------------
 #define MY_ID 0x00ED
 
@@ -80,7 +81,7 @@ void setup() {
     LCDinit();
     
     // nordic wireless initialization
-    initNordic(0);
+    initNordic(MY_ID,0);
     if(nordicOK) {        
         LCDprint("uci@home","wireless ok");
     }
