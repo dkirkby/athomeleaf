@@ -154,7 +154,7 @@ void dumpBuffer(byte dumpType) {
     uintValue = BUFFER_SIZE;
     counter = 0;
     bufptr = buffer;
-    while(--uintValue) { // loop over pairs of buffer bytes to write
+    while(uintValue--) { // loop over pairs of buffer bytes to write
         dumpPacket.data[counter++] = *bufptr++;
         if(counter == PACKET_VALUES || uintValue == 0) {
             // send the current packet contents
