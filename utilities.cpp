@@ -308,15 +308,6 @@ void lightingAnalysis(float scaleFactor) {
         lightingMean = (beta0 < 0) ? 0 : (unsigned short)(scaleFactor*beta0+0.5);
         // Calculate the 120Hz peak amplitude in 0.1 ADC units
         lighting120Hz = (unsigned short)(scaleFactor*beta1+0.5);
-
-        LCDclear();
-        printFloat(beta0,100);
-        Serial.print(" -> ");
-        Serial.print(lightingMean,DEC);
-        LCDpos(1,0);
-        printFloat(beta1,100);
-        Serial.print(" -> ");
-        Serial.print(lighting120Hz,DEC);
     }
 }
 

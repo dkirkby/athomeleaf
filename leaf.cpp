@@ -1,5 +1,7 @@
 #include "utilities.h"
 
+#define PRINT_LIGHTING
+
 // ---------------------------------------------------------------------
 // Define this device's 16-bit ID. MSB must be clear so there are
 // 2^15 = 32,768 choices.
@@ -112,6 +114,39 @@ void loop() {
     // =====================================================================
     // Do a burst of 256 x 5kHz ADC samples lasting exactly 51,200 us
     // 250 samples span exactly 6 120Hz powerline cycles.
+    // First time round is the high-gain photoamp output.
+    // =====================================================================
+    bufptr = buffer;
+    noInterrupts();
+    do {
+        // toggle pin13 to allow scope timing measurements
+        digitalWrite(STROBE_PIN, HIGH);
+        *bufptr++ = TCNT0;
+        *bufptr++ = analogRead(LIGHTING_PIN_HI);
+        digitalWrite(STROBE_PIN, LOW);
+        // insert some idle delay (borrowed from delayMicroseconds() in wiring.c)
+        delayCycles = 328; // 4 CPU cycles = 0.25us per iteration
+        __asm__ __volatile__ (
+            "1: sbiw %0,1" "\n\t" // 2 cycles
+            "brne 1b" : "=w" (delayCycles) : "0" (delayCycles) // 2 cycles
+            );
+    } while(++counter); // wraps around at 256
+    interrupts();
+
+    // Analyze the captured waveform
+    lightingAnalysis(32.0);
+    
+    #ifdef PRINT_LIGHTING
+    LCDclear();
+    Serial.print(lightingMean,DEC);
+    Serial.write(' ');
+    Serial.print(lighting120Hz,DEC);
+    #endif
+    
+    // =====================================================================
+    // Do a burst of 256 x 5kHz ADC samples lasting exactly 51,200 us
+    // 250 samples span exactly 6 120Hz powerline cycles.
+    // Second time round is the low-gain photoamp output.
     // =====================================================================
     bufptr = buffer;
     noInterrupts();
@@ -130,11 +165,18 @@ void loop() {
     } while(++counter); // wraps around at 256
     interrupts();
 
-    // Analyze the captured waveform and dump the results
-    lightingAnalysis(10.0);
+    // Analyze the captured waveform
+    lightingAnalysis(32.0);
+    
+    #ifdef PRINT_LIGHTING
+    LCDpos(1,0);
+    Serial.print(lightingMean,DEC);
+    Serial.write(' ');
+    Serial.print(lighting120Hz,DEC);
+    #endif
     
     // Dump every 16th lighting waveform
-    if((packet.sequenceNumber & 0x0f) == 0) dumpBuffer(PACKET_DUMP_LIGHTING);
+    //if((packet.sequenceNumber & 0x0f) == 0) dumpBuffer(PACKET_DUMP_LIGHTING);
     
     packet.data[0] = lightingMean;
     packet.data[1] = lighting120Hz;
@@ -283,6 +325,7 @@ void loop() {
     //----------------------------------------------------------------------
     // Display readings on the optional LCD
     //----------------------------------------------------------------------
+#ifndef PRINT_LIGHTING
     LCDclear();
     Serial.print(packet.data[0],DEC);
     LCDpos(0,5);
@@ -312,6 +355,7 @@ void loop() {
         Serial.print('0');
     }
     Serial.print(packet.status,HEX);
+#endif
 }
 
 int main(void) {
