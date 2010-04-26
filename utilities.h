@@ -39,8 +39,8 @@ extern void dumpBuffer(byte dumpType);
 
 // Lighting analysis
 
-extern unsigned int lightingMean,lighting120Hz;
-extern void lightingAnalysis(void);
+extern unsigned short lightingMean,lighting120Hz;
+extern void lightingAnalysis(float scaleFactor);
 
 // Power analysis
 

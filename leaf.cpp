@@ -111,7 +111,7 @@ void loop() {
 
     // =====================================================================
     // Do a burst of 256 x 5kHz ADC samples lasting exactly 51,200 us
-    // 250 samples span exactly 6 120Hz powerline cycles
+    // 250 samples span exactly 6 120Hz powerline cycles.
     // =====================================================================
     bufptr = buffer;
     noInterrupts();
@@ -131,7 +131,7 @@ void loop() {
     interrupts();
 
     // Analyze the captured waveform and dump the results
-    lightingAnalysis();
+    lightingAnalysis(10.0);
     
     // Dump every 16th lighting waveform
     if((packet.sequenceNumber & 0x0f) == 0) dumpBuffer(PACKET_DUMP_LIGHTING);

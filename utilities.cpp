@@ -209,11 +209,13 @@ static float sink,cosk,cosSum,sinSum;
 // against clipping and can reconstruct waveforms whose baseline exceeds
 // the ADC input range as long as some 120Hz is visible within the range.
 // This function makes the following math calls: 62*sin, 62*cos, 3*sqrt.
+// The scale factor is used to scale the results from ADC counts
+// to the unsigned short globals lightingMean and lighting120Hz.
 // =====================================================================
 
-unsigned int lightingMean,lighting120Hz;
+unsigned short lightingMean,lighting120Hz;
 
-void lightingAnalysis() {
+void lightingAnalysis(float scaleFactor) {
     
     static float beta0,beta1,beta2,alpha00,alpha01,alpha02,alpha11,alpha12,alpha22;
     
@@ -303,9 +305,9 @@ void lightingAnalysis() {
         beta1 = sqrt(beta1*beta1 + beta2*beta2);
         
         // beta0 is the mean lighting level in 0.1 ADC units, clipped at zero.
-        lightingMean = (beta0 < 0) ? 0 : (unsigned int)(10*beta0+0.5);
+        lightingMean = (beta0 < 0) ? 0 : (unsigned short)(scaleFactor*beta0+0.5);
         // Calculate the 120Hz peak amplitude in 0.1 ADC units
-        lighting120Hz = (unsigned int)(10*beta1+0.5);
+        lighting120Hz = (unsigned short)(scaleFactor*beta1+0.5);
 
         LCDclear();
         printFloat(beta0,100);
