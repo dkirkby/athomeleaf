@@ -134,7 +134,7 @@ void loop() {
     interrupts();
 
     // Analyze the captured waveform
-    lightingAnalysis(32.0);
+    lightingAnalysis(16.0);
     
     #ifdef PRINT_LIGHTING
     LCDclear();
@@ -166,7 +166,7 @@ void loop() {
     interrupts();
 
     // Analyze the captured waveform
-    lightingAnalysis(32.0);
+    lightingAnalysis(16.0);
     
     #ifdef PRINT_LIGHTING
     LCDpos(1,0);

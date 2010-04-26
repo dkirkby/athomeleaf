@@ -273,14 +273,17 @@ void lightingAnalysis(float scaleFactor) {
     // in the sampling. At this point, alpha00 contains the number of unclipped samples
     // out of a possible NLIGHTSAMP maximum.
     if(alpha00 < MINUNCLIPPED) {
-        beta1 = 0;
+        //beta1 = 0;
+        lighting120Hz = 0xffff;
         if(nzero > NLIGHTSAMPBY2) {
             // underflow
-            beta0 = 0;
+            //beta0 = 0;
+            lightingMean = 0;
         }
         else {
             // overflow
-            beta0 = -1;
+            //beta0 = -1;
+            lightingMean = 0xffff;
         }
     }
     else {
@@ -304,10 +307,29 @@ void lightingAnalysis(float scaleFactor) {
         // Store the 120 Hz peak amplitude in beta1
         beta1 = sqrt(beta1*beta1 + beta2*beta2);
         
-        // beta0 is the mean lighting level in 0.1 ADC units, clipped at zero.
-        lightingMean = (beta0 < 0) ? 0 : (unsigned short)(scaleFactor*beta0+0.5);
-        // Calculate the 120Hz peak amplitude in 0.1 ADC units
-        lighting120Hz = (unsigned short)(scaleFactor*beta1+0.5);
+        // scale beta0 to lightingMean
+        beta0 = scaleFactor*beta0 + 0.5;
+        if(beta0 <= 0) {
+            lightingMean = 0;
+        }
+        else if(beta0 >= 0xfffe) {
+            lightingMean = 0xfffe;
+        }
+        else {
+            lightingMean = (unsigned short)beta0;
+        }
+        
+        // scale beta1 to lighting120Hz
+        beta1 = scaleFactor*beta1 + 0.5;
+        if(beta1 <= 0) {
+            lighting120Hz = 0;
+        }
+        else if(beta1 >= 0xfffe) {
+            lighting120Hz = 0xfffe;
+        }
+        else {
+            lighting120Hz = (unsigned short)beta1;
+        }
     }
 }
 
