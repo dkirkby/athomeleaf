@@ -298,11 +298,23 @@ void lightingAnalysis() {
         beta2 = (beta2 - alpha02*beta0 - alpha12*beta1)/alpha22;
         beta1 = (beta1 - alpha12*beta2)/alpha11;
         beta0 = (beta0 - alpha01*beta1 - alpha02*beta2)/alpha00;
-    
+        
+        // Store the 120 Hz peak amplitude in beta1
+        beta1 = sqrt(beta1*beta1 + beta2*beta2);
+        
         // beta0 is the mean lighting level in 0.1 ADC units, clipped at zero.
-        lightingMean = (beta0 < 0) ? 0 : (unsigned int)(0.1*beta0);
+        lightingMean = (beta0 < 0) ? 0 : (unsigned int)(10*beta0+0.5);
         // Calculate the 120Hz peak amplitude in 0.1 ADC units
-        lighting120Hz = (unsigned int)(0.1*sqrt(beta1*beta1 + beta2*beta2));
+        lighting120Hz = (unsigned int)(10*beta1+0.5);
+
+        LCDclear();
+        printFloat(beta0,100);
+        Serial.print(" -> ");
+        Serial.print(lightingMean,DEC);
+        LCDpos(1,0);
+        printFloat(beta1,100);
+        Serial.print(" -> ");
+        Serial.print(lighting120Hz,DEC);
     }
 }
 
