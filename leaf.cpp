@@ -139,8 +139,7 @@ void loop() {
     packet.data[0] = lightingMean;
     packet.data[1] = lighting120Hz;
 
-//    if((lighting120Hz > 20) && (10*lighting120Hz > lightingMean)) {
-    if(packet.sequenceNumber % 2) {
+    if((lighting120Hz > 20) && (10*lighting120Hz > lightingMean)) {
         whichLED = AMBER_LED_PIN;
     }
     else {
