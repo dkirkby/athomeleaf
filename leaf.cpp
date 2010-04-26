@@ -136,6 +136,21 @@ void loop() {
     // Analyze the captured waveform
     lightingAnalysis(16.0);
     
+    if(lightingMean < 300) {
+        whichLED = 0; // signals that the LED should be off
+    }
+    else if(lightingMean < 25000) {
+        if(lighting120Hz > (lightingMean >> 3)) {
+            whichLED = AMBER_LED_PIN;
+        }
+        else {
+            whichLED = GREEN_LED_PIN;
+        }
+    }
+    else {
+        whichLED = 0xff; // signals that we defer to the low-gain analysis
+    }    
+    
     #ifdef PRINT_LIGHTING
     LCDclear();
     Serial.print(lightingMean,DEC);
@@ -168,6 +183,15 @@ void loop() {
     // Analyze the captured waveform
     lightingAnalysis(16.0);
     
+    if(whichLED == 0xff) {
+        if(lighting120Hz > (lightingMean >> 3)) {
+            whichLED = AMBER_LED_PIN;
+        }
+        else {
+            whichLED = GREEN_LED_PIN;
+        }
+    }
+    
     #ifdef PRINT_LIGHTING
     LCDpos(1,0);
     Serial.print(lightingMean,DEC);
@@ -180,13 +204,6 @@ void loop() {
     
     packet.data[0] = lightingMean;
     packet.data[1] = lighting120Hz;
-
-    if((lighting120Hz > 20) && (10*lighting120Hz > lightingMean)) {
-        whichLED = AMBER_LED_PIN;
-    }
-    else {
-        whichLED = GREEN_LED_PIN;
-    }
 
     // =====================================================================
     // Calculate average of NTEMPSUM temperature ADC samples.
@@ -209,7 +226,8 @@ void loop() {
     for(temperatureIndex = 0; temperatureIndex <  NTEMPSUMBY2; temperatureIndex++) {
         temperatureSum += analogRead(TEMPERATURE_PIN);
         // gradually ramp the LED on during the first set of temperature samples
-        analogWrite(whichLED,(int)(127.*(1.-cos(temperatureIndex*DPHIGLOW))+0.5));
+        byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW))+0.5);
+        if(whichLED) analogWrite(whichLED,byteValue);
         tick();
     }
     //----------------------------------------------------------------------
@@ -250,7 +268,8 @@ void loop() {
     for(temperatureIndex = NTEMPSUMBY2; temperatureIndex < NTEMPSUM; temperatureIndex++) {
         temperatureSum += analogRead(TEMPERATURE_PIN);
         // gradually ramp the LED off during the second set of temperature samples
-        analogWrite(whichLED,(int)(127.*(1.-cos(temperatureIndex*DPHIGLOW))+0.5));
+        byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW))+0.5);
+        if(whichLED) analogWrite(whichLED,byteValue);
         tick();
     }
 
