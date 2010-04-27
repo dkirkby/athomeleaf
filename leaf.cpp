@@ -27,9 +27,28 @@
 // blue/red flash duration (ms) to indicate below/above comfort range
 #define TEMP_FLASH_DURATION 20
 
+// ---------------------------------------------------------------------
+// Lighting analysis parameters
+// ---------------------------------------------------------------------
+// If mean lighting level on the high-gain channel is below this threshold
+// we consider the room to be dark
+#define DARK_THRESHOLD 250
+// If the high-gain mean lighting level is above this value, give preference
+// to the low-gain channel. With a crossover at 10,000, the low-gain mean
+// should be at least 500.
+#define LIGHTING_CROSSOVER 10000
+// Whenever the mean lighting level exceeds the DARK_THRESHOLD, artificial
+// lighting is considered to be present if the ratio of the 120 Hz amplitude
+// to mean lighting level is at least 1/ARTIFICIAL_THRESHOLD. Whether to use
+// the high- or low-gain channel for this test depends on LIGHTING_CROSSOVER.
+#define ARTIFICIAL_THRESHOLD 20
+
+// ---------------------------------------------------------------------
+// Power analysis parameters
+// ---------------------------------------------------------------------
+
 // Power to threshold conversion factor: (1<<27)/(1000W)^2
 #define THRESHOLDSCALE 134.21772799999999
-
 
 // =====================================================================
 // Global variable declarations. All variables must fit within 2K
@@ -138,11 +157,11 @@ void loop() {
     // Analyze the captured waveform
     lightingAnalysis(16.0);
     
-    if(lightingMean < 300) {
-        whichLED = 0; // signals that the LED should be off
+    if(lightingMean < DARK_THRESHOLD) {
+        whichLED = 0; // signals that the room is dark and the LED should be off
     }
-    else if(lightingMean < 25000) {
-        if(lighting120Hz > (lightingMean >> 3)) {
+    else if(lightingMean < LIGHTING_CROSSOVER) {
+        if(lighting120Hz > lightingMean/ARTIFICIAL_THRESHOLD) {
             whichLED = AMBER_LED_PIN;
         }
         else {
@@ -186,7 +205,7 @@ void loop() {
     lightingAnalysis(16.0);
     
     if(whichLED == 0xff) {
-        if(lighting120Hz > (lightingMean >> 3)) {
+        if(lighting120Hz > lightingMean/ARTIFICIAL_THRESHOLD) {
             whichLED = AMBER_LED_PIN;
         }
         else {
@@ -281,8 +300,9 @@ void loop() {
     //----------------------------------------------------------------------
     // Use the red/blue LEDs to indicate if the temperature is beyond the
     // comfort level. Don't flash every reading to minimize distraction.
+    // Disable the temperature feedback when the room is dark (whichLED = 0)
     //----------------------------------------------------------------------
-    if((cycleCount >= SELF_HEATING_DELAY) && (packet.sequenceNumber % TEMP_FLASH_INTERVAL == 0)) {
+    if(whichLED && (cycleCount >= SELF_HEATING_DELAY) && (packet.sequenceNumber % TEMP_FLASH_INTERVAL == 0)) {
         if(packet.data[3] > temperatureMax + SELF_HEATING_CORRECTION) {
             digitalWrite(RED_LED_PIN,HIGH);
         }
