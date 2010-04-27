@@ -123,13 +123,13 @@ void tick() {
     randomState ^= randomState << 17;
     randomState ^= randomState >> 5;
     doClick = (randomState < clickThreshold) ? 1 : 0;
-    digitalWrite(RED_LED_PIN,doClick);
+    //digitalWrite(RED_LED_PIN,doClick);
     delayMicroseconds(250);
     digitalWrite(PIEZO_PIN,doClick);
     delayMicroseconds(500);
     digitalWrite(PIEZO_PIN,LOW);
     delayMicroseconds(250);
-    digitalWrite(RED_LED_PIN,LOW);
+    //digitalWrite(RED_LED_PIN,LOW);
 }
 
 // ---------------------------------------------------------------------
@@ -470,7 +470,7 @@ void chirp(byte cycles, byte timebase) {
     byte counter = cycles;
     unsigned int delay = cycles*timebase;
     
-    digitalWrite(RED_LED_PIN,HIGH);
+    //digitalWrite(RED_LED_PIN,HIGH);
     do {
         digitalWrite(PIEZO_PIN,HIGH);
         delayMicroseconds(delay);
@@ -480,7 +480,7 @@ void chirp(byte cycles, byte timebase) {
     } while(--counter);
 
     counter = cycles;
-    digitalWrite(RED_LED_PIN,LOW);
+    //digitalWrite(RED_LED_PIN,LOW);
     do {
         delay += timebase;
         digitalWrite(PIEZO_PIN,HIGH);
@@ -557,11 +557,11 @@ byte cricketSample[CRICKET_SAMPLES] = {
 };
 
 void cricket(void) {
-    digitalWrite(RED_LED_PIN,HIGH);
+    //digitalWrite(RED_LED_PIN,HIGH);
     shiftOut(PIEZO_PIN,CRICKET_SAMPLES,cricketSample);
     delay(20);
     shiftOut(PIEZO_PIN,CRICKET_SAMPLES,cricketSample);
     delay(20);
     shiftOut(PIEZO_PIN,CRICKET_SAMPLES,cricketSample);
-    digitalWrite(RED_LED_PIN,LOW);
+    //digitalWrite(RED_LED_PIN,LOW);
 }
