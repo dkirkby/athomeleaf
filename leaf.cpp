@@ -41,7 +41,7 @@
 // lighting is considered to be present if the ratio of the 120 Hz amplitude
 // to mean lighting level is at least 1/ARTIFICIAL_THRESHOLD. Whether to use
 // the high- or low-gain channel for this test depends on LIGHTING_CROSSOVER.
-#define ARTIFICIAL_THRESHOLD 20
+#define ARTIFICIAL_THRESHOLD 100
 
 // ---------------------------------------------------------------------
 // Power analysis parameters
@@ -172,6 +172,9 @@ void loop() {
         whichLED = 0xff; // signals that we defer to the low-gain analysis
     }    
     
+    packet.data[0] = lightingMean;
+    packet.data[1] = lighting120Hz;
+    
     #ifdef PRINT_LIGHTING
     LCDclear();
     Serial.print(lightingMean,DEC);
@@ -223,9 +226,6 @@ void loop() {
     // Dump every 16th lighting waveform
     //if((packet.sequenceNumber & 0x0f) == 0) dumpBuffer(PACKET_DUMP_LIGHTING);
     
-    packet.data[0] = lightingMean;
-    packet.data[1] = lighting120Hz;
-
     // =====================================================================
     // Calculate average of NTEMPSUM temperature ADC samples.
     // Result is stored in 32-bit unsigned, so can average up to 2^22
@@ -313,6 +313,12 @@ void loop() {
     delay(TEMP_FLASH_DURATION);
     digitalWrite(RED_LED_PIN,LOW);
     digitalWrite(BLUE_LED_PIN,LOW);
+    
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //!! Hijack the packet for lighting
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    packet.data[2] = lightingMean;
+    packet.data[3] = lighting120Hz;
     
     //----------------------------------------------------------------------
     // Transmit our data via the nordic interface
