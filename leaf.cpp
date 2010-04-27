@@ -17,9 +17,12 @@
 #define ADC2DEGF 0.0002384185791015625
 // 2pi/NTEMPSUM
 #define DPHIGLOW 0.0030679615757712823
-// number of readings to wait until self-heating has stabilized and
-// corrections are applied (must be less than 256, set to zero to disable)
-#define SELF_HEATING_DELAY 180
+
+// number of readings to wait until self-heating has stabilized
+// (must be less than 256, set to zero to disable)
+#define SELF_HEATING_DELAY 0
+// the size of the self heating correction to apply after the delay (degF x 100)
+#define SELF_HEATING_CORRECTION 0
 // the blue/red LED will flash every Nth readings for below/above comfort range
 #define TEMP_FLASH_INTERVAL 8
 // blue/red flash duration (ms) to indicate below/above comfort range
@@ -273,43 +276,19 @@ void loop() {
         tick();
     }
 
-    //----------------------------------------------------------------------
-    // Calculate the temperature to return, including a correction for
-    // the device's self heating.
-    //----------------------------------------------------------------------
     // calculate the average temperature in degF x 100
     packet.data[3] = (unsigned int)(100*temperatureSum*ADC2DEGF);
-    // are we still tracking the initial self-heating?
-    if(cycleCount > 0 || packet.sequenceNumber > SELF_HEATING_DELAY) {
-        // apply the self-heating correction
-        packet.data[3] -= selfHeatingCorrection;
-    }
-    else if(packet.sequenceNumber == 1) {
-        // remember the first reading, before there is any self heating
-        selfHeatingCorrection = packet.data[3];
-    }
-    else if(packet.sequenceNumber < SELF_HEATING_DELAY) {
-        // return the first reading until we have a fix on the correction
-        packet.data[3] = selfHeatingCorrection;
-    }
-    else if(packet.sequenceNumber == SELF_HEATING_DELAY) {
-        // remember the initial temperature (using temperatureSum as a temporary)
-        temperatureSum = selfHeatingCorrection;
-        // store the temperature change during the initial heating as the correction
-        selfHeatingCorrection = packet.data[3] - selfHeatingCorrection;
-        // return the initial temperature
-        packet.data[3] = (unsigned short)temperatureSum;
-    }
             
     //----------------------------------------------------------------------
     // Use the red/blue LEDs to indicate if the temperature is beyond the
     // comfort level. Don't flash every reading to minimize distraction.
     //----------------------------------------------------------------------
-    if(packet.sequenceNumber % TEMP_FLASH_INTERVAL == 0) {
-        if(packet.data[3] > temperatureMax) {
+    if((cycleCount > 0 || packet.sequenceNumber > SELF_HEATING_DELAY) &&
+        (packet.sequenceNumber % TEMP_FLASH_INTERVAL == 0)) {
+        if(packet.data[3] > temperatureMax + SELF_HEATING_CORRECTION) {
             digitalWrite(RED_LED_PIN,HIGH);
         }
-        else if(packet.data[3] < temperatureMin) {
+        else if(packet.data[3] < temperatureMin + SELF_HEATING_CORRECTION) {
             digitalWrite(BLUE_LED_PIN,HIGH);
         }
     }
