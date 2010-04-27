@@ -18,11 +18,10 @@
 // 2pi/NTEMPSUM
 #define DPHIGLOW 0.0030679615757712823
 
-// number of readings to wait until self-heating has stabilized
-// (must be less than 256, set to zero to disable)
-#define SELF_HEATING_DELAY 0
+// number of cyles (256 readings each) to wait until self-heating has stabilized
+#define SELF_HEATING_DELAY 2
 // the size of the self heating correction to apply after the delay (degF x 100)
-#define SELF_HEATING_CORRECTION 0
+#define SELF_HEATING_CORRECTION 763
 // the blue/red LED will flash every Nth readings for below/above comfort range
 #define TEMP_FLASH_INTERVAL 8
 // blue/red flash duration (ms) to indicate below/above comfort range
@@ -45,7 +44,7 @@ unsigned short cycleCount = 0; // counts the number of completed 256-packet sequ
 byte whichLED;
 unsigned int temperatureIndex;
 unsigned long temperatureSum;
-unsigned short temperatureMax = 8000; // degF x 100
+unsigned short temperatureMax = 7800; // degF x 100
 unsigned short temperatureMin = 7400; // degF x 100
 unsigned short selfHeatingCorrection = 0; // degF x 100
 
@@ -283,8 +282,7 @@ void loop() {
     // Use the red/blue LEDs to indicate if the temperature is beyond the
     // comfort level. Don't flash every reading to minimize distraction.
     //----------------------------------------------------------------------
-    if((cycleCount > 0 || packet.sequenceNumber > SELF_HEATING_DELAY) &&
-        (packet.sequenceNumber % TEMP_FLASH_INTERVAL == 0)) {
+    if((cycleCount >= SELF_HEATING_DELAY) && (packet.sequenceNumber % TEMP_FLASH_INTERVAL == 0)) {
         if(packet.data[3] > temperatureMax + SELF_HEATING_CORRECTION) {
             digitalWrite(RED_LED_PIN,HIGH);
         }
