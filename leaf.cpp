@@ -3,12 +3,6 @@
 #define PRINT_LIGHTING
 
 // ---------------------------------------------------------------------
-// Define this device's 16-bit ID. MSB must be clear so there are
-// 2^15 = 32,768 choices.
-// ---------------------------------------------------------------------
-#define MY_ID 0x00ED
-
-// ---------------------------------------------------------------------
 // Temperature monitoring parameters
 // ---------------------------------------------------------------------
 #define NTEMPSUM        2048
@@ -107,8 +101,8 @@ void setup() {
     LCDinit();
     
     // nordic wireless initialization
-    initNordic(MY_ID,0);
-    if(nordicOK) {        
+    initNordic((unsigned short)serialNumber,0);
+    if(nordicOK) {
         LCDprint("uci@home","wireless ok");
     }
     else {
@@ -116,7 +110,7 @@ void setup() {
     }
     
     // initialize wireless packets
-    packet.deviceID = MY_ID & 0x7fff; // make sure the MSB is clear
+    packet.deviceID = (unsigned short)(serialNumber & 0x7fff); // make sure the MSB is clear
     packet.sequenceNumber = 0;
     for(byteValue = 0; byteValue < PACKET_VALUES; byteValue++) {
         packet.data[byteValue] = 0;
@@ -322,7 +316,7 @@ void loop() {
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     packet.data[2] = lightingMean;
     packet.data[3] = lighting120Hz;
-    
+
     //----------------------------------------------------------------------
     // Transmit our data via the nordic interface
     //----------------------------------------------------------------------
