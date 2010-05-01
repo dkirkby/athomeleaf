@@ -17,7 +17,9 @@ import struct
 import ctypes
 
 # parse command-line args
-assert(len(sys.argv)==2)
+if len(sys.argv) != 2:
+    sys.stderr.write("Missing SERIAL_NUMBER parameter\n")
+    sys.exit(-1)
 (serialNumber,) = sys.argv[1:]
 
 # perform string conversions

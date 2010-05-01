@@ -63,18 +63,18 @@ LOCAL_CPP_SRC = Spi.cpp mirf.cpp utilities.cpp
 ifeq ($(DEVICE),168)
 	MCU = atmega168
 	BUILD_DIR = build.168
-	AVR_FUSES = -u -U efuse:w:0x01:m -U hfuse:w:0xDF:m -U lfuse:w:0xff:m
+	AVR_FUSES = -u -U efuse:w:0x01:m -U hfuse:w:0xD7:m -U lfuse:w:0xff:m
 else
 	MCU = atmega328p
 	BUILD_DIR = build.328
 	## 5V 16MHz full-swing oscillator
-	#AVR_FUSES = -u -U efuse:w:0x07:m -U hfuse:w:0xD9:m -U lfuse:w:0xF7:m
+	#AVR_FUSES = -u -U efuse:w:0x07:m -U hfuse:w:0xD1:m -U lfuse:w:0xF7:m
 	## 5V 16MHz low-power oscillator
-	AVR_FUSES = -u -U efuse:w:0x07:m -U hfuse:w:0xD9:m -U lfuse:w:0xFF:m
+	AVR_FUSES = -u -U efuse:w:0x07:m -U hfuse:w:0xD1:m -U lfuse:w:0xFF:m
 	## 3.3V 2 MHz full-swing oscillator
-	#AVR_FUSES = -u -U efuse:w:0x07:m -U hfuse:w:0xD9:m -U lfuse:w:0x77:m	
+	#AVR_FUSES = -u -U efuse:w:0x07:m -U hfuse:w:0xD1:m -U lfuse:w:0x77:m	
 	## 3.3V 2 MHz low-power oscillator
-	#AVR_FUSES = -u -U efuse:w:0x07:m -U hfuse:w:0xD9:m -U lfuse:w:0x7F:m	
+	#AVR_FUSES = -u -U efuse:w:0x07:m -U hfuse:w:0xD1:m -U lfuse:w:0x7F:m	
 endif
 
 F_CPU = 16000000
@@ -99,11 +99,15 @@ endif
 
 AVRDUDE_WRITE_FLASH = -U flash:w:$(BUILD_DIR)/$(TARGET).hex
 
+CONFIG_FILE = config.dat
+AVRDUDE_WRITE_EEPROM = -U eeprom:w:$(CONFIG_FILE):s
+
 # Add -v option for more verbose output
 # Add -V option for faster turnaround: eliminates verify cycle, but can add
 # suprious fuse verify errors (which are safe to ignore if there is a final "Fuses OK")
+# Add -F to disable the signature byte check
 
-AVRDUDE_FLAGS = -v -V -F -C $(INSTALL_DIR)/hardware/tools/avr/etc/avrdude.conf \
+AVRDUDE_FLAGS = -v -V -C $(INSTALL_DIR)/hardware/tools/avr/etc/avrdude.conf \
 	-p $(MCU) -P $(AVRDUDE_PORT) -c $(AVRDUDE_PROGRAMMER) $(AVRDUDE_BAUDRATE)
 
 # ==========================================================================
@@ -176,6 +180,17 @@ all: $(BUILD_DIR) sizeafter
 # --------------------------------------------------------------------------
 fuses:
 	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVR_FUSES)
+
+# --------------------------------------------------------------------------
+# Special target to load config data into EEPROM. The following make
+# symbols must be defined on the command line when using this target:
+#
+#  SERIAL_NUMBER=... 32-bit, decimal or hex (0x...)
+# --------------------------------------------------------------------------
+config:
+	./config.py $(SERIAL_NUMBER) > $(CONFIG_FILE)
+	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_EEPROM)
+	rm $(CONFIG_FILE)
 
 # --------------------------------------------------------------------------
 # Rules for building the library
