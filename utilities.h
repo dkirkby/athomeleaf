@@ -5,6 +5,13 @@
 #include "packet.h"
 
 // ---------------------------------------------------------------------
+// Configuration data read from EEPROM
+// ---------------------------------------------------------------------
+#define CONFIG_BASE_ADDR 0x10
+extern uint32_t serialNumber;
+extern void readConfig();
+
+// ---------------------------------------------------------------------
 // Shared globals
 // ---------------------------------------------------------------------
 extern byte byteValue;

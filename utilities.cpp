@@ -1,4 +1,10 @@
 #include "utilities.h"
+#include <avr/eeprom.h>
+
+// ---------------------------------------------------------------------
+// Configuration data read from EEPROM
+// ---------------------------------------------------------------------
+uint32_t serialNumber;
 
 // ---------------------------------------------------------------------
 // Shared globals
@@ -7,6 +13,13 @@ byte byteValue;
 unsigned int uintValue;
 float floatValue;
 Packet packet,dumpPacket;
+
+// =====================================================================
+// Reads configuration data from EEPROM
+// =====================================================================
+void readConfig() {
+    serialNumber = eeprom_read_dword((uint32_t*)CONFIG_BASE_ADDR);
+}
 
 // =====================================================================
 // Print a floating point value as a fixed-precision decimal.

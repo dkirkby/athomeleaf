@@ -72,6 +72,9 @@ unsigned short selfHeatingCorrection = 0; // degF x 100
 // =====================================================================
 
 void setup() {
+    // read our configuration data from EEPROM
+    readConfig();
+    
     // setup our digital outputs
     pinMode(AMBER_LED_PIN,OUTPUT);
     pinMode(GREEN_LED_PIN,OUTPUT);
