@@ -292,7 +292,7 @@ void loop() {
     }
 
     // calculate the average temperature in degF x 100
-    packet.data[3] = (unsigned int)(100*temperatureSum*ADC2DEGF);
+    packet.data[4] = (unsigned int)(100*temperatureSum*ADC2DEGF);
             
     //----------------------------------------------------------------------
     // Use the red/blue LEDs to indicate if the temperature is beyond the
@@ -300,10 +300,10 @@ void loop() {
     // Disable the temperature feedback when the room is dark (whichLED = 0)
     //----------------------------------------------------------------------
     if(whichLED && (cycleCount >= SELF_HEATING_DELAY) && (packet.sequenceNumber % TEMP_FLASH_INTERVAL == 0)) {
-        if(packet.data[3] > temperatureMax + SELF_HEATING_CORRECTION) {
+        if(packet.data[4] > temperatureMax + SELF_HEATING_CORRECTION) {
             digitalWrite(RED_LED_PIN,HIGH);
         }
-        else if(packet.data[3] < temperatureMin + SELF_HEATING_CORRECTION) {
+        else if(packet.data[4] < temperatureMin + SELF_HEATING_CORRECTION) {
             digitalWrite(BLUE_LED_PIN,HIGH);
         }
     }
@@ -361,9 +361,9 @@ void loop() {
     Serial.print(packet.data[2],DEC);
     // temperature reading
     LCDpos(1,7);
-    Serial.print(packet.data[3]/100,DEC);
+    Serial.print(packet.data[4]/100,DEC);
     Serial.print('.');
-    uintValue = packet.data[3]%100;
+    uintValue = packet.data[4]%100;
     if(uintValue < 10) {
         Serial.print('0');
     }
