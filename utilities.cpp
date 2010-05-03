@@ -169,7 +169,7 @@ void dumpBuffer(byte dumpType) {
     bufptr = buffer;
     while(uintValue--) { // loop over pairs of buffer bytes to write
         dumpPacket.data[counter++] = *bufptr++;
-        if(counter == PACKET_VALUES || uintValue == 0) {
+        if(counter == DATA_PACKET_VALUES || uintValue == 0) {
             // send the current packet contents
             Mirf.send((byte*)&dumpPacket);
             // get ready for the next packet

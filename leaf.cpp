@@ -112,7 +112,7 @@ void setup() {
     // initialize wireless packets
     packet.deviceID = (unsigned short)(serialNumber & 0x7fff); // make sure the MSB is clear
     packet.sequenceNumber = 0;
-    for(byteValue = 0; byteValue < PACKET_VALUES; byteValue++) {
+    for(byteValue = 0; byteValue < DATA_PACKET_VALUES; byteValue++) {
         packet.data[byteValue] = 0;
     }
     // Set the MSB in the dump packet to distinguish it from a normal

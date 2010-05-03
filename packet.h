@@ -1,13 +1,13 @@
 #ifndef PACKET_H
 #define PACKET_H
 
-#define PACKET_VALUES 5
+#define DATA_PACKET_VALUES 5
 
 typedef struct {
     unsigned short deviceID;
     unsigned char sequenceNumber;
     unsigned char status;
-    unsigned short data[PACKET_VALUES];
+    unsigned short data[DATA_PACKET_VALUES];
 } Packet;
 
 // When the MSB of deviceID is set, the status byte identifies one of

@@ -50,7 +50,7 @@ void loop() {
             Serial.print(" [");
             Serial.print(packet.sequenceNumber,HEX);
             Serial.print("]");
-            for(byteValue = 0; byteValue < PACKET_VALUES; byteValue++) {
+            for(byteValue = 0; byteValue < DATA_PACKET_VALUES; byteValue++) {
                 Serial.print(' ');
                 Serial.print(packet.data[byteValue],DEC);
             }
