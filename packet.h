@@ -14,6 +14,7 @@ typedef struct {
     unsigned long serialNumber;
     unsigned long commitTimestamp;
     unsigned char commitID[20];
+    unsigned char synchedToCommit;
 } LookAtMe;
 
 // When the MSB of deviceID is set, the status byte identifies one of

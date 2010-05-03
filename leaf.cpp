@@ -3,6 +3,18 @@
 #define PRINT_LIGHTING
 
 // ---------------------------------------------------------------------
+// Declare our 'look-at-me' packet
+// ---------------------------------------------------------------------
+LookAtMe LAM = {
+    0, // serial number will be copied from EEPROM
+#ifdef COMMIT_INFO
+    COMMIT_INFO
+#elif
+    0, { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }, 0
+#endif
+};
+
+// ---------------------------------------------------------------------
 // Temperature monitoring parameters
 // ---------------------------------------------------------------------
 #define NTEMPSUM        2048
