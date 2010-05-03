@@ -170,7 +170,7 @@ ALL_CFLAGS = -mmcu=$(MCU) -I. $(CFLAGS)
 ALL_CXXFLAGS = -mmcu=$(MCU) -I. $(CXXFLAGS)
 ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
 
-# Get the current commit date (unix timestamp) and ID (abbreviated to 20 bytes)
+# Get the current commit date (4-byte unix timestamp) and ID (40 hex chars = 20 bytes)
 # Should probably handle the case where we are being used in an environment without git
 COMMIT_INFO := $(shell git log -n 1 HEAD --pretty="format:%ct %H")
 
