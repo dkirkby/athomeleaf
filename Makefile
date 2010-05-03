@@ -170,10 +170,6 @@ ALL_CFLAGS = -mmcu=$(MCU) -I. $(CFLAGS)
 ALL_CXXFLAGS = -mmcu=$(MCU) -I. $(CXXFLAGS)
 ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
 
-# Get the current commit date (4-byte unix timestamp) and ID (40 hex chars = 20 bytes)
-# Should probably handle the case where we are being used in an environment without git
-COMMIT_INFO := $(shell git log -n 1 HEAD --pretty="format:%ct %H")
-
 # --------------------------------------------------------------------------
 # Default target.
 # --------------------------------------------------------------------------
@@ -290,7 +286,7 @@ extcoff: $(TARGET).elf
 
 # Link: create ELF output file from library.
 $(BUILD_DIR)/$(TARGET).elf: $(TARGET).cpp $(BUILD_DIR)/core.a
-	$(CC) $(ALL_CXXFLAGS) -o $@ $(TARGET).cpp -L. $(BUILD_DIR)/core.a $(LDFLAGS)
+	$(CC) $(ALL_CXXFLAGS) -o $@ $(TARGET).cpp -D COMMIT_INFO="$(shell ./commitInfo.py)" -L. $(BUILD_DIR)/core.a $(LDFLAGS)
 
 $(BUILD_DIR)/core.a: $(LIBOBJ)
 	@for i in $(LIBOBJ); do echo $(AR) rcs $(BUILD_DIR)/core.a $$i; $(AR) rcs $(BUILD_DIR)/core.a $$i; done
