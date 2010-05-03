@@ -10,6 +10,12 @@ typedef struct {
     unsigned short data[DATA_PACKET_VALUES];
 } DataPacket;
 
+typedef struct {
+    unsigned long serialNumber;
+    unsigned long commitTimestamp;
+    unsigned char commitID[20];
+} LookAtMe;
+
 // When the MSB of deviceID is set, the status byte identifies one of
 // the following special packet types
 
