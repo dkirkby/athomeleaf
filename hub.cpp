@@ -22,7 +22,7 @@ void setup() {
     
     // print out the hub configuration on one line
     Serial.print("HUB SIZE ");
-    Serial.print(sizeof(Packet),DEC);
+    Serial.print(sizeof(DataPacket),DEC);
     Serial.println();
 
     // try to initialize the wireless interface and print the result

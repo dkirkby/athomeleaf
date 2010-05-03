@@ -12,7 +12,7 @@ uint32_t serialNumber;
 byte byteValue;
 unsigned int uintValue;
 float floatValue;
-Packet packet,dumpPacket;
+DataPacket packet,dumpPacket;
 
 // =====================================================================
 // Reads configuration data from EEPROM
@@ -457,7 +457,7 @@ void initNordic(unsigned short id, byte isHub) {
     // Mirf.ceHigh(); // don't need this before Mirf.config() ?
 
     // set the payload size and radio channel
-    Mirf.payload = sizeof(Packet);
+    Mirf.payload = sizeof(DataPacket);
     Mirf.channel = RADIO_CHANNEL;
     
     Mirf.config();
@@ -466,7 +466,7 @@ void initNordic(unsigned short id, byte isHub) {
     // to a Nordic transceiver
     uint8_t rv;
 	Mirf.readRegister(RX_PW_P1,&rv,1);
-	if(rv == sizeof(Packet)) {
+	if(rv == sizeof(DataPacket)) {
         nordicOK = 1;
 	}
 	else {

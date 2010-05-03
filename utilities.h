@@ -17,7 +17,7 @@ extern void readConfig();
 extern byte byteValue;
 extern unsigned int uintValue;
 extern float floatValue;
-extern Packet packet,dumpPacket;
+extern DataPacket packet,dumpPacket;
 
 // Printing support for float values
 

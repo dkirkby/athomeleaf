@@ -8,7 +8,7 @@ typedef struct {
     unsigned char sequenceNumber;
     unsigned char status;
     unsigned short data[DATA_PACKET_VALUES];
-} Packet;
+} DataPacket;
 
 // When the MSB of deviceID is set, the status byte identifies one of
 // the following special packet types
