@@ -2,11 +2,6 @@
 #include <avr/eeprom.h>
 
 // ---------------------------------------------------------------------
-// Configuration data read from EEPROM
-// ---------------------------------------------------------------------
-uint32_t serialNumber;
-
-// ---------------------------------------------------------------------
 // Shared globals
 // ---------------------------------------------------------------------
 byte byteValue;
@@ -17,8 +12,8 @@ DataPacket packet,dumpPacket;
 // =====================================================================
 // Reads configuration data from EEPROM
 // =====================================================================
-void readConfig() {
-    serialNumber = eeprom_read_dword((uint32_t*)CONFIG_BASE_ADDR);
+void copySerialNumber(LookAtMe *lam) {
+    lam->serialNumber = eeprom_read_dword((uint32_t*)SERIAL_NUMBER_ADDR);
 }
 
 // =====================================================================

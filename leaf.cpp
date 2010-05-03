@@ -78,8 +78,8 @@ unsigned short selfHeatingCorrection = 0; // degF x 100
 // =====================================================================
 
 void setup() {
-    // read our configuration data from EEPROM
-    readConfig();
+    // copy our serial number from EEPROM to our LAM packet
+    copySerialNumber(&LAM);
     
     // setup our digital outputs
     pinMode(AMBER_LED_PIN,OUTPUT);
@@ -113,7 +113,7 @@ void setup() {
     LCDinit();
     
     // nordic wireless initialization
-    initNordic((unsigned short)serialNumber,0);
+    initNordic((unsigned short)LAM.serialNumber,0);
     if(nordicOK) {
         LCDprint("uci@home","wireless ok");
     }
@@ -122,7 +122,7 @@ void setup() {
     }
     
     // initialize wireless packets
-    packet.deviceID = (unsigned short)(serialNumber & 0x7fff); // make sure the MSB is clear
+    packet.deviceID = (unsigned short)(LAM.serialNumber & 0x7fff); // make sure the MSB is clear
     packet.sequenceNumber = 0;
     for(byteValue = 0; byteValue < DATA_PACKET_VALUES; byteValue++) {
         packet.data[byteValue] = 0;

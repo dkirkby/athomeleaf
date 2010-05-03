@@ -7,9 +7,9 @@
 // ---------------------------------------------------------------------
 // Configuration data read from EEPROM
 // ---------------------------------------------------------------------
-#define CONFIG_BASE_ADDR 0x10
-extern uint32_t serialNumber;
-extern void readConfig();
+#define SERIAL_NUMBER_ADDR 0x10
+
+extern void copySerialNumber(LookAtMe*);
 
 // ---------------------------------------------------------------------
 // Shared globals
