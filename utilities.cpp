@@ -448,22 +448,29 @@ void initNordic(unsigned short id, byte isHub) {
 #error "NORDIC_ADDR_LEN must be 3, 4 or 5"
 #endif
 
-    // Setup the receiving pipelines (P0 is reserved for auto-acknowledge)
+    // Setup the transmitter and receiving pipelines
     if(isHub) {
+        // P0 will be configured at Tx time
+        
+        // P1 listens for DataPackets
         Mirf.writeRegister(RX_ADDR_P1,hubDataAddress,NORDIC_ADDR_LEN);
+    	Mirf.configRegister(RX_PW_P1, sizeof(DataPacket));
+        Mirf.payload = sizeof(DataPacket);
+        // Using P1
+        Mirf.configRegister(EN_RXADDR,0x02);
     }
     else {
-        Mirf.writeRegister(RX_ADDR_P0,hubDataAddress,NORDIC_ADDR_LEN);
+        // Transmit DataPackets to the hub
     	Mirf.writeRegister(TX_ADDR,hubDataAddress,NORDIC_ADDR_LEN);
+        // P0 listens for auto-acknowledgments of DataPackets
+        Mirf.writeRegister(RX_ADDR_P0,hubDataAddress,NORDIC_ADDR_LEN);
+    	Mirf.configRegister(RX_PW_P0, sizeof(DataPacket));
+        // P1 listens for ConfigPackets
+    	Mirf.configRegister(RX_PW_P1, sizeof(DataPacket));
+        Mirf.payload = sizeof(DataPacket);
+        // Using P1 and P0
+        Mirf.configRegister(EN_RXADDR,0x03);
     }
-    // Mirf.ceHigh(); // don't need this before Mirf.config() ?
-
-    // Set payload sizes for each Rx pipeline:
-    // P0 = auto-acknowledge
-    // P1 = data packets
-    Mirf.payload = sizeof(DataPacket);
-	Mirf.configRegister(RX_PW_P0, sizeof(DataPacket));
-	Mirf.configRegister(RX_PW_P1, sizeof(DataPacket));
 
     // Start receiver 
     Mirf.powerUpRx();
