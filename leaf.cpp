@@ -132,6 +132,7 @@ void setup() {
     // initialize wireless packets
     packet.deviceID = (unsigned short)(LAM.serialNumber & 0x7fff); // make sure the MSB is clear
     packet.sequenceNumber = 0;
+    packet.status = 0;
     for(byteValue = 0; byteValue < DATA_PACKET_VALUES; byteValue++) {
         packet.data[byteValue] = 0;
     }
@@ -337,37 +338,11 @@ void loop() {
     packet.data[2] = lightingMean;
     packet.data[3] = lighting120Hz;
 
-    // Add the number of retransmits needed for the last packet to this packet
-    if(nordicOK) {
-        Mirf.readRegister(OBSERVE_TX,(byte*)&(packet.status),1);
-    }
-
     //----------------------------------------------------------------------
-    // Transmit our data via the nordic interface
+    // Transmit our data via the nordic interface. Save the return value
+    // to send with the next packet.
     //----------------------------------------------------------------------
-    sendNordic(dataAddress, (byte*)&packet, sizeof(packet));
-/**
-    if(nordicOK) {
-        // Append the nordic transmit observer register contents to our packet
-        Mirf.readRegister(OBSERVE_TX,(byte*)&(packet.status),1);
-    
-        // Transmit our new sensor readings
-        Mirf.send((byte*)&packet);
-        while(1) { // should probably add a timeout to this loop...
-            byteValue = Mirf.getStatus();
-            // did we reach the max retransmissions limit?
-            if(byteValue & (1 << MAX_RT)) {
-                break;
-            }
-            // was the transmission acknowledged by the receiver?
-            if(byteValue & (1 << TX_DS)) {
-                break;
-            }
-        }
-
-        Mirf.powerUpRx(); // return to Rx mode
-    }
-**/
+    packet.status = sendNordic(dataAddress, (byte*)&packet, sizeof(packet));
     
     //----------------------------------------------------------------------
     // Display readings on the optional LCD

@@ -58,12 +58,13 @@ extern void powerAnalysis(void);
 
 #define RADIO_CHANNEL 0
 #define NORDIC_ADDR_LEN 3
+#define NORDIC_MAX_RETRIES 15
 
 extern byte nordicOK;
 extern byte idleAddress[],dataAddress[],lamAddress[],configAddress[];
 
 extern void initNordic(unsigned short id, byte isHub);
-extern void sendNordic(byte *address, byte *payload, byte payloadSize);
+extern byte sendNordic(byte *address, byte *payload, byte payloadSize);
 
 // Signalling
 

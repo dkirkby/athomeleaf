@@ -431,7 +431,7 @@ void initNordic(unsigned short id, byte isHub) {
     // Use the maximum number of retries (16) and pick one of 4 different
     // retransmit delays based on the low-order bits of the device ID:
     // 1250,1500,1750,2000us.
-    Mirf.configRegister(SETUP_RETR, 0x4f | ((byte)(id & 3) << 4));
+    Mirf.configRegister(SETUP_RETR, NORDIC_MAX_RETRIES | 0x40 | ((byte)(id & 3) << 4));
     
     // Use a 1-byte CRC which catches all error bursts that last for no
     // more than 8 bits (32us at 250 kbps) and catches 255/256 = 99.61%
@@ -493,12 +493,15 @@ void initNordic(unsigned short id, byte isHub) {
 
 // =====================================================================
 // Sends the specified payload data synchronously to the specified
-// address. Returns.... ?
+// address. Returns the number of retransmits necessary (ideally zero).
+// If the return value is greater than 0x0f then the packet was lost.
+// Returns 0xff in case the nordic transceiver was never successfully
+// initialized by initNordic().
 // =====================================================================
 
-void sendNordic(byte *address, byte *payload, byte payloadSize) {
+byte sendNordic(byte *address, byte *payload, byte payloadSize) {
 
-    if(!nordicOK)  return;
+    if(!nordicOK)  return 0xff;
     
     // Configure pipeline-0 to receive an auto-ack from the receiver
     Mirf.writeRegister(RX_ADDR_P0,address,NORDIC_ADDR_LEN);
@@ -506,11 +509,13 @@ void sendNordic(byte *address, byte *payload, byte payloadSize) {
     // Set our transmit address
     Mirf.writeRegister(TX_ADDR,address,NORDIC_ADDR_LEN);
     
-    // Start sending the payload
-    //Mirf.send(data);
-
-    // Wait until any previous transmit has completed
-    //byteValue = Mirf.getStatus(); // is this necessary??
+    // Wait until any previous transmit has completed. In case the previous
+    // transmit failed, its payload will still be in the Tx FIFO and we
+    // could try re-sending it by toggling CE. We don't do this and instead
+    // always flush the Tx FIFO below.
+    //
+    // This really isn't necessary as long as all data is sent using this
+    // function, since it ends with a call to powerUpRx() that sets PTX=0
     while (Mirf.PTX) {
         Mirf.readRegister(STATUS,&byteValue,1);
 	    if((byteValue & ((1 << TX_DS)  | (1 << MAX_RT)))){
@@ -523,10 +528,11 @@ void sendNordic(byte *address, byte *payload, byte payloadSize) {
     Mirf.ceLow();
     Mirf.powerUpTx();
     
-    // Flush the Tx FIFO
-    Mirf.csnLow();                    // Pull down chip select
-    Spi.transfer(FLUSH_TX);     // Write cmd to flush tx fifo
-    Mirf.csnHi();                    // Pull up chip select
+    // Flush the Tx FIFO (in case the last transmit reached its max retries, it
+    // will still be in the FIFO)
+    Mirf.csnLow();
+    Spi.transfer(FLUSH_TX);
+    Mirf.csnHi();
     
     // Write this payload
     Mirf.csnLow();
@@ -550,8 +556,17 @@ void sendNordic(byte *address, byte *payload, byte payloadSize) {
         }
     }
     
+    // Fetch the contents of the transmit observe register, which gives
+    // statistics on retransmissions. We will return this at the end.
+    Mirf.readRegister(OBSERVE_TX,(byte*)&byteValue,1);
+    
+    // Reset the P0 (auto-ack) address
+    Mirf.writeRegister(RX_ADDR_P0,idleAddress,NORDIC_ADDR_LEN);
+    
     // return to Rx mode
     Mirf.powerUpRx();
+    
+    return byteValue;
 }
 
 // =====================================================================
