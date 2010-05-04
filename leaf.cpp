@@ -345,7 +345,7 @@ void loop() {
     //----------------------------------------------------------------------
     // Transmit our data via the nordic interface
     //----------------------------------------------------------------------
-    sendNordic((byte*)&packet, hubDataAddress);
+    sendNordic((byte*)&packet, dataAddress);
 /**
     if(nordicOK) {
         // Append the nordic transmit observer register contents to our packet

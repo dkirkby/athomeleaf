@@ -405,7 +405,10 @@ byte nordicOK;
 
 // Nordic Tx/Rx addresses: should not alternate 101010... or have only one
 // level transition.
-byte hubDataAddress[NORDIC_ADDR_LEN] = { 0xF2, 0xF2, 0xF2 };
+byte idleAddress[NORDIC_ADDR_LEN] =   { 0xEE, 0xEE, 0xEE };
+byte dataAddress[NORDIC_ADDR_LEN] =   { 0xF2, 0xF2, 0xF2 };
+byte lamAddress[NORDIC_ADDR_LEN] =    { 0xC6, 0xC6, 0xC6 };
+byte configAddress[NORDIC_ADDR_LEN] = { 0x9A, 0xFF, 0xFF };
 
 void initNordic(unsigned short id, byte isHub) {
     
@@ -449,27 +452,25 @@ void initNordic(unsigned short id, byte isHub) {
 #error "NORDIC_ADDR_LEN must be 3, 4 or 5"
 #endif
 
-    // Setup the transmitter and receiving pipelines
+    // P0 listens for auto-acks. Address must match the Tx address
+    // and is updated in sendNordic(). Unless we are expecting an
+    // auto-ack, listen on an unsued address.
+    Mirf.writeRegister(RX_ADDR_P0,idleAddress,NORDIC_ADDR_LEN);
+    
+    // Setup the other (non-ack) receiver pipelines
     if(isHub) {
-        // P0 will be configured at Tx time
-        
         // P1 listens for DataPackets
-        Mirf.writeRegister(RX_ADDR_P1,hubDataAddress,NORDIC_ADDR_LEN);
-    	Mirf.configRegister(RX_PW_P1, sizeof(DataPacket));
+        Mirf.writeRegister(RX_ADDR_P1,dataAddress,NORDIC_ADDR_LEN);
+    	Mirf.configRegister(RX_PW_P1,sizeof(DataPacket));
         Mirf.payload = sizeof(DataPacket);
-        // Using P1
-        Mirf.configRegister(EN_RXADDR,0x02);
+        // Using P1:0
+        Mirf.configRegister(EN_RXADDR,0x03);
     }
     else {
-        // Transmit DataPackets to the hub
-    	Mirf.writeRegister(TX_ADDR,hubDataAddress,NORDIC_ADDR_LEN);
-        // P0 listens for auto-acknowledgments of DataPackets
-        Mirf.writeRegister(RX_ADDR_P0,hubDataAddress,NORDIC_ADDR_LEN);
-    	//Mirf.configRegister(RX_PW_P0, sizeof(DataPacket));
         // P1 listens for ConfigPackets
-    	Mirf.configRegister(RX_PW_P1, sizeof(DataPacket));
+    	Mirf.configRegister(RX_PW_P1,sizeof(DataPacket));
         Mirf.payload = sizeof(DataPacket);
-        // Using P1 and P0
+        // Using P1:0
         Mirf.configRegister(EN_RXADDR,0x03);
     }
 
@@ -500,8 +501,16 @@ void sendNordic(byte* data, byte *address) {
 
     if(!nordicOK)  return;
     
-    // Transmit our new sensor readings
+    // Configure pipeline-0 to receive an auto-ack from the receiver
+    Mirf.writeRegister(RX_ADDR_P0,address,NORDIC_ADDR_LEN);
+    
+    // Set our transmit address
+    Mirf.writeRegister(TX_ADDR,address,NORDIC_ADDR_LEN);
+    
+    // Start sending the payload
     Mirf.send(data);
+
+    // Wait until the transmission is complete or fails
     while(1) { // does this loop need a timeout? (no problems so far)
         byteValue = Mirf.getStatus();
         // did we reach the max retransmissions limit?
@@ -513,8 +522,8 @@ void sendNordic(byte* data, byte *address) {
             break;
         }
     }
-
-    Mirf.powerUpRx(); // return to Rx mode
+    // return to Rx mode
+    Mirf.powerUpRx();
 }
 
 // =====================================================================

@@ -60,7 +60,7 @@ extern void powerAnalysis(void);
 #define NORDIC_ADDR_LEN 3
 
 extern byte nordicOK;
-extern byte hubDataAddress[];
+extern byte idleAddress[],dataAddress[],lamAddress[],configAddress[];
 
 extern void initNordic(unsigned short id, byte isHub);
 extern void sendNordic(byte *data, byte *address);
