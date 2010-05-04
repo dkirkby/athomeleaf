@@ -560,6 +560,11 @@ byte sendNordic(byte *address, byte *payload, byte payloadSize) {
     // statistics on retransmissions. We will return this at the end.
     Mirf.readRegister(OBSERVE_TX,(byte*)&byteValue,1);
     
+    // In case we dropped any packets, reset the counter now.
+    if(byteValue & 0xf0) {
+        Mirf.configRegister(RF_CH,RADIO_CHANNEL);
+    }
+    
     // Reset the P0 (auto-ack) address
     Mirf.writeRegister(RX_ADDR_P0,idleAddress,NORDIC_ADDR_LEN);
     
