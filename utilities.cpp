@@ -415,7 +415,7 @@ void initNordic(unsigned short id, byte isHub) {
     
     // Select a data rate of 250 kbps (the lowest possible) and a transmit
     // power of 0dB (the largest possible) for maximum receiver sensitivity.
-    // At this data rate, aintaining <1% saturation with 16 packets sent
+    // At this data rate, maintaining <1% saturation with 16 packets sent
     // per second requires a packet length < 250000/1600 = 156 bits.
     // With a 3-byte address and 1-byte CRC, the framing overhead is
     // 6*8+1=49 bits so the maximum payload size is 13*8 = 104 < 107.
@@ -423,8 +423,7 @@ void initNordic(unsigned short id, byte isHub) {
 
     // Use the maximum number of retries (16) and pick one of 4 different
     // retransmit delays based on the low-order bits of the device ID:
-    // 1250,1500,1750,2000us. These delays allow a payload size up to
-    // 24 bytes at 250 kbps (with no size limits at higher speeds)
+    // 1250,1500,1750,2000us.
     Mirf.configRegister(SETUP_RETR, 0x4f | ((byte)(id & 3) << 4));
     
     // Use a 1-byte CRC which catches all error bursts that last for no
