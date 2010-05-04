@@ -37,9 +37,9 @@ void setup() {
     Serial.begin(115200);
     
     // print out our look-at-me config data
-    Serial.print("HUB SERIAL# ");
-    Serial.println(LAM.serialNumber,HEX);
-    Serial.print("COMMIT ");
+    Serial.print("HUB ");
+    Serial.print(LAM.serialNumber,HEX);
+    Serial.write(' ');
     Serial.print(LAM.commitTimestamp,DEC);
     Serial.write(' ');
     for(index = 0; index < 20; index++) {
@@ -49,18 +49,13 @@ void setup() {
         }
         Serial.print(byteValue,HEX);
     }
-    if(LAM.modified) {
-        Serial.write('+');
-    }
-    Serial.println();
+    Serial.write(' ');
+    Serial.println(LAM.modified,DEC);
 
     // try to initialize the wireless interface and print the result
     initNordic(0,1);
-    if(nordicOK) {
-        Serial.println("READY");
-    }
-    else {
-        Serial.println("ERROR");
+    if(!nordicOK) {
+        Serial.println("ERROR Unable to config wireless interface");
     }
     // flush any pending data before we start looping
     while(Mirf.dataReady()) {
