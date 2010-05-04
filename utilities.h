@@ -63,7 +63,7 @@ extern byte nordicOK;
 extern byte idleAddress[],dataAddress[],lamAddress[],configAddress[];
 
 extern void initNordic(unsigned short id, byte isHub);
-extern void sendNordic(byte *data, byte *address);
+extern void sendNordic(byte *address, byte *payload, byte payloadSize);
 
 // Signalling
 

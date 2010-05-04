@@ -469,7 +469,6 @@ void initNordic(unsigned short id, byte isHub) {
     else {
         // P1 listens for ConfigPackets
     	Mirf.configRegister(RX_PW_P1,sizeof(DataPacket));
-        Mirf.payload = sizeof(DataPacket);
         // Using P1:0
         Mirf.configRegister(EN_RXADDR,0x03);
     }
@@ -497,7 +496,7 @@ void initNordic(unsigned short id, byte isHub) {
 // address. Returns.... ?
 // =====================================================================
 
-void sendNordic(byte* data, byte *address) {
+void sendNordic(byte *address, byte *payload, byte payloadSize) {
 
     if(!nordicOK)  return;
     
@@ -508,7 +507,35 @@ void sendNordic(byte* data, byte *address) {
     Mirf.writeRegister(TX_ADDR,address,NORDIC_ADDR_LEN);
     
     // Start sending the payload
-    Mirf.send(data);
+    //Mirf.send(data);
+
+    // Wait until any previous transmit has completed
+    byteValue = Mirf.getStatus(); // is this necessary??
+    while (Mirf.PTX) {
+	    byteValue = Mirf.getStatus();
+	    if((byteValue & ((1 << TX_DS)  | (1 << MAX_RT)))){
+		    Mirf.PTX = 0;
+		    break;
+	    }
+    }
+
+    // Switch to Tx mode and power up
+    Mirf.ceLow();
+    Mirf.powerUpTx();
+    
+    // Flush the Tx FIFO
+    Mirf.csnLow();                    // Pull down chip select
+    Spi.transfer(FLUSH_TX);     // Write cmd to flush tx fifo
+    Mirf.csnHi();                    // Pull up chip select
+    
+    // Write this payload
+    Mirf.csnLow();
+    Spi.transfer(W_TX_PAYLOAD);
+    Mirf.transmitSync(payload,payloadSize);
+    Mirf.csnHi();
+
+    // Start the transmission
+    Mirf.ceHi();
 
     // Wait until the transmission is complete or fails
     while(1) { // does this loop need a timeout? (no problems so far)
@@ -522,6 +549,7 @@ void sendNordic(byte* data, byte *address) {
             break;
         }
     }
+    
     // return to Rx mode
     Mirf.powerUpRx();
 }
