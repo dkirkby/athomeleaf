@@ -3,6 +3,14 @@
 #define PRINT_LIGHTING
 
 // ---------------------------------------------------------------------
+// Connection state machine
+// ---------------------------------------------------------------------
+#define STATE_DISCONNECTED 0
+#define STATE_CONNECTING   1
+#define STATE_CONNECTED    2
+byte connectionState = STATE_DISCONNECTED;
+
+// ---------------------------------------------------------------------
 // Declare our 'look-at-me' packet
 // ---------------------------------------------------------------------
 LookAtMe LAM = {
