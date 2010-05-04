@@ -464,7 +464,7 @@ void initNordic(unsigned short id, byte isHub) {
     	Mirf.writeRegister(TX_ADDR,hubDataAddress,NORDIC_ADDR_LEN);
         // P0 listens for auto-acknowledgments of DataPackets
         Mirf.writeRegister(RX_ADDR_P0,hubDataAddress,NORDIC_ADDR_LEN);
-    	Mirf.configRegister(RX_PW_P0, sizeof(DataPacket));
+    	//Mirf.configRegister(RX_PW_P0, sizeof(DataPacket));
         // P1 listens for ConfigPackets
     	Mirf.configRegister(RX_PW_P1, sizeof(DataPacket));
         Mirf.payload = sizeof(DataPacket);
