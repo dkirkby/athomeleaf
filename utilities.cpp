@@ -406,7 +406,7 @@ void initNordic(unsigned short id, byte isHub) {
     // 3-byte hub address is hard-wired here. Addresses with a single level
     // shift or with alternating bits are most prone to false address matches.
     // The chosen address has 10 level changes of varying durations (1-4 cycles)
-    byte hubDataAddress[3] = { 0xF2, 0xF2, 0xF2 };
+    byte hubDataAddress[NORDIC_ADDR_LEN] = { 0xF2, 0xF2, 0xF2 };
     
     // nordic wireless initialization
     Mirf.csnPin = SPI_SSEL;
@@ -438,16 +438,23 @@ void initNordic(unsigned short id, byte isHub) {
     //...this is set by a #define mirf_CONFIG in mirf.h...
 
     // Use 3-byte addressing to minimize the packet length
+#if NORDIC_ADDR_LEN==3
     Mirf.configRegister(SETUP_AW,0x01);
-    
-    // Set the device addresses (with Rx/Tx disabled via CE)
-    // Mirf.ceLow(); // don't need this before Mirf.config() ?
+#elif NORDIC_ADDR_LEN==4
+    Mirf.configRegister(SETUP_AW,0x02);
+#elif NORDIC_ADDR_LEN==5
+    Mirf.configRegister(SETUP_AW,0x03);
+#else
+#error "NORDIC_ADDR_LEN must be 3, 4 or 5"
+#endif
+
+    // Setup the receiving pipelines (P0 is reserved for auto-acknowledge)
     if(isHub) {
-        Mirf.writeRegister(RX_ADDR_P1,hubDataAddress,3); // 3-byte address
+        Mirf.writeRegister(RX_ADDR_P1,hubDataAddress,NORDIC_ADDR_LEN);
     }
     else {
-        Mirf.writeRegister(RX_ADDR_P0,hubDataAddress,3);
-    	Mirf.writeRegister(TX_ADDR,hubDataAddress,3);
+        Mirf.writeRegister(RX_ADDR_P0,hubDataAddress,NORDIC_ADDR_LEN);
+    	Mirf.writeRegister(TX_ADDR,hubDataAddress,NORDIC_ADDR_LEN);
     }
     // Mirf.ceHigh(); // don't need this before Mirf.config() ?
 
