@@ -337,9 +337,16 @@ void loop() {
     packet.data[2] = lightingMean;
     packet.data[3] = lighting120Hz;
 
+    // Add the number of retransmits needed for the last packet to this packet
+    if(nordicOK) {
+        Mirf.readRegister(OBSERVE_TX,(byte*)&(packet.status),1);
+    }
+
     //----------------------------------------------------------------------
     // Transmit our data via the nordic interface
     //----------------------------------------------------------------------
+    sendNordic((byte*)&packet, hubDataAddress);
+/**
     if(nordicOK) {
         // Append the nordic transmit observer register contents to our packet
         Mirf.readRegister(OBSERVE_TX,(byte*)&(packet.status),1);
@@ -360,6 +367,7 @@ void loop() {
 
         Mirf.powerUpRx(); // return to Rx mode
     }
+**/
     
     //----------------------------------------------------------------------
     // Display readings on the optional LCD

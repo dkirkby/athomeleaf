@@ -399,14 +399,15 @@ void powerAnalysis() {
 // if the initialization was successful.
 // =====================================================================
 
+// Global status byte indicates if the nordic transceiver is alive (which
+// does not require that anyone is listening)
 byte nordicOK;
 
+// Nordic Tx/Rx addresses: should not alternate 101010... or have only one
+// level transition.
+byte hubDataAddress[NORDIC_ADDR_LEN] = { 0xF2, 0xF2, 0xF2 };
+
 void initNordic(unsigned short id, byte isHub) {
-    
-    // 3-byte hub address is hard-wired here. Addresses with a single level
-    // shift or with alternating bits are most prone to false address matches.
-    // The chosen address has 10 level changes of varying durations (1-4 cycles)
-    byte hubDataAddress[NORDIC_ADDR_LEN] = { 0xF2, 0xF2, 0xF2 };
     
     // nordic wireless initialization
     Mirf.csnPin = SPI_SSEL;
@@ -488,6 +489,32 @@ void initNordic(unsigned short id, byte isHub) {
 	else {
         nordicOK = 0;
 	}
+}
+
+// =====================================================================
+// Sends the specified payload data synchronously to the specified
+// address. Returns.... ?
+// =====================================================================
+
+void sendNordic(byte* data, byte *address) {
+
+    if(!nordicOK)  return;
+    
+    // Transmit our new sensor readings
+    Mirf.send(data);
+    while(1) { // does this loop need a timeout? (no problems so far)
+        byteValue = Mirf.getStatus();
+        // did we reach the max retransmissions limit?
+        if(byteValue & (1 << MAX_RT)) {
+            break;
+        }
+        // was the transmission acknowledged by the receiver?
+        if(byteValue & (1 << TX_DS)) {
+            break;
+        }
+    }
+
+    Mirf.powerUpRx(); // return to Rx mode
 }
 
 // =====================================================================
