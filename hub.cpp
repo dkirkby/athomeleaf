@@ -1,10 +1,26 @@
 #include "utilities.h"
 
+// ---------------------------------------------------------------------
+// Declare our 'look-at-me' packet
+// ---------------------------------------------------------------------
+LookAtMe LAM = {
+    0, // serial number will be copied from EEPROM
+#ifdef COMMIT_INFO
+    COMMIT_INFO
+#elif
+    0, { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }, 0
+#endif
+};
+
 // =====================================================================
 // The setup() function is called once on startup.
 // =====================================================================
 
 void setup() {
+    byte index;
+    
+    // copy our serial number from EEPROM to our LAM packet
+    copySerialNumber(&LAM);
 
     pinMode(PIEZO_PIN,OUTPUT);
     pinMode(RED_LED_PIN,OUTPUT);
@@ -20,9 +36,22 @@ void setup() {
     // startup the serial port
     Serial.begin(115200);
     
-    // print out the hub configuration on one line
-    Serial.print("HUB SIZE ");
-    Serial.print(sizeof(DataPacket),DEC);
+    // print out our look-at-me config data
+    Serial.print("HUB SERIAL# ");
+    Serial.println(LAM.serialNumber,HEX);
+    Serial.print("COMMIT ");
+    Serial.print(LAM.commitTimestamp,DEC);
+    Serial.write(' ');
+    for(index = 0; index < 20; index++) {
+        byteValue = LAM.commitID[index];
+        if(byteValue < 0x10) {
+            Serial.write('0');
+        }
+        Serial.print(byteValue,HEX);
+    }
+    if(LAM.modified) {
+        Serial.write('+');
+    }
     Serial.println();
 
     // try to initialize the wireless interface and print the result
