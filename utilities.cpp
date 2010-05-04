@@ -413,6 +413,9 @@ void initNordic(unsigned short id, byte isHub) {
     Mirf.cePin = NORDIC_CE;
     Mirf.init();
     
+    // Set RF channel to use: 2400 + (RADIO_CHANNEL=0-99) MHz
+	Mirf.configRegister(RF_CH,RADIO_CHANNEL);
+
     // Select a data rate of 250 kbps (the lowest possible) and a transmit
     // power of 0dB (the largest possible) for maximum receiver sensitivity.
     // At this data rate, maintaining <1% saturation with 16 packets sent
@@ -448,11 +451,18 @@ void initNordic(unsigned short id, byte isHub) {
     }
     // Mirf.ceHigh(); // don't need this before Mirf.config() ?
 
-    // set the payload size and radio channel
+    // Set payload sizes for each Rx pipeline:
+    // P0 = auto-acknowledge
+    // P1 = data packets
     Mirf.payload = sizeof(DataPacket);
-    Mirf.channel = RADIO_CHANNEL;
+	Mirf.configRegister(RX_PW_P0, sizeof(DataPacket));
+	Mirf.configRegister(RX_PW_P1, sizeof(DataPacket));
+
+    // Start receiver 
+    Mirf.powerUpRx();
+    Mirf.flushRx();
     
-    Mirf.config();
+    //Mirf.config();
         
     // read back the payload size to check that we really are talking
     // to a Nordic transceiver
