@@ -13,18 +13,18 @@ try:
     proc = subprocess.Popen('git diff --name-only HEAD --exit-code',
         stdout=subprocess.PIPE,stderr=subprocess.STDOUT,shell=True)
     proc.wait()
-    synched = proc.returncode
+    modified = proc.returncode
     output = proc.communicate()[0]
 except OSError,e:
     print >>sys.stderr, "Subprocess execution failed:", e
     sys.exit(-1)
 
-if synched == 0x7f:
+if modified == 0x7f:
     print >>sys.stderr, "Cannot determine if code is in synch with repository."
     sys.exit(-2)
 
 # warn if we are not in synch
-if synched == 1:
+if modified == 1:
     print >>sys.stderr, ("Source code not in synch with repository:\n%s" % output),
 
 # lookup the HEAD commit timestamp and 20-byte hash
@@ -38,7 +38,7 @@ try:
     timestamp = int(timestamp)
     assert(len(hashString) == 40)
     # convert the hash string to a byte array
-    hashData = [ int(b,16) for b in hashString[::2] ]
+    hashData = [int(hashString[2*k:2*k+2],16) for k in range(20)]
 except OSError,e:
     print >>sys.stderr, "Subprocess execution failed:", e
     sys.exit(-3)
@@ -46,4 +46,4 @@ except OSError,e:
 # format the results as C initializers
 
 print "%d, { %s }, %d" % (
-    timestamp,','.join(["0x%02x" % b for b in hashData]),synched)
+    timestamp,','.join(["0x%02x" % b for b in hashData]),modified)
