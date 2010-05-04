@@ -510,9 +510,9 @@ void sendNordic(byte *address, byte *payload, byte payloadSize) {
     //Mirf.send(data);
 
     // Wait until any previous transmit has completed
-    byteValue = Mirf.getStatus(); // is this necessary??
+    //byteValue = Mirf.getStatus(); // is this necessary??
     while (Mirf.PTX) {
-	    byteValue = Mirf.getStatus();
+        Mirf.readRegister(STATUS,&byteValue,1);
 	    if((byteValue & ((1 << TX_DS)  | (1 << MAX_RT)))){
 		    Mirf.PTX = 0;
 		    break;
@@ -539,7 +539,7 @@ void sendNordic(byte *address, byte *payload, byte payloadSize) {
 
     // Wait until the transmission is complete or fails
     while(1) { // does this loop need a timeout? (no problems so far)
-        byteValue = Mirf.getStatus();
+        Mirf.readRegister(STATUS,&byteValue,1);
         // did we reach the max retransmissions limit?
         if(byteValue & (1 << MAX_RT)) {
             break;

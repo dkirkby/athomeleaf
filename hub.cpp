@@ -36,8 +36,9 @@ void setup() {
     // startup the serial port
     Serial.begin(115200);
     
-    // print out our look-at-me config data
-    Serial.print("HUB ");
+    // print out our look-at-me config data (leading \n\n ensures that this
+    // message is cleanly detected even with garbage in the serial input buffer)
+    Serial.print("\n\nHUB ");
     Serial.print(LAM.serialNumber,HEX);
     Serial.write(' ');
     Serial.print(LAM.commitTimestamp,DEC);
