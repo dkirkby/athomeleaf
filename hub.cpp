@@ -12,6 +12,8 @@ LookAtMe LAM = {
 #endif
 };
 
+byte pipeline;
+
 // =====================================================================
 // The setup() function is called once on startup.
 // =====================================================================
@@ -58,34 +60,39 @@ void setup() {
     if(!nordicOK) {
         Serial.println("ERROR Unable to config wireless interface");
     }
+    /**
     // flush any pending data before we start looping
     while(Mirf.dataReady()) {
         do {
             Mirf.getData((byte*)&packet);
         } while(!Mirf.rxFifoEmpty());
     }
+    **/
 }
 
 void loop() {
-    if(Mirf.dataReady()) {
+    // look for data in pipeline 1
+    pipeline = getNordic((byte*)&packet,sizeof(packet));
+    if(pipeline == 1) {
         digitalWrite(RED_LED_PIN,HIGH);
-        do {
-            Mirf.getData((byte*)&packet);
-            Serial.print(packet.deviceID,HEX);
-            Serial.print(" [");
-            Serial.print(packet.sequenceNumber,HEX);
-            Serial.print("]");
-            for(byteValue = 0; byteValue < DATA_PACKET_VALUES; byteValue++) {
-                Serial.print(' ');
-                Serial.print(packet.data[byteValue],DEC);
-            }
-            if(packet.status) {
-              Serial.print(" *");
-              Serial.print(packet.status,HEX);
-            }
-            Serial.println();
-        } while(!Mirf.rxFifoEmpty());
+        Serial.print(packet.deviceID,HEX);
+        Serial.print(" [");
+        Serial.print(packet.sequenceNumber,HEX);
+        Serial.print("]");
+        for(byteValue = 0; byteValue < DATA_PACKET_VALUES; byteValue++) {
+            Serial.print(' ');
+            Serial.print(packet.data[byteValue],DEC);
+        }
+        if(packet.status) {
+          Serial.print(" *");
+          Serial.print(packet.status,HEX);
+        }
+        Serial.println();
         digitalWrite(RED_LED_PIN,LOW);
+    }
+    else if (pipeline < 6) {
+        Serial.print("ERROR unexpected data in P");
+        Serial.println(pipeline,DEC);
     }
 }
 

@@ -492,6 +492,44 @@ void initNordic(unsigned short id, byte isHub) {
 }
 
 // =====================================================================
+// Reads the next available payload from the Rx FIFO into the buffer
+// provided and returns the pipeline number (0-5) that it came from.
+// Returns 0xff if the transceiver was never successfully initialized
+// by initNordic() or 0xf0 if there is no data available. Does not
+// check that the input payloadSize matches what the pipeline is
+// configured for so, in case data is received from an unexpected
+// pipeline, the returned payload may be truncated or have trailing
+// garbage bytes.
+// =====================================================================
+
+byte getNordic(byte *payload, byte payloadSize) {
+
+    if(!nordicOK) return 0xff;
+    
+    // Is there any data ready in our Rx FIFO?
+    Mirf.readRegister(FIFO_STATUS,&byteValue,1);
+    if(byteValue & (1 << RX_EMPTY)) {
+        return 0xf0;
+    }
+    
+    // Which pipeline is the next payload from? This will be our
+    // return value.
+    Mirf.readRegister(STATUS,&byteValue,1);
+    byteValue = (byteValue >> RX_P_NO) & 0x07;
+    
+    // Read the payload from the pipeline
+    Mirf.csnLow();
+    Spi.transfer(R_RX_PAYLOAD);
+    Mirf.transferSync(payload,payload,payloadSize);
+    Mirf.csnHi();
+
+    // Reset the RX_DR interrupt bit in the status register
+    Mirf.configRegister(STATUS,(1<<RX_DR));
+    
+    return byteValue;
+}
+
+// =====================================================================
 // Sends the specified payload data synchronously to the specified
 // address. Returns the number of retransmits necessary (ideally zero).
 // If the return value is greater than 0x0f then the packet was lost.
