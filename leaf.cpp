@@ -114,20 +114,12 @@ void setup() {
     digitalWrite(GREEN_LED_PIN,HIGH);
     delay(500);
     digitalWrite(GREEN_LED_PIN,LOW);
-    cricket();
-    delay(250);
 
     // startup the serial port for talking to an optional debugging LCD
     LCDinit();
     
     // nordic wireless initialization
     initNordic((unsigned short)LAM.serialNumber,0);
-    if(nordicOK) {
-        LCDprint("uci@home","wireless ok");
-    }
-    else {
-        LCDprint("uci@home","no wireless");
-    }
     
     // initialize wireless packets
     packet.deviceID = (unsigned short)(LAM.serialNumber & 0x7fff); // make sure the MSB is clear
@@ -140,6 +132,19 @@ void setup() {
     // measurement packet. The status byte encodes what type of special
     // packet this is.
     dumpPacket.deviceID = packet.deviceID | 0x8000;
+    
+    // send an initial Look-at-Me packet to test if there is a hub out there
+    if(sendNordic(lamAddress, (byte*)&LAM, sizeof(LAM)) < 0x10) {
+        LCDprint("uci@home","connected to hub");
+    }
+    else {
+        if(!nordicOK) {
+            LCDprint("uci@home","wireless hardware error");
+        }
+        else {
+            LCDprint("uci@home","no hub found");
+        }        
+    }
 }
 
 void loop() {

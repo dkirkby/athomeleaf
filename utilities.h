@@ -62,8 +62,7 @@ extern void powerAnalysis(void);
 #define NORDIC_MAX_RETRIES 15
 
 extern byte nordicOK;
-extern byte idleAddress[],dataAddress[],configAddress[];
-extern byte lamAddressLSB;
+extern byte idleAddress[],dataAddress[],configAddress[],lamAddress[];
 
 extern void initNordic(unsigned short id, byte isHub);
 extern byte getNordic(byte *payload, byte payloadSize);

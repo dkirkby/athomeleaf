@@ -16,8 +16,8 @@ LookAtMe LAM = {
 // of incoming wireless messages. 
 byte pipeline;
 
-#define PIPELINE_DATA 1
-#define PIPELINE_LAM  2
+#define PIPELINE_DATA       1
+#define PIPELINE_LOOK_AT_ME 2
 
 // Define a buffer big enough for any nordic packet.
 byte packetBuffer[32];
@@ -28,11 +28,33 @@ const DataPacket *data;
 const LookAtMe *lam;
 
 // =====================================================================
+// Dump the contents of a Look-at-Me packet to the serial port on
+// a single line.
+// =====================================================================
+
+void printLookAtMe(const LookAtMe *lam) {
+    byte index;
+
+    Serial.print(lam->serialNumber,HEX);
+    Serial.write(' ');
+    Serial.print(lam->commitTimestamp,DEC);
+    Serial.write(' ');
+    for(index = 0; index < 20; index++) {
+        byteValue = lam->commitID[index];
+        if(byteValue < 0x10) {
+            Serial.write('0');
+        }
+        Serial.print(byteValue,HEX);
+    }
+    Serial.write(' ');
+    Serial.println(lam->modified,DEC);    
+}
+
+// =====================================================================
 // The setup() function is called once on startup.
 // =====================================================================
 
 void setup() {
-    byte index;
     
     // copy our serial number from EEPROM to our LAM packet
     copySerialNumber(&LAM);
@@ -54,19 +76,7 @@ void setup() {
     // print out our look-at-me config data (leading \n\n ensures that this
     // message is cleanly detected even with garbage in the serial input buffer)
     Serial.print("\n\nHUB ");
-    Serial.print(LAM.serialNumber,HEX);
-    Serial.write(' ');
-    Serial.print(LAM.commitTimestamp,DEC);
-    Serial.write(' ');
-    for(index = 0; index < 20; index++) {
-        byteValue = LAM.commitID[index];
-        if(byteValue < 0x10) {
-            Serial.write('0');
-        }
-        Serial.print(byteValue,HEX);
-    }
-    Serial.write(' ');
-    Serial.println(LAM.modified,DEC);
+    printLookAtMe(&LAM);
 
     // try to initialize the wireless interface and print the result
     initNordic(0,1);
@@ -90,13 +100,18 @@ void loop() {
             Serial.print(data->data[byteValue],DEC);
         }
         if(data->status) {
-          Serial.print(" *");
-          Serial.print(data->status,HEX);
+            Serial.print(" *");
+            Serial.print(data->status,HEX);
         }
         Serial.println();
         digitalWrite(RED_LED_PIN,LOW);
     }
-    else if (pipeline < 6) {
+    else if(pipeline == PIPELINE_LOOK_AT_ME) {
+        lam = (const LookAtMe*)packetBuffer;
+        Serial.print("LAM ");
+        printLookAtMe(lam);
+    }
+    else if(pipeline < 6) {
         Serial.print("ERROR unexpected data in P");
         Serial.println(pipeline,DEC);
     }

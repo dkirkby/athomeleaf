@@ -404,13 +404,12 @@ void powerAnalysis() {
 byte nordicOK;
 
 // Nordic Tx/Rx addresses: should not alternate 101010... or have only one
-// level transition.
+// level transition. First array element is least-significant byte.
 byte idleAddress[NORDIC_ADDR_LEN] =   { 0xEE, 0xEE, 0xEE };
-byte dataAddress[NORDIC_ADDR_LEN] =   { 0xF2, 0xF2, 0xF2 };
 byte configAddress[NORDIC_ADDR_LEN] = { 0x9A, 0xFF, 0xFF };
-// The LAM address has the same two upper bytes as the data address so we
-// only specify the least-significant byte here
-byte lamAddressLSB = 0xC6;
+// The data and LAM addresses must have the same last two (most-significant) bytes
+byte dataAddress[NORDIC_ADDR_LEN] =   { 0xF2, 0xF2, 0xF2 };
+byte lamAddress[NORDIC_ADDR_LEN]=     { 0xC6, 0xF2, 0xF2 };
 
 void initNordic(unsigned short id, byte isHub) {
     
@@ -464,8 +463,9 @@ void initNordic(unsigned short id, byte isHub) {
         // P1 listens for DataPackets
         Mirf.writeRegister(RX_ADDR_P1,dataAddress,NORDIC_ADDR_LEN);
     	Mirf.configRegister(RX_PW_P1,sizeof(DataPacket));
-    	// P2 listens for Look-at-Me (LAM) packets
-        Mirf.configRegister(RX_ADDR_P2,lamAddressLSB);
+    	// P2 listens for Look-at-Me (LAM) packets. We only write the
+    	// least-significant byte [0] (MS bytes [1:2] shared with P1)
+        Mirf.configRegister(RX_ADDR_P2,lamAddress[0]);
     	Mirf.configRegister(RX_PW_P2,sizeof(LookAtMe));
         // Using P2,P1,P0
         Mirf.configRegister(EN_RXADDR,0x07);
@@ -482,7 +482,7 @@ void initNordic(unsigned short id, byte isHub) {
     Mirf.powerUpRx();
     Mirf.flushRx();
     
-    // Read back the least-significant byte of the auto-ack pipeline (P0)
+    // Read back the least-significant byte [0] of the auto-ack pipeline (P0)
     // address to check that we are really talking to a nordic transceiver.
     // Use this register since it is configured the same in a hub and leaf.
 	Mirf.readRegister(RX_ADDR_P0,&byteValue,1);
