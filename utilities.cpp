@@ -466,7 +466,7 @@ void initNordic(unsigned short id, byte isHub) {
     	Mirf.configRegister(RX_PW_P1,sizeof(DataPacket));
     	// P2 listens for Look-at-Me (LAM) packets
         Mirf.configRegister(RX_ADDR_P2,lamAddressLSB);
-    	Mirf.configRegister(RX_PW_P2,sizeof(DataPacket));
+    	Mirf.configRegister(RX_PW_P2,sizeof(LookAtMe));
         // Using P2,P1,P0
         Mirf.configRegister(EN_RXADDR,0x07);
     }

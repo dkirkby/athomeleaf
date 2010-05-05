@@ -12,7 +12,20 @@ LookAtMe LAM = {
 #endif
 };
 
+// A pipeline number allows us to distinguish between different types
+// of incoming wireless messages. 
 byte pipeline;
+
+#define PIPELINE_DATA 1
+#define PIPELINE_LAM  2
+
+// Define a buffer big enough for any nordic packet.
+byte packetBuffer[32];
+
+// Use the pipeline number to cast the generic buffer to a pointer
+// of the appropriate packet type.
+const DataPacket *data;
+const LookAtMe *lam;
 
 // =====================================================================
 // The setup() function is called once on startup.
@@ -63,21 +76,22 @@ void setup() {
 }
 
 void loop() {
-    // look for data in pipeline 1
-    pipeline = getNordic((byte*)&packet,sizeof(packet));
-    if(pipeline == 1) {
+    // is there any wireless data in our receive pipeline?
+    pipeline = getNordic(packetBuffer,32);
+    if(pipeline == PIPELINE_DATA) {
         digitalWrite(RED_LED_PIN,HIGH);
-        Serial.print(packet.deviceID,HEX);
+        data = (const DataPacket*)packetBuffer;
+        Serial.print(data->deviceID,HEX);
         Serial.print(" [");
-        Serial.print(packet.sequenceNumber,HEX);
+        Serial.print(data->sequenceNumber,HEX);
         Serial.print("]");
         for(byteValue = 0; byteValue < DATA_PACKET_VALUES; byteValue++) {
             Serial.print(' ');
-            Serial.print(packet.data[byteValue],DEC);
+            Serial.print(data->data[byteValue],DEC);
         }
-        if(packet.status) {
+        if(data->status) {
           Serial.print(" *");
-          Serial.print(packet.status,HEX);
+          Serial.print(data->status,HEX);
         }
         Serial.println();
         digitalWrite(RED_LED_PIN,LOW);
