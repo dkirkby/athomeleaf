@@ -230,7 +230,7 @@ sym: $(BUILD_DIR)/$(TARGET).sym
 # --------------------------------------------------------------------------
 # Re-compile the target and library if any of these headers changes
 # --------------------------------------------------------------------------
-HEADERS = packet.h utilities.h pins.h Mirf.h nRF24L01.h Spi.h
+HEADERS = packet.h utilities.h pins.h config.h Mirf.h nRF24L01.h Spi.h
 
 $(BUILD_DIR)/$(TARGET).elf : $(HEADERS)
 

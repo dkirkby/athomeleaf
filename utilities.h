@@ -3,6 +3,7 @@
 #include "pins.h"
 #include "mirf.h"
 #include "packet.h"
+#include "config.h"
 
 // ---------------------------------------------------------------------
 // Configuration data read from EEPROM
@@ -61,7 +62,8 @@ extern void powerAnalysis(void);
 #define NORDIC_MAX_RETRIES 15
 
 extern byte nordicOK;
-extern byte idleAddress[],dataAddress[],lamAddress[],configAddress[];
+extern byte idleAddress[],dataAddress[],configAddress[];
+extern byte lamAddressLSB;
 
 extern void initNordic(unsigned short id, byte isHub);
 extern byte getNordic(byte *payload, byte payloadSize);

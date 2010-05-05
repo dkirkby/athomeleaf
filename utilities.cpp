@@ -407,8 +407,10 @@ byte nordicOK;
 // level transition.
 byte idleAddress[NORDIC_ADDR_LEN] =   { 0xEE, 0xEE, 0xEE };
 byte dataAddress[NORDIC_ADDR_LEN] =   { 0xF2, 0xF2, 0xF2 };
-byte lamAddress[NORDIC_ADDR_LEN] =    { 0xC6, 0xC6, 0xC6 };
 byte configAddress[NORDIC_ADDR_LEN] = { 0x9A, 0xFF, 0xFF };
+// The LAM address has the same two upper bytes as the data address so we
+// only specify the least-significant byte here
+byte lamAddressLSB = 0xC6;
 
 void initNordic(unsigned short id, byte isHub) {
     
@@ -462,13 +464,17 @@ void initNordic(unsigned short id, byte isHub) {
         // P1 listens for DataPackets
         Mirf.writeRegister(RX_ADDR_P1,dataAddress,NORDIC_ADDR_LEN);
     	Mirf.configRegister(RX_PW_P1,sizeof(DataPacket));
-        // Using P1:0
-        Mirf.configRegister(EN_RXADDR,0x03);
+    	// P2 listens for Look-at-Me (LAM) packets
+        Mirf.configRegister(RX_ADDR_P2,lamAddressLSB);
+    	Mirf.configRegister(RX_PW_P2,sizeof(DataPacket));
+        // Using P2,P1,P0
+        Mirf.configRegister(EN_RXADDR,0x07);
     }
     else {
-        // P1 listens for ConfigPackets
-    	Mirf.configRegister(RX_PW_P1,sizeof(DataPacket));
-        // Using P1:0
+        // P1 listens for Config packets
+        Mirf.writeRegister(RX_ADDR_P1,configAddress,NORDIC_ADDR_LEN);
+    	Mirf.configRegister(RX_PW_P1,sizeof(Config));
+        // Using P1,P0
         Mirf.configRegister(EN_RXADDR,0x03);
     }
 
@@ -476,13 +482,11 @@ void initNordic(unsigned short id, byte isHub) {
     Mirf.powerUpRx();
     Mirf.flushRx();
     
-    //Mirf.config();
-        
-    // read back the payload size to check that we really are talking
-    // to a Nordic transceiver
-    uint8_t rv;
-	Mirf.readRegister(RX_PW_P1,&rv,1);
-	if(rv == sizeof(DataPacket)) {
+    // Read back the least-significant byte of the auto-ack pipeline (P0)
+    // address to check that we are really talking to a nordic transceiver.
+    // Use this register since it is configured the same in a hub and leaf.
+	Mirf.readRegister(RX_ADDR_P0,&byteValue,1);
+	if(byteValue == idleAddress[0]) {
         nordicOK = 1;
 	}
 	else {
