@@ -60,14 +60,6 @@ void setup() {
     if(!nordicOK) {
         Serial.println("ERROR Unable to config wireless interface");
     }
-    /**
-    // flush any pending data before we start looping
-    while(Mirf.dataReady()) {
-        do {
-            Mirf.getData((byte*)&packet);
-        } while(!Mirf.rxFifoEmpty());
-    }
-    **/
 }
 
 void loop() {
@@ -92,6 +84,10 @@ void loop() {
     }
     else if (pipeline < 6) {
         Serial.print("ERROR unexpected data in P");
+        Serial.println(pipeline,DEC);
+    }
+    else if(pipeline < 8) {
+        Serial.print("ERROR invalid RX_P_NO ");
         Serial.println(pipeline,DEC);
     }
 }
