@@ -119,9 +119,12 @@ void loop() {
         digitalWrite(RED_LED_PIN,LOW);
     }
     else if(pipeline == PIPELINE_LOOK_AT_ME) {
+        digitalWrite(RED_LED_PIN,HIGH);
         lam = (const LookAtMe*)packetBuffer;
         Serial.print("LAM ");
         printLookAtMe(lam);
+        delay(500);
+        digitalWrite(RED_LED_PIN,LOW);
     }
     else if(pipeline < 6) {
         Serial.print("ERROR 02 unexpected data in P");
@@ -132,6 +135,7 @@ void loop() {
         Serial.println(pipeline,DEC);
     }
     // Is there any serial input data?
+    /**
     while(Serial.available() > 0 && serialBytes < SERIAL_BUFFER_SIZE) {
         if((serialBuffer[serialBytes++]= (byte)Serial.read()) == '\n') {
             // we now have a complete command in the buffer
@@ -149,6 +153,7 @@ void loop() {
             serialBytes = 0;
         }
     }
+    **/
 }
 
 int main(void) {
