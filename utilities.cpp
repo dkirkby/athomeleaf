@@ -679,6 +679,7 @@ void shiftOut(byte pin,unsigned int ndata,const byte *data) {
 
 #define CRICKET_SAMPLES 413
 
+/**
 byte cricketSample[CRICKET_SAMPLES] = {
     86, 85, 85, 149, 170, 170, 90, 85, 85, 170, 170, 90, 85, 85, 169, \
     170, 106, 85, 85, 169, 210, 170, 213, 74, 165, 82, 173, 213, 170, \
@@ -709,13 +710,16 @@ byte cricketSample[CRICKET_SAMPLES] = {
     85, 149, 170, 170, 86, 85, 85, 170, 170, 90, 85, 85, 170, 170, 106, \
     85, 85, 85, 1
 };
+**/
 
 void cricket(void) {
     //digitalWrite(RED_LED_PIN,HIGH);
+    /**
     shiftOut(PIEZO_PIN,CRICKET_SAMPLES,cricketSample);
     delay(20);
     shiftOut(PIEZO_PIN,CRICKET_SAMPLES,cricketSample);
     delay(20);
     shiftOut(PIEZO_PIN,CRICKET_SAMPLES,cricketSample);
+    **/
     //digitalWrite(RED_LED_PIN,LOW);
 }

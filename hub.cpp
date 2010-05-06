@@ -1,3 +1,15 @@
+// =====================================================================
+// The hub program runs on an embedded microcontroller and coordinates
+// a network of leaf nodes via wireless nordic transceivers. The hub
+// passes on the data it receives via serial output and also listens
+// for commands via serial input (115200 baud). The hub serial link
+// is normally connected to a server process but can also be tested
+// interactively, e.g., using "screen /dev/tty.usbserial-... 115200"
+// (remember ^A^K to quit)
+//
+// Copyright (c) 2010 David Kirkby dkirkby@uci.edu
+// =====================================================================
+
 #include "utilities.h"
 
 // ---------------------------------------------------------------------
@@ -26,6 +38,12 @@ byte packetBuffer[32];
 // of the appropriate packet type.
 const DataPacket *data;
 const LookAtMe *lam;
+
+// Serial input will be buffered here until we reach a newline that
+// indicates a complete command.
+#define SERIAL_BUFFER_SIZE 128
+byte serialBuffer[SERIAL_BUFFER_SIZE];
+byte serialBytes = 0;
 
 // =====================================================================
 // Dump the contents of a Look-at-Me packet to the serial port on
@@ -81,7 +99,7 @@ void setup() {
     // try to initialize the wireless interface and print the result
     initNordic(0,1);
     if(!nordicOK) {
-        Serial.println("ERROR Unable to config wireless interface");
+        Serial.println("ERROR 01 Unable to config wireless interface");
     }
 }
 
@@ -91,19 +109,16 @@ void loop() {
     if(pipeline == PIPELINE_DATA) {
         digitalWrite(RED_LED_PIN,HIGH);
         data = (const DataPacket*)packetBuffer;
+        Serial.print("DATA ");
         Serial.print(data->deviceID,HEX);
-        Serial.print(" [");
+        Serial.write(' ');
         Serial.print(data->sequenceNumber,HEX);
-        Serial.print("]");
         for(byteValue = 0; byteValue < DATA_PACKET_VALUES; byteValue++) {
-            Serial.print(' ');
+            Serial.write(' ');
             Serial.print(data->data[byteValue],DEC);
         }
-        if(data->status) {
-            Serial.print(" *");
-            Serial.print(data->status,HEX);
-        }
-        Serial.println();
+        Serial.write(' ');
+        Serial.println(data->status,HEX);
         digitalWrite(RED_LED_PIN,LOW);
     }
     else if(pipeline == PIPELINE_LOOK_AT_ME) {
@@ -112,13 +127,31 @@ void loop() {
         printLookAtMe(lam);
     }
     else if(pipeline < 6) {
-        Serial.print("ERROR unexpected data in P");
+        Serial.print("ERROR 02 unexpected data in P");
         Serial.println(pipeline,DEC);
     }
     else if(pipeline < 8) {
-        Serial.print("ERROR invalid RX_P_NO ");
+        Serial.print("ERROR 03 invalid RX_P_NO ");
         Serial.println(pipeline,DEC);
     }
+    // Is there any serial input data?
+    /**
+    while(Serial.available() > 0 && serialBytes < SERIAL_BUFFER_SIZE) {
+        if((serialBuffer[serialBytes++]= (byte)Serial.read()) == '\n') {
+            serialBuffer[serialBytes-1] = '\0';
+            Serial.print("CMD ");
+            Serial.println((const char*)serialBuffer);
+            // Handle the command here...
+            // ...
+            // Reset the serial buffer
+            serialBytes = 0;
+        }
+        else if(serialBytes == SERIAL_BUFFER_SIZE) {
+            Serial.println("ERROR 04 serial buffer overflow");
+            serialBytes = 0;
+        }
+    }
+    **/
 }
 
 int main(void) {
