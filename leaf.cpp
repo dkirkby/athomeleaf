@@ -30,7 +30,9 @@ LookAtMe LAM = {
 // (0.1F/mV)(5000mV/1024ADC)/NTEMPSUM
 #define ADC2DEGF 0.0002384185791015625
 // 2pi/NTEMPSUM
-#define DPHIGLOW 0.0030679615757712823
+#define DPHIGLOW_SLOW 0.0030679615757712823
+// 4pi/NTEMPSUM
+#define DPHIGLOW_FAST 0.0061359231515425647
 
 // number of cyles (256 readings each) to wait until self-heating has stabilized
 #define SELF_HEATING_DELAY 2
@@ -274,7 +276,7 @@ void loop() {
     for(temperatureIndex = 0; temperatureIndex <  NTEMPSUMBY2; temperatureIndex++) {
         temperatureSum += analogRead(TEMPERATURE_PIN);
         // gradually ramp the LED on during the first set of temperature samples
-        byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW))+0.5);
+        byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW_SLOW))+0.5);
         if(whichLED) analogWrite(whichLED,byteValue);
         tick();
     }
@@ -316,7 +318,7 @@ void loop() {
     for(temperatureIndex = NTEMPSUMBY2; temperatureIndex < NTEMPSUM; temperatureIndex++) {
         temperatureSum += analogRead(TEMPERATURE_PIN);
         // gradually ramp the LED off during the second set of temperature samples
-        byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW))+0.5);
+        byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW_SLOW))+0.5);
         if(whichLED) analogWrite(whichLED,byteValue);
         tick();
     }
