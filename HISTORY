@@ -1,3 +1,4 @@
+Thu May  6 09:47:43 PDT 2010 david@dk.local Device implements connection state machine
 Tue May  4 08:21:51 PDT 2010 david@dk.local master
 Sun May  2 10:38:41 PDT 2010 david@dk.local Give each device a unique ID
 Tue Apr 27 13:21:31 PDT 2010 david@dk.local Include high gain channel in lighting analysis
