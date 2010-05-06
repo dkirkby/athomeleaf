@@ -325,7 +325,7 @@ void loop() {
     // comfort level. Don't flash every reading to minimize distraction.
     // Disable the temperature feedback when the room is dark (whichLED = 0)
     //----------------------------------------------------------------------
-    if(whichLED && (cycleCount >= SELF_HEATING_DELAY) && (packet.sequenceNumber % TEMP_FLASH_INTERVAL == 0)) {
+    if(whichLED /*&& (cycleCount >= SELF_HEATING_DELAY)*/ && (packet.sequenceNumber % TEMP_FLASH_INTERVAL == 0)) {
         if(packet.data[4] > temperatureMax + SELF_HEATING_CORRECTION) {
             digitalWrite(RED_LED_PIN,HIGH);
         }
