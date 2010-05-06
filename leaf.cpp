@@ -37,9 +37,13 @@ LookAtMe LAM = {
 // the size of the self heating correction to apply after the delay (degF x 100)
 #define SELF_HEATING_CORRECTION 763
 // the blue/red LED will flash every Nth readings for below/above comfort range
-#define TEMP_FLASH_INTERVAL 8
+#define TEMP_FLASH_INTERVAL 2
 // blue/red flash duration (ms) to indicate below/above comfort range
 #define TEMP_FLASH_DURATION 20
+// the maximum number of degrees above/below to indicate with individual flashes
+#define TEMP_MAX_FLASHES 3
+// spacing between individual flashes (ms)
+#define TEMP_FLASH_SPACING 200
 
 // ---------------------------------------------------------------------
 // Lighting analysis parameters
@@ -325,17 +329,34 @@ void loop() {
     // comfort level. Don't flash every reading to minimize distraction.
     // Disable the temperature feedback when the room is dark (whichLED = 0)
     //----------------------------------------------------------------------
-    if(whichLED /*&& (cycleCount >= SELF_HEATING_DELAY)*/ && (packet.sequenceNumber % TEMP_FLASH_INTERVAL == 0)) {
-        if(packet.data[4] > temperatureMax + SELF_HEATING_CORRECTION) {
-            digitalWrite(RED_LED_PIN,HIGH);
+    uintValue = packet.data[4] - SELF_HEATING_CORRECTION;
+    if(whichLED && (cycleCount >= SELF_HEATING_DELAY) &&
+        (packet.sequenceNumber % TEMP_FLASH_INTERVAL == 0)) {
+        if(uintValue > temperatureMax) {
+            // how many degrees over are we? (round up so the answer is at least one)
+            uintValue = 1 + (uintValue - temperatureMax)/100;
+            whichLED = RED_LED_PIN;
         }
-        else if(packet.data[4] < temperatureMin + SELF_HEATING_CORRECTION) {
-            digitalWrite(BLUE_LED_PIN,HIGH);
+        else if(uintValue < temperatureMin) {
+            // how many degrees under are we? (round up so the answer is at least one)
+            uintValue = 1 + (temperatureMin - uintValue)/100;
+            whichLED = BLUE_LED_PIN;
         }
+        // The degree excess determines how many times we will flash. Max this out
+        // at a small value.
+        if(uintValue > TEMP_MAX_FLASHES) uintValue = TEMP_MAX_FLASHES;
     }
-    delay(TEMP_FLASH_DURATION);
-    digitalWrite(RED_LED_PIN,LOW);
-    digitalWrite(BLUE_LED_PIN,LOW);
+    else {
+        whichLED = 0;
+    }
+    // We always cycle through the max flash sequence so that the overall timing
+    // is independent of how the LEDs are actually driven.
+    for(byteValue = 0; byteValue < TEMP_MAX_FLASHES; byteValue++) {
+        if(byteValue) delay(TEMP_FLASH_SPACING);
+        if(whichLED && byteValue < uintValue) digitalWrite(whichLED,HIGH);
+        delay(TEMP_FLASH_DURATION);        
+        if(whichLED && byteValue < uintValue) digitalWrite(whichLED,LOW);
+    }
     
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //!! Hijack the packet for lighting
