@@ -1,6 +1,6 @@
 #include "utilities.h"
 
-//#define PRINT_LIGHTING
+#define PRINT_LIGHTING
 
 // ---------------------------------------------------------------------
 // Connection state machine
