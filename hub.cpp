@@ -2,10 +2,7 @@
 // The hub program runs on an embedded microcontroller and coordinates
 // a network of leaf nodes via wireless nordic transceivers. The hub
 // passes on the data it receives via serial output and also listens
-// for commands via serial input (115200 baud). The hub serial link
-// is normally connected to a server process but can also be tested
-// interactively, e.g., using "screen /dev/tty.usbserial-... 115200"
-// (remember ^A^K to quit)
+// for commands via serial input (115200 baud).
 //
 // Copyright (c) 2010 David Kirkby dkirkby@uci.edu
 // =====================================================================
@@ -135,9 +132,9 @@ void loop() {
         Serial.println(pipeline,DEC);
     }
     // Is there any serial input data?
-    /**
     while(Serial.available() > 0 && serialBytes < SERIAL_BUFFER_SIZE) {
         if((serialBuffer[serialBytes++]= (byte)Serial.read()) == '\n') {
+            // we now have a complete command in the buffer
             serialBuffer[serialBytes-1] = '\0';
             Serial.print("CMD ");
             Serial.println((const char*)serialBuffer);
@@ -147,11 +144,11 @@ void loop() {
             serialBytes = 0;
         }
         else if(serialBytes == SERIAL_BUFFER_SIZE) {
+            // buffer is now full and we still have not received a complete command
             Serial.println("ERROR 04 serial buffer overflow");
             serialBytes = 0;
         }
     }
-    **/
 }
 
 int main(void) {
