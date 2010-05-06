@@ -275,8 +275,13 @@ void loop() {
     tick();
     for(temperatureIndex = 0; temperatureIndex <  NTEMPSUMBY2; temperatureIndex++) {
         temperatureSum += analogRead(TEMPERATURE_PIN);
-        // gradually ramp the LED on during the first set of temperature samples
-        byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW_SLOW))+0.5);
+        // gradually ramp the LED during the first set of temperature samples
+        if(whichLED == AMBER_LED_PIN) {
+            byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW_FAST))+0.5);
+        }
+        else {
+            byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW_SLOW))+0.5);
+        }
         if(whichLED) analogWrite(whichLED,byteValue);
         tick();
     }
@@ -317,8 +322,13 @@ void loop() {
     tick();
     for(temperatureIndex = NTEMPSUMBY2; temperatureIndex < NTEMPSUM; temperatureIndex++) {
         temperatureSum += analogRead(TEMPERATURE_PIN);
-        // gradually ramp the LED off during the second set of temperature samples
-        byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW_SLOW))+0.5);
+        // gradually ramp the LED during the second set of temperature samples
+        if(whichLED == AMBER_LED_PIN) {
+            byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW_FAST))+0.5);
+        }
+        else {
+            byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW_SLOW))+0.5);
+        }
         if(whichLED) analogWrite(whichLED,byteValue);
         tick();
     }
