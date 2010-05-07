@@ -135,12 +135,11 @@ void loop() {
         Serial.println(pipeline,DEC);
     }
     // Is there any serial input data?
-    /**
     while(Serial.available() > 0 && serialBytes < SERIAL_BUFFER_SIZE) {
         if((serialBuffer[serialBytes++]= (byte)Serial.read()) == '\n') {
             // we now have a complete command in the buffer
             serialBuffer[serialBytes-1] = '\0';
-            Serial.print("CMD ");
+            Serial.print("GOT ");
             Serial.println((const char*)serialBuffer);
             // Handle the command here...
             // ...
@@ -153,7 +152,6 @@ void loop() {
             serialBytes = 0;
         }
     }
-    **/
 }
 
 int main(void) {
