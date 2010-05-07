@@ -1,6 +1,6 @@
 #include "utilities.h"
 
-//#define PRINT_LIGHTING
+#define PRINT_LIGHTING
 
 // ---------------------------------------------------------------------
 // Connection state machine
@@ -92,8 +92,6 @@ unsigned short selfHeatingCorrection = 0; // degF x 100
 // =====================================================================
 
 void setup() {
-    // copy our serial number from EEPROM to our LAM packet
-    copySerialNumber(&LAM);
     
     // setup our digital outputs
     pinMode(AMBER_LED_PIN,OUTPUT);
@@ -102,9 +100,6 @@ void setup() {
     pinMode(BLUE_LED_PIN,OUTPUT);
     pinMode(PIEZO_PIN,OUTPUT);
     pinMode(STROBE_PIN,OUTPUT);
-    
-    // configure the nordic interrupt line
-    //pinMode(NORDIC_IRQ,INPUT);
     
     // run-through the outputs once to show we are alive (and also provide
     // an audio-visual self-test of each output)
@@ -139,7 +134,13 @@ void setup() {
     // packet this is.
     dumpPacket.deviceID = packet.deviceID | 0x8000;
     
-    // send an initial Look-at-Me packet to test if there is a hub out there
+    // Send an initial Look-at-Me packet to test if there is a hub out there.
+    // At this point, the LAM serial number is zero, which indicates that we
+    // don't expect the hub to respond with a Config packet. The reason for
+    // this is that the first packet sent after a reset does not seem to be
+    // reliably received by the hub (even though it is reliably acknowledged
+    // by the leaf's nordic chip... would be good to understand this better)
+    LAM.serialNumber = 0;
     if(sendNordic(lamAddress, (byte*)&LAM, sizeof(LAM)) < 0x10) {
         LCDprint("uci@home","connected to hub");
     }
@@ -151,6 +152,16 @@ void setup() {
             LCDprint("uci@home","no hub found");
         }        
     }
+
+    // copy our serial number from EEPROM to our LAM packet
+    copySerialNumber(&LAM);
+
+    // Wait a second and then send another LAM with our real serial number
+    delay(1000);
+    LCDclear();
+    Serial.print("SN ");
+    Serial.print(LAM.serialNumber,HEX);
+    sendNordic(lamAddress, (byte*)&LAM, sizeof(LAM));
 }
 
 void loop() {
@@ -380,12 +391,13 @@ void loop() {
     // Transmit our data via the nordic interface. Save the return value
     // to send with the next packet.
     //----------------------------------------------------------------------
+    LCDclear();    
     packet.status = sendNordic(dataAddress, (byte*)&packet, sizeof(packet));
     
     //----------------------------------------------------------------------
     // Display readings on the optional LCD
     //----------------------------------------------------------------------
-#ifndef PRINT_LIGHTING
+#ifdef PRINT_SUMMARY
     LCDclear();
     Serial.print(packet.data[0],DEC);
     LCDpos(0,5);

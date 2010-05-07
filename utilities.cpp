@@ -396,7 +396,8 @@ void powerAnalysis() {
 // =====================================================================
 // Initializes the Nordic nRF24L01+ transciever. Sets the value of
 // the global nordicOK byte to either 1 (true) or 0 (false) to indicate
-// if the initialization was successful.
+// if the initialization was successful. If successful, the transceiver
+// is left in receive mode with CE high.
 // =====================================================================
 
 // Global status byte indicates if the nordic transceiver is alive (which
@@ -417,6 +418,10 @@ void initNordic(unsigned short id, byte isHub) {
     Mirf.csnPin = SPI_SSEL;
     Mirf.cePin = NORDIC_CE;
     Mirf.init();
+    
+    // configure MCU pin connected to the nordic IRQ as an input with internal pull-up
+    pinMode(NORDIC_IRQ,INPUT);
+    digitalWrite(NORDIC_IRQ,HIGH);
     
     // Set RF channel to use: 2400 + (RADIO_CHANNEL=0-99) MHz
 	Mirf.configRegister(RF_CH,RADIO_CHANNEL);
@@ -478,20 +483,20 @@ void initNordic(unsigned short id, byte isHub) {
         Mirf.configRegister(EN_RXADDR,0x03);
     }
 
-    // Start receiver 
-    Mirf.powerUpRx();
-    Mirf.flushRx();
-    
     // Read back the least-significant byte [0] of the auto-ack pipeline (P0)
     // address to check that we are really talking to a nordic transceiver.
     // Use this register since it is configured the same in a hub and leaf.
 	Mirf.readRegister(RX_ADDR_P0,&byteValue,1);
 	if(byteValue == idleAddress[0]) {
         nordicOK = 1;
+        // Start receiver
+        Mirf.powerUpRx();
+        Mirf.flushRx();
 	}
 	else {
         nordicOK = 0;
 	}
+    
 }
 
 // =====================================================================
@@ -508,9 +513,18 @@ void initNordic(unsigned short id, byte isHub) {
 byte getNordic(byte *payload, byte payloadSize) {
 
     if(!nordicOK) return 0xff;
+
+    // Read our status register to check for a new packet and, if there
+    // is one, find out which pipeline it came through.
+//    Mirf.readRegister(STATUS,&byteValue,1);
+//    Serial.print(byteValue,BIN);
+//    Serial.write(' ');
+    Mirf.readRegister(FIFO_STATUS,&byteValue,1);
+//    Serial.println(byteValue,BIN);
+//    delay(500);
     
     // Is there any data ready in our Rx FIFO?
-    Mirf.readRegister(FIFO_STATUS,&byteValue,1);
+    //Mirf.readRegister(FIFO_STATUS,&byteValue,1);
     if(byteValue & (1 << RX_EMPTY)) {
         return 0xf0;
     }
@@ -544,12 +558,6 @@ byte sendNordic(byte *address, byte *payload, byte payloadSize) {
 
     if(!nordicOK)  return 0xff;
     
-    // Configure pipeline-0 to receive an auto-ack from the receiver
-    Mirf.writeRegister(RX_ADDR_P0,address,NORDIC_ADDR_LEN);
-    
-    // Set our transmit address
-    Mirf.writeRegister(TX_ADDR,address,NORDIC_ADDR_LEN);
-    
     // Wait until any previous transmit has completed. In case the previous
     // transmit failed, its payload will still be in the Tx FIFO and we
     // could try re-sending it by toggling CE. We don't do this and instead
@@ -565,8 +573,16 @@ byte sendNordic(byte *address, byte *payload, byte payloadSize) {
 	    }
     }
 
-    // Switch to Tx mode and power up
+    // Disable the receiver and transmitter while we reconfigure
     Mirf.ceLow();
+
+    // Configure pipeline-0 to receive an auto-ack from the receiver
+    Mirf.writeRegister(RX_ADDR_P0,address,NORDIC_ADDR_LEN);
+    
+    // Set our transmit address
+    Mirf.writeRegister(TX_ADDR,address,NORDIC_ADDR_LEN);
+
+    // Switch to Tx mode and power up
     Mirf.powerUpTx();
     
     // Flush the Tx FIFO (in case the last transmit reached its max retries, it
@@ -585,18 +601,15 @@ byte sendNordic(byte *address, byte *payload, byte payloadSize) {
     Mirf.ceHi();
 
     // Wait until the transmission is complete or fails
-    while(1) { // does this loop need a timeout? (no problems so far)
+    Mirf.readRegister(STATUS,&byteValue,1);
+    // does this loop need a timeout? (no problems so far)
+    while((byteValue & (byte)((1 << MAX_RT)|(1 << TX_DS))) == 0) {
         Mirf.readRegister(STATUS,&byteValue,1);
-        // did we reach the max retransmissions limit?
-        if(byteValue & (1 << MAX_RT)) {
-            break;
-        }
-        // was the transmission acknowledged by the receiver?
-        if(byteValue & (1 << TX_DS)) {
-            break;
-        }
     }
     
+    // Disable the receiver and transmitter while we cleanup
+    Mirf.ceLow();
+
     // Fetch the contents of the transmit observe register, which gives
     // statistics on retransmissions. We will return this at the end.
     Mirf.readRegister(OBSERVE_TX,(byte*)&byteValue,1);
