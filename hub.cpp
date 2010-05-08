@@ -42,6 +42,9 @@ const LookAtMe *lam;
 byte serialBuffer[SERIAL_BUFFER_SIZE];
 byte serialBytes = 0;
 
+// Config data received via serial input will be assembled here
+Config configData;
+
 // =====================================================================
 // Dump the contents of a Look-at-Me packet to the serial port on
 // a single line.
@@ -63,6 +66,87 @@ void printLookAtMe(const LookAtMe *lam) {
     }
     Serial.write(' ');
     Serial.println(lam->modified,DEC);    
+}
+
+// =====================================================================
+// Parse the characters ptr[0:1] as a hex string and return the result
+// in the uintValue global. Returns a value > 0xff in case of a parse
+// error. Upper or lower-case hex digits are allowed.
+// =====================================================================
+
+void parseHex(byte *ptr) {
+    uintValue = 0;
+    if(*ptr >= '0' && *ptr <= '9') {
+        uintValue = (*ptr-'0') << 4;
+    }
+    else if(*ptr >= 'A' && *ptr <= 'F') {
+        uintValue = ((*ptr-'A')|0xA) << 4;
+    }
+    else if(*ptr >= 'a' && *ptr <= 'f') {
+        uintValue = ((*ptr-'a')|0xA) << 4;
+    }
+    else {
+        uintValue = 0x100;
+    }
+    ptr++;
+    if(*ptr >= '0' && *ptr <= '9') {
+        uintValue |= (*ptr-'0');
+    }
+    else if(*ptr >= 'A' && *ptr <= 'F') {
+        uintValue |= ((*ptr-'A')|0xA);
+    }
+    else if(*ptr >= 'a' && *ptr <= 'f') {
+        uintValue = ((*ptr-'a')|0xA);
+    }
+    else {
+        uintValue |= 0x200;
+    }
+}
+
+// =====================================================================
+// Handle the command in serialBuffer[0:serialBytes-1] and return
+// zero for success or else a non-zero error code.
+// =====================================================================
+
+byte handleCommand() {
+
+    byte *ptr;
+
+    // A valid config command looks like:
+    // C ssssssss dddddd...dd\0
+    // where ssssssss is exactly 8 hex digits of device serial number
+    // and dd...dd is an even number of hex digits of config data.
+    if(serialBytes < 10 || serialBuffer[0] !='C' || serialBuffer[1] != ' ' ||
+        serialBuffer[10] != ' ' || (serialBytes-10)%2 != 0) return 1;
+    
+    // Check that the amount of data provided matches sizeof(Config)
+    if(serialBytes != 12 + 2*sizeof(Config)) {
+        Serial.println(serialBytes,DEC);
+        Serial.println(sizeof(Config),DEC);
+        return 2;
+    }
+
+    // Extract the least-significant 2 bytes of serial number and
+    // copy them into the configAddress buffer
+    parseHex(serialBuffer+6);
+    if(uintValue > 0xff) return 6;
+    configAddress[1] = (byte)uintValue;
+    parseHex(serialBuffer+8);
+    if(uintValue > 0xff) return 8;
+    configAddress[0] = (byte)uintValue;
+
+    // Do a byte-wise copy of data from the command into our config buffer
+    ptr = (byte*)&configData;
+    byteValue = 11;
+    while(byteValue < serialBytes-1) { // up to but not including the final \0
+        parseHex(serialBuffer + byteValue);
+        if(uintValue > 0xff) return byteValue;
+        *ptr++ = byteValue;
+        byteValue += 2;
+    }
+
+    // If we get here, configAdddress and configData should be ready to go
+    return 0;
 }
 
 // =====================================================================
@@ -96,9 +180,13 @@ void setup() {
     // try to initialize the wireless interface and print the result
     initNordic(0,1);
     if(!nordicOK) {
-        Serial.println("ERROR 01 Unable to config wireless interface");
+        Serial.println("ERROR 1 Unable to config wireless interface");
     }
 }
+
+// =====================================================================
+// The loop() function is called repeatedly forever after setup().
+// =====================================================================
 
 void loop() {
     // is there any wireless data in our receive pipeline?
@@ -127,11 +215,11 @@ void loop() {
         digitalWrite(RED_LED_PIN,LOW);
     }
     else if(pipeline < 6) {
-        Serial.print("ERROR 02 unexpected data in P");
+        Serial.print("ERROR 2 unexpected data in P");
         Serial.println(pipeline,DEC);
     }
     else if(pipeline < 8) {
-        Serial.print("ERROR 03 invalid RX_P_NO ");
+        Serial.print("ERROR 3 invalid RX_P_NO ");
         Serial.println(pipeline,DEC);
     }
     // Is there any serial input data?
@@ -142,13 +230,22 @@ void loop() {
             Serial.print("GOT ");
             Serial.println((const char*)serialBuffer);
             // Handle the command here...
-            // ...
+            byteValue = handleCommand();
+            if(0 == byteValue) {
+                Serial.println("OK");
+            }
+            else {
+                Serial.print("ERROR ");
+                Serial.print(100+byteValue,DEC);
+                Serial.print(" bad cmd: ");
+                Serial.println((const char*)serialBuffer);                
+            }
             // Reset the serial buffer
             serialBytes = 0;
         }
         else if(serialBytes == SERIAL_BUFFER_SIZE) {
             // buffer is now full and we still have not received a complete command
-            Serial.println("ERROR 04 serial buffer overflow");
+            Serial.println("ERROR 5 serial buffer overflow");
             serialBytes = 0;
         }
     }

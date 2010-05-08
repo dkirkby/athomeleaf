@@ -122,18 +122,6 @@ void setup() {
     // nordic wireless initialization
     initNordic((unsigned short)LAM.serialNumber,0);
     
-    // initialize wireless packets
-    packet.deviceID = (unsigned short)(LAM.serialNumber & 0x7fff); // make sure the MSB is clear
-    packet.sequenceNumber = 0;
-    packet.status = 0;
-    for(byteValue = 0; byteValue < DATA_PACKET_VALUES; byteValue++) {
-        packet.data[byteValue] = 0;
-    }
-    // Set the MSB in the dump packet to distinguish it from a normal
-    // measurement packet. The status byte encodes what type of special
-    // packet this is.
-    dumpPacket.deviceID = packet.deviceID | 0x8000;
-    
     // Send an initial Look-at-Me packet to test if there is a hub out there.
     // At this point, the LAM serial number is zero, which indicates that we
     // don't expect the hub to respond with a Config packet. The reason for
@@ -162,6 +150,18 @@ void setup() {
     Serial.print("SN ");
     Serial.print(LAM.serialNumber,HEX);
     sendNordic(lamAddress, (byte*)&LAM, sizeof(LAM));
+
+    // initialize data packets
+    packet.deviceID = (unsigned short)(LAM.serialNumber & 0x7fff); // make sure the MSB is clear
+    packet.sequenceNumber = 0;
+    packet.status = 0;
+    for(byteValue = 0; byteValue < DATA_PACKET_VALUES; byteValue++) {
+        packet.data[byteValue] = 0;
+    }
+    // Set the MSB in the dump packet to distinguish it from a normal
+    // measurement packet. The status byte encodes what type of special
+    // packet this is.
+    dumpPacket.deviceID = packet.deviceID | 0x8000;
 }
 
 void loop() {

@@ -407,7 +407,7 @@ byte nordicOK;
 // Nordic Tx/Rx addresses: should not alternate 101010... or have only one
 // level transition. First array element is least-significant byte.
 byte idleAddress[NORDIC_ADDR_LEN] =   { 0xEE, 0xEE, 0xEE };
-byte configAddress[NORDIC_ADDR_LEN] = { 0x9A, 0xFF, 0xFF };
+byte configAddress[NORDIC_ADDR_LEN] = { 0xFF, 0xFF, 0x9A };
 // The data and LAM addresses must have the same last two (most-significant) bytes
 byte dataAddress[NORDIC_ADDR_LEN] =   { 0xF2, 0xF2, 0xF2 };
 byte lamAddress[NORDIC_ADDR_LEN]=     { 0xC6, 0xF2, 0xF2 };
