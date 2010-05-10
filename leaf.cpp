@@ -148,6 +148,9 @@ void setup() {
     // copy our serial number from EEPROM to our LAM packet
     LAM.serialNumber = serialNumber();
     
+    // copy our config data from EEPROM
+    loadConfig(&config);
+
     // Print our startup config to the optional LCD display
     delay(2000);
     LCDclear();

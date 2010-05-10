@@ -17,6 +17,21 @@ unsigned long serialNumber() {
 }
 
 // =====================================================================
+// Loads previously saved config data from EEPROM into the specified
+// RAM address.
+// =====================================================================
+void loadConfig(Config *config) {
+    eeprom_read_block((void*)config,(void*)CONFIG_ADDR,sizeof(Config));
+}
+
+// =====================================================================
+// Saves config data in RAM to EEPROM.
+// =====================================================================
+void saveConfig(const Config *config) {
+    eeprom_write_block((void*)CONFIG_ADDR,(void*)config,sizeof(Config));
+}
+
+// =====================================================================
 // Print a floating point value as a fixed-precision decimal.
 // Uses Serial.write() and Serial.print(). Does not emit a newline.
 // =====================================================================

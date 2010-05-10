@@ -8,12 +8,15 @@
 // ---------------------------------------------------------------------
 // Configuration data read from EEPROM
 // ---------------------------------------------------------------------
-#define SERIAL_NUMBER_ADDR 0x10 // the EEPROM offset where the serial number starts
-#define HUB_SERIAL_NUMBER_MASK 0xff000000 // all hubs have these bits set in their SN
+#define SERIAL_NUMBER_ADDR 0x10 // EEPROM offset where the serial number starts
+#define CONFIG_ADDR        0x14 // EEPROM offset where saved config data starts
 
+#define HUB_SERIAL_NUMBER_MASK 0xff000000 // all hubs have these bits set in their SN
 #define IS_HUB(sn) (((sn) & HUB_SERIAL_NUMBER_MASK) == HUB_SERIAL_NUMBER_MASK)
 
 extern unsigned long serialNumber();
+void loadConfig(Config *config);
+void saveConfig(const Config *config);
 
 // ---------------------------------------------------------------------
 // Shared globals
