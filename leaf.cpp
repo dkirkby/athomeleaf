@@ -5,10 +5,9 @@
 // ---------------------------------------------------------------------
 // Connection state machine
 // ---------------------------------------------------------------------
-#define STATE_DISCONNECTED 0
 #define STATE_CONNECTING   1
 #define STATE_CONNECTED    2
-byte connectionState = STATE_DISCONNECTED;
+byte connectionState;
 
 // ---------------------------------------------------------------------
 // Declare our 'look-at-me' packet
@@ -175,22 +174,27 @@ void setup() {
     LCDpos(1,11);
     Serial.print(config.temperatureMin,DEC);
 
-    // Send another LAM with our real serial number after a short delay
+    // Send another LAM with our real serial number after a short delay.
     delay(2000);
     sendNordic(lamAddress, (byte*)&LAM, sizeof(LAM));
 
-    // initialize data packets
-    packet.deviceID = (unsigned short)(LAM.serialNumber & 0x7fff); // make sure the MSB is clear
+    // Initialize our data packet. The device ID will be filled in later.
+    // Even if there is no hub listening, we still use the packet's sequence
+    // number counter for the passive feedback algorithms.
     packet.sequenceNumber = 0;
     packet.status = 0;
     for(byteValue = 0; byteValue < DATA_PACKET_VALUES; byteValue++) {
         packet.data[byteValue] = 0;
     }
-    // Set the MSB in the dump packet to distinguish it from a normal
-    // measurement packet. The status byte encodes what type of special
-    // packet this is.
-    dumpPacket.deviceID = packet.deviceID | 0x8000;
+    
+    // We start out in the connecting state, waiting for a config packet
+    // in response to our LAM packet.
+    connectionState = STATE_CONNECTING;
 }
+
+// =====================================================================
+// The loop() function is called repeatedly forever after setup().
+// =====================================================================
 
 void loop() {
     // update our packet counter (which cycles from $00-$ff)
@@ -415,12 +419,16 @@ void loop() {
     packet.data[2] = lightingMean;
     packet.data[3] = lighting120Hz;
 
-    //----------------------------------------------------------------------
-    // Transmit our data via the nordic interface. Save the return value
-    // to send with the next packet.
-    //----------------------------------------------------------------------
-    LCDclear();    
-    packet.status = sendNordic(dataAddress, (byte*)&packet, sizeof(packet));
+    if(connectionState == STATE_CONNECTING) {
+        // We are still waiting for a response from the hub. Send out another
+        // request here...
+        sendNordic(lamAddress, (byte*)&LAM, sizeof(LAM));
+    }
+    else {
+        // Transmit our data via the nordic interface. Save the return value
+        // to send with the next packet.
+        packet.status = sendNordic(dataAddress, (byte*)&packet, sizeof(packet));
+    }
     
     //----------------------------------------------------------------------
     // Display readings on the optional LCD
