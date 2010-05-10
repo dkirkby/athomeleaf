@@ -135,13 +135,26 @@ void setup() {
     // by the leaf's nordic chip... would be good to understand this better)
     if(sendNordic(lamAddress, (byte*)&LAM, sizeof(LAM)) < 0x10) {
         LCDprint("uci@home","connected to hub");
+        // play a rising sequence of tones to indicate success
+        tone(1500,50);
+        tone(1000,75);
+        tone(750,100);
     }
     else {
         if(!nordicOK) {
             LCDprint("uci@home","wireless hardware error");
+            // play alternating tones to indicate a wireless hardware problem
+            tone(1000,75);
+            tone(1500,50);
+            tone(1000,75);
+            tone(1500,50);
         }
         else {
             LCDprint("uci@home","no hub found");
+            // play a falling sequence of tones to indicate that no hub was found
+            tone(750,100);
+            tone(1000,75);
+            tone(1500,50);
         }        
     }
 
