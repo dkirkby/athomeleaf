@@ -67,6 +67,13 @@ extern void powerAnalysis(void);
 #define NORDIC_ADDR_LEN 3
 #define NORDIC_MAX_RETRIES 15
 
+// Hub pipelines
+#define PIPELINE_DATA       1
+#define PIPELINE_LOOK_AT_ME 2
+
+// Leaf pipelines
+#define PIPELINE_CONFIG     1
+
 extern byte nordicOK;
 extern byte idleAddress[],dataAddress[],configAddress[],lamAddress[];
 

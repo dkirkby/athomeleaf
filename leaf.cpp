@@ -328,21 +328,31 @@ void loop() {
     //----------------------------------------------------------------------
     // Check for any incoming wireless data
     //----------------------------------------------------------------------
-    if(getNordic((byte*)&config,sizeof(config)) == 1) {
+    if(getNordic((byte*)&config,sizeof(config)) == PIPELINE_CONFIG) {
         // Use the provided networkID to identify our data packets
-        // ...
+        packet.deviceID = config.networkID;
         // Remember this config in EEPROM so we have it available in case there
         // is no hub the next time we power up.
         // ...
-        // We are now officially connected
-        connectionState = STATE_CONNECTED;
-        // Play a rising sequence of tones to indicate success
-        tone(1500,50);
-        tone(1000,75);
-        tone(750,100);        
+        // Have we been waiting for this config data?
+        if(connectionState == STATE_CONNECTING) {
+            // Play a rising sequence of tones to indicate success
+            tone(1500,50);
+            tone(1000,75);
+            tone(750,100);
+            // we are now officially connected
+            connectionState = STATE_CONNECTED;
+        }
+        else {
+            // Play alternating tones to indicate that we have updated our config
+            tone(1000,75);
+            tone(750,100);
+            tone(1000,75);
+            tone(750,100);
+        }
     }
     else {
-        // restore our config data from EEPROM
+        // We clobbered our config above, so restore it from EEPROM now
         // ...
     }
     

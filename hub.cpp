@@ -25,9 +25,6 @@ LookAtMe LAM = {
 // of incoming wireless messages. 
 byte pipeline;
 
-#define PIPELINE_DATA       1
-#define PIPELINE_LOOK_AT_ME 2
-
 // Define a buffer big enough for any nordic packet.
 byte packetBuffer[32];
 
@@ -141,7 +138,7 @@ byte handleConfigCommand() {
     while(byteValue < serialBytes-1) { // up to but not including the final \0
         parseHex(serialBuffer + byteValue);
         if(uintValue > 0xff) return 5;
-        *ptr++ = byteValue;
+        *ptr++ = (byte)uintValue;
         byteValue += 2;
     }
 
