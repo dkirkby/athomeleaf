@@ -10,10 +10,10 @@ float floatValue;
 DataPacket packet,dumpPacket;
 
 // =====================================================================
-// Reads configuration data from EEPROM
+// Returns our 32-bit serial number read from EEPROM
 // =====================================================================
-void copySerialNumber(LookAtMe *lam) {
-    lam->serialNumber = eeprom_read_dword((uint32_t*)SERIAL_NUMBER_ADDR);
+unsigned long serialNumber() {
+    return eeprom_read_dword((uint32_t*)SERIAL_NUMBER_ADDR);
 }
 
 // =====================================================================
@@ -397,7 +397,8 @@ void powerAnalysis() {
 // Initializes the Nordic nRF24L01+ transciever. Sets the value of
 // the global nordicOK byte to either 1 (true) or 0 (false) to indicate
 // if the initialization was successful. If successful, the transceiver
-// is left in receive mode with CE high.
+// is left in receive mode with CE high. The transciever is initialized
+// for hub / leaf operation based on the serial number provided.
 // =====================================================================
 
 // Global status byte indicates if the nordic transceiver is alive (which
@@ -414,7 +415,7 @@ byte configAddress[NORDIC_ADDR_LEN] = { 0xFF, 0xFF, 0x9A };
 byte dataAddress[NORDIC_ADDR_LEN] =   { 0xF2, 0xF2, 0xF2 };
 byte lamAddress[NORDIC_ADDR_LEN]=     { 0xC6, 0xF2, 0xF2 };
 
-void initNordic(unsigned short id, byte isHub) {
+void initNordic(unsigned long serialNumber) {
     
     // nordic wireless initialization
     Mirf.csnPin = SPI_SSEL;
@@ -437,9 +438,10 @@ void initNordic(unsigned short id, byte isHub) {
     Mirf.configRegister(RF_SETUP,0x26);
 
     // Use the maximum number of retries (16) and pick one of 4 different
-    // retransmit delays based on the low-order bits of the device ID:
+    // retransmit delays based on the low-order bits of the serial number:
     // 1250,1500,1750,2000us.
-    Mirf.configRegister(SETUP_RETR, NORDIC_MAX_RETRIES | 0x40 | ((byte)(id & 3) << 4));
+    Mirf.configRegister(SETUP_RETR,
+        NORDIC_MAX_RETRIES | 0x40 | ((byte)(serialNumber & 3) << 4));
     
     // Use a 1-byte CRC which catches all error bursts that last for no
     // more than 8 bits (32us at 250 kbps) and catches 255/256 = 99.61%
@@ -466,7 +468,7 @@ void initNordic(unsigned short id, byte isHub) {
     Mirf.writeRegister(RX_ADDR_P0,idleAddress,NORDIC_ADDR_LEN);
     
     // Setup the other (non-ack) receiver pipelines
-    if(isHub) {
+    if(IS_HUB(serialNumber)) {
         // P1 listens for DataPackets
         Mirf.writeRegister(RX_ADDR_P1,dataAddress,NORDIC_ADDR_LEN);
     	Mirf.configRegister(RX_PW_P1,sizeof(DataPacket));
@@ -479,8 +481,8 @@ void initNordic(unsigned short id, byte isHub) {
     }
     else {
         // Use a per-device config address based on our serial number
-        configAddress[0] = id & 0xff;
-        configAddress[1] = (id >> 8) & 0xff;
+        configAddress[0] = (byte)(serialNumber & 0xff);
+        configAddress[1] = (byte)((serialNumber >> 8) & 0xff);
         // P1 listens for Config packets
         Mirf.writeRegister(RX_ADDR_P1,configAddress,NORDIC_ADDR_LEN);
     	Mirf.configRegister(RX_PW_P1,sizeof(Config));

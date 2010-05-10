@@ -8,9 +8,12 @@
 // ---------------------------------------------------------------------
 // Configuration data read from EEPROM
 // ---------------------------------------------------------------------
-#define SERIAL_NUMBER_ADDR 0x10
+#define SERIAL_NUMBER_ADDR 0x10 // the EEPROM offset where the serial number starts
+#define HUB_SERIAL_NUMBER_MASK 0xff000000 // all hubs have these bits set in their SN
 
-extern void copySerialNumber(LookAtMe*);
+#define IS_HUB(sn) (((sn) & HUB_SERIAL_NUMBER_MASK) == HUB_SERIAL_NUMBER_MASK)
+
+extern unsigned long serialNumber();
 
 // ---------------------------------------------------------------------
 // Shared globals
@@ -64,7 +67,7 @@ extern void powerAnalysis(void);
 extern byte nordicOK;
 extern byte idleAddress[],dataAddress[],configAddress[],lamAddress[];
 
-extern void initNordic(unsigned short id, byte isHub);
+extern void initNordic(unsigned long serialNumber);
 extern byte getNordic(byte *payload, byte payloadSize);
 extern byte sendNordic(byte *address, byte *payload, byte payloadSize);
 

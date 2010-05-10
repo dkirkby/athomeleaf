@@ -164,8 +164,8 @@ byte handleConfigCommand() {
 
 void setup() {
     
-    // copy our serial number from EEPROM to our LAM packet
-    copySerialNumber(&LAM);
+    // copy our serial number from EEPROM to our LAM buffer
+    LAM.serialNumber = serialNumber();
 
     pinMode(PIEZO_PIN,OUTPUT);
     pinMode(RED_LED_PIN,OUTPUT);
@@ -187,7 +187,7 @@ void setup() {
     printLookAtMe(&LAM);
 
     // try to initialize the wireless interface and print the result
-    initNordic(0,1);
+    initNordic(LAM.serialNumber);
     if(!nordicOK) {
         Serial.println("ERROR 1 Unable to config wireless interface");
     }
