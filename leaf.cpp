@@ -23,6 +23,11 @@ LookAtMe LAM = {
 };
 
 // ---------------------------------------------------------------------
+// Declare our run-time configuration data
+// ---------------------------------------------------------------------
+Config config;
+
+// ---------------------------------------------------------------------
 // Temperature monitoring parameters
 // ---------------------------------------------------------------------
 #define NTEMPSUM        2048
@@ -142,12 +147,20 @@ void setup() {
 
     // copy our serial number from EEPROM to our LAM packet
     LAM.serialNumber = serialNumber();
-
-    // Wait a second and then send another LAM with our real serial number
-    delay(1000);
+    
+    // Print our startup config to the optional LCD display
+    delay(2000);
     LCDclear();
-    Serial.print("SN ");
     Serial.print(LAM.serialNumber,HEX);
+    LCDpos(0,11);
+    Serial.print(config.temperatureMax,DEC);
+    LCDpos(1,0);
+    Serial.print(config.capabilities,BIN);
+    LCDpos(1,11);
+    Serial.print(config.temperatureMin,DEC);
+
+    // Send another LAM with our real serial number after a short delay
+    delay(2000);
     sendNordic(lamAddress, (byte*)&LAM, sizeof(LAM));
 
     // initialize data packets
