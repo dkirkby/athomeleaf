@@ -133,15 +133,11 @@ void setup() {
     // reliably received by the hub (even though it is reliably acknowledged
     // by the leaf's nordic chip... would be good to understand this better)
     if(sendNordic(lamAddress, (byte*)&LAM, sizeof(LAM)) < 0x10) {
-        LCDprint("uci@home","connected to hub");
-        // play a rising sequence of tones to indicate success
-        tone(1500,50);
-        tone(1000,75);
-        tone(750,100);
+        LCDprint("uci@home","connecting...");
     }
     else {
         if(!nordicOK) {
-            LCDprint("uci@home","wireless hardware error");
+            LCDprint("uci@home","nordic error");
             // play alternating tones to indicate a wireless hardware problem
             tone(1000,75);
             tone(1500,50);
@@ -328,6 +324,28 @@ void loop() {
         if(whichLED) analogWrite(whichLED,byteValue);
         tick();
     }
+    
+    //----------------------------------------------------------------------
+    // Check for any incoming wireless data
+    //----------------------------------------------------------------------
+    if(getNordic((byte*)&config,sizeof(config)) == 1) {
+        // Use the provided networkID to identify our data packets
+        // ...
+        // Remember this config in EEPROM so we have it available in case there
+        // is no hub the next time we power up.
+        // ...
+        // We are now officially connected
+        connectionState = STATE_CONNECTED;
+        // Play a rising sequence of tones to indicate success
+        tone(1500,50);
+        tone(1000,75);
+        tone(750,100);        
+    }
+    else {
+        // restore our config data from EEPROM
+        // ...
+    }
+    
     //----------------------------------------------------------------------
     // Do a burst of 256 x 5kHz ADC samples lasting exactly 51,200 us
     // 250 samples span exactly 3 60Hz powerline cycles
