@@ -104,11 +104,11 @@ void parseHex(byte *ptr) {
 }
 
 // =====================================================================
-// Handle the command in serialBuffer[0:serialBytes-1] and return
-// zero for success or else a non-zero error code.
+// Handle a  config command in serialBuffer[0:serialBytes-1] and return
+// zero for success or else a non-zero error code (1-6).
 // =====================================================================
 
-byte handleCommand() {
+byte handleConfigCommand() {
 
     byte *ptr;
 
@@ -129,10 +129,10 @@ byte handleCommand() {
     // Extract the least-significant 2 bytes of serial number and
     // copy them into the configAddress buffer
     parseHex(serialBuffer+6);
-    if(uintValue > 0xff) return 6;
+    if(uintValue > 0xff) return 3;
     configAddress[1] = (byte)uintValue;
     parseHex(serialBuffer+8);
-    if(uintValue > 0xff) return 8;
+    if(uintValue > 0xff) return 4;
     configAddress[0] = (byte)uintValue;
 
     // Do a byte-wise copy of data from the command into our config buffer
@@ -140,13 +140,22 @@ byte handleCommand() {
     byteValue = 11;
     while(byteValue < serialBytes-1) { // up to but not including the final \0
         parseHex(serialBuffer + byteValue);
-        if(uintValue > 0xff) return byteValue;
+        if(uintValue > 0xff) return 5;
         *ptr++ = byteValue;
         byteValue += 2;
     }
 
-    // If we get here, configAdddress and configData should be ready to go
-    return 0;
+    // If we get here, configAdddress and configData should be ready to go.
+    // Send the config packet now.
+    byteValue = sendNordic(configAddress,(byte*)&configData,sizeof(configData));
+    if(byteValue > 0x0f) {
+        // Config packet was never acknowledged
+        return 6;
+    }
+    else {
+        // Config command has been validated and sucessfully executed
+        return 0;
+    }
 }
 
 // =====================================================================
@@ -229,14 +238,15 @@ void loop() {
             serialBuffer[serialBytes-1] = '\0';
             Serial.print("GOT ");
             Serial.println((const char*)serialBuffer);
-            // Handle the command here...
-            byteValue = handleCommand();
+            // we only accept a config command (for now) - handle it here
+            byteValue = handleConfigCommand();
             if(0 == byteValue) {
                 Serial.println("OK");
             }
             else {
-                Serial.print("ERROR ");
-                Serial.print(100+byteValue,DEC);
+                Serial.print("ERROR 4 ");
+                // the handler return value is our error sub-code
+                Serial.print(byteValue,DEC);
                 Serial.print(" bad cmd: ");
                 Serial.println((const char*)serialBuffer);                
             }
