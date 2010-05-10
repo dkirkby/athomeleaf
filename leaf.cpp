@@ -120,8 +120,7 @@ void setup() {
     LCDinit();
     
     // nordic wireless initialization
-    copySerialNumber(&LAM);
-    initNordic((unsigned short)LAM.serialNumber,0);
+    initNordic(serialNumber());
     
     // Send an initial Look-at-Me packet to test if there is a hub out there.
     // At this point, the LAM serial number is zero, which indicates that we
@@ -129,7 +128,6 @@ void setup() {
     // this is that the first packet sent after a reset does not seem to be
     // reliably received by the hub (even though it is reliably acknowledged
     // by the leaf's nordic chip... would be good to understand this better)
-    LAM.serialNumber = 0;
     if(sendNordic(lamAddress, (byte*)&LAM, sizeof(LAM)) < 0x10) {
         LCDprint("uci@home","connected to hub");
     }
@@ -143,7 +141,7 @@ void setup() {
     }
 
     // copy our serial number from EEPROM to our LAM packet
-    copySerialNumber(&LAM);
+    LAM.serialNumber = serialNumber();
 
     // Wait a second and then send another LAM with our real serial number
     delay(1000);
