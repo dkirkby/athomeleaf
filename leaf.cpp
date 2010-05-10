@@ -120,6 +120,7 @@ void setup() {
     LCDinit();
     
     // nordic wireless initialization
+    copySerialNumber(&LAM);
     initNordic((unsigned short)LAM.serialNumber,0);
     
     // Send an initial Look-at-Me packet to test if there is a hub out there.

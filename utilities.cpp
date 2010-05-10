@@ -407,6 +407,8 @@ byte nordicOK;
 // Nordic Tx/Rx addresses: should not alternate 101010... or have only one
 // level transition. First array element is least-significant byte.
 byte idleAddress[NORDIC_ADDR_LEN] =   { 0xEE, 0xEE, 0xEE };
+// The least-significant 2 bytes [0:1] of the config address will be set based
+// on a leaf node's serial number in initNoridc()
 byte configAddress[NORDIC_ADDR_LEN] = { 0xFF, 0xFF, 0x9A };
 // The data and LAM addresses must have the same last two (most-significant) bytes
 byte dataAddress[NORDIC_ADDR_LEN] =   { 0xF2, 0xF2, 0xF2 };
@@ -476,6 +478,9 @@ void initNordic(unsigned short id, byte isHub) {
         Mirf.configRegister(EN_RXADDR,0x07);
     }
     else {
+        // Use a per-device config address based on our serial number
+        configAddress[0] = id & 0xff;
+        configAddress[1] = (id >> 8) & 0xff;
         // P1 listens for Config packets
         Mirf.writeRegister(RX_ADDR_P1,configAddress,NORDIC_ADDR_LEN);
     	Mirf.configRegister(RX_PW_P1,sizeof(Config));
