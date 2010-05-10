@@ -25,10 +25,17 @@ if len(sys.argv) != 2:
 # perform string conversions
 serialNumber = int(serialNumber,0)
 
+# hard-coded config defaults
+networkID = 0
+capabilities = 0xff
+temperatureMin = 7000 # degF x 100
+temperatureMax = 8000 # degF x 100
+
 # pack the config data into a mutable buffer, leaving space for the 3-byte line header
 buf = ctypes.create_string_buffer(64)
-struct.pack_into('<I',buf,3,serialNumber)
-dataSize = 4
+struct.pack_into('<IBBHH',buf,3,
+    serialNumber,networkID,capabilities,temperatureMin,temperatureMax)
+dataSize = 4 + 1 + 1 + 2 + 2
 
 # store the header (byte count, start address)
 byteCount = 3 + dataSize
