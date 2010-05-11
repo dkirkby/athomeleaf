@@ -101,8 +101,9 @@ void handleConfigUpdate() {
     // have higher error rates (eg, if it is mostly zeros or ones).
     // Start with some sanity checks...
     if(config.header != CONFIG_HEADER ||
-        (conectionState == STATE_CONNECTED && config.networkID != packet.deviceID)) {
-        // this looks like a spurious config packet so ignore it
+        (connectionState == STATE_CONNECTED && config.networkID != packet.deviceID)) {
+        // This looks like a spurious config packet so ignore it.
+        packet.status |= STATUS_GOT_INVALID_CONFIG;
         tone(750,100);
         tone(1000,75);
         tone(750,100);
@@ -121,6 +122,7 @@ void handleConfigUpdate() {
 
     // Have we been waiting for this config data?
     if(connectionState == STATE_CONNECTING) {
+        packet.status |= STATUS_GOT_INITIAL_CONFIG;
         // Play a rising sequence of tones to indicate success
         tone(1500,50);
         tone(1000,75);
@@ -129,6 +131,7 @@ void handleConfigUpdate() {
         connectionState = STATE_CONNECTED;
     }
     else {
+        packet.status |= STATUS_GOT_UPDATED_CONFIG;
         // Play alternating tones to indicate that we have updated our config
         tone(1000,75);
         tone(750,100);
@@ -379,7 +382,7 @@ void loop() {
     }
     else {
         // We clobbered our config in RAM above, so restore it from EEPROM now
-        // ...
+        loadConfig(&config);
     }
     
     //----------------------------------------------------------------------
@@ -481,7 +484,9 @@ void loop() {
     else {
         // Transmit our data via the nordic interface. Save the return value
         // to send with the next packet.
-        packet.status = sendNordic(dataAddress, (byte*)&packet, sizeof(packet));
+        packet.status =
+            sendNordic(dataAddress, (byte*)&packet, sizeof(packet)) &
+            STATUS_NUM_RETRANSMIT_MASK;
     }
     
     //----------------------------------------------------------------------

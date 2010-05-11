@@ -3,6 +3,12 @@
 
 #define DATA_PACKET_VALUES 5
 
+#define STATUS_NUM_RETRANSMIT_MASK 0x0f
+
+#define STATUS_GOT_INITIAL_CONFIG 0x10
+#define STATUS_GOT_UPDATED_CONFIG 0x20
+#define STATUS_GOT_INVALID_CONFIG 0x40
+
 typedef struct {
     unsigned short deviceID;
     unsigned char sequenceNumber;
