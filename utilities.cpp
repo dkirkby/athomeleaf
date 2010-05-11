@@ -18,17 +18,37 @@ unsigned long serialNumber() {
 
 // =====================================================================
 // Loads previously saved config data from EEPROM into the specified
-// RAM address.
+// RAM address. Skips over the fixed header.
 // =====================================================================
 void loadConfig(Config *config) {
-    eeprom_read_block((void*)config,(void*)CONFIG_ADDR,sizeof(Config));
+    eeprom_read_block((void*)&(config->networkID),(void*)CONFIG_ADDR,
+        sizeof(Config)-sizeof(config->header));
 }
 
 // =====================================================================
-// Saves config data in RAM to EEPROM.
+// Saves config data in RAM to EEPROM. Each byte is compared with the
+// existing EEPROM contents before performing an erase-and-write cycle,
+// in order to minimize the EEPROM wear. Ignores the values of the
+// fixed header and network ID.
 // =====================================================================
+
+#define CONFIG_INITIAL_SKIP (sizeof(config->header) - sizeof(config->networkID))
+
 void saveConfig(const Config *config) {
-    eeprom_write_block((void*)CONFIG_ADDR,(void*)config,sizeof(Config));
+    // Iterate over the bytes to save after skipping over the fixed header and network ID
+    byte newValue,offset = 0;
+    while(offset < sizeof(Config) - CONFIG_INITIAL_SKIP) {
+        // Do we need to change this byte in EEPROM?
+        newValue = *((byte*)config + CONFIG_INITIAL_SKIP + offset);
+        if(eeprom_read_byte((const byte*)(CONFIG_ADDR+offset)) != newValue) {
+
+            Serial.print(newValue,HEX);
+            Serial.write(' ');
+
+            eeprom_write_byte((byte*)(CONFIG_ADDR+offset),newValue);
+        }        
+        offset++;
+    }
 }
 
 // =====================================================================
