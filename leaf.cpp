@@ -41,7 +41,7 @@ Config config;
 // number of cyles (256 readings each) to wait until self-heating has stabilized
 #define SELF_HEATING_DELAY 2
 // the size of the self heating correction to apply after the delay (degF x 100)
-#define SELF_HEATING_CORRECTION 763
+#define SELF_HEATING_CORRECTION 0 // 763
 // the blue/red LED will flash every Nth readings for below/above comfort range
 #define TEMP_FLASH_INTERVAL 2
 // blue/red flash duration (ms) to indicate below/above comfort range
@@ -87,9 +87,6 @@ unsigned short cycleCount = 0; // counts the number of completed 256-packet sequ
 byte whichLED;
 unsigned int temperatureIndex;
 unsigned long temperatureSum;
-unsigned short temperatureMax = 7800; // degF x 100
-unsigned short temperatureMin = 7400; // degF x 100
-unsigned short selfHeatingCorrection = 0; // degF x 100
 
 // ---------------------------------------------------------------------
 // Handles a newly received packet on PIPELINE_CONFIG
@@ -444,24 +441,24 @@ void loop() {
     // Disable the temperature feedback when the room is dark (whichLED = 0)
     //----------------------------------------------------------------------
     uintValue = packet.data[4] - SELF_HEATING_CORRECTION;
-    if(whichLED && (cycleCount >= SELF_HEATING_DELAY) &&
-        (packet.sequenceNumber % TEMP_FLASH_INTERVAL == 0)) {
-        if(uintValue > temperatureMax) {
-            // how many degrees over are we? (round up so the answer is at least one)
-            uintValue = 1 + (uintValue - temperatureMax)/100;
-            whichLED = RED_LED_PIN;
-        }
-        else if(uintValue < temperatureMin) {
-            // how many degrees under are we? (round up so the answer is at least one)
-            uintValue = 1 + (temperatureMin - uintValue)/100;
-            whichLED = BLUE_LED_PIN;
-        }
-        // The degree excess determines how many times we will flash. Max this out
-        // at a small value.
-        if(uintValue > TEMP_MAX_FLASHES) uintValue = TEMP_MAX_FLASHES;
-    }
-    else {
+    if(whichLED) {
         whichLED = 0;
+        if((cycleCount >= SELF_HEATING_DELAY) &&
+            (packet.sequenceNumber % TEMP_FLASH_INTERVAL == 0)) {
+            if(uintValue > config.temperatureMax) {
+                // how many degrees over are we? (round up so the answer is at least one)
+                uintValue = 1 + (uintValue - config.temperatureMax)/100;
+                whichLED = RED_LED_PIN;
+            }
+            else if(uintValue < config.temperatureMin) {
+                // how many degrees under are we? (round up so the answer is at least one)
+                uintValue = 1 + (config.temperatureMin - uintValue)/100;
+                whichLED = BLUE_LED_PIN;
+            }
+            // The degree excess determines how many times we will flash. Max this out
+            // at a small value.
+            if(uintValue > TEMP_MAX_FLASHES) uintValue = TEMP_MAX_FLASHES;
+        }
     }
     // We always cycle through the max flash sequence so that the overall timing
     // is independent of how the LEDs are actually driven.
