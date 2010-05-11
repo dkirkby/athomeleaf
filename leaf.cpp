@@ -118,7 +118,7 @@ void handleConfigUpdate() {
 
     // Remember this config in EEPROM so we have it available in case there
     // is no hub the next time we power up.
-    // ...
+    saveConfig(&config);
 
     // Have we been waiting for this config data?
     if(connectionState == STATE_CONNECTING) {
@@ -381,7 +381,9 @@ void loop() {
         handleConfigUpdate();
     }
     else {
-        // We clobbered our config in RAM above, so restore it from EEPROM now
+        // We clobbered our config in RAM above, so restore it from EEPROM now.
+        // (This should never happen since we only have one pipeline active,
+        // but just in case...)
         loadConfig(&config);
     }
     
