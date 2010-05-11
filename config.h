@@ -1,10 +1,13 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#define CONFIG_HEADER 0xDeadBeef
+
 #define CAPABILITY_TEMP_FEEDBACK     (1<<0)
 #define CAPABILITY_LIGHT_FEEDBACK    (1<<1)
 
 typedef struct {
+    unsigned long header; // a fixed header to help filter spurious config packets
     byte networkID; // a short identifier that uniquely identifies us on our local network
     byte capabilities; // a bitmask of user-selectable device capabilities
     unsigned short temperatureMax; // comfort zone upper limit (degF x 100)

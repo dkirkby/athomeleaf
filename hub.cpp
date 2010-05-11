@@ -116,10 +116,9 @@ byte handleConfigCommand() {
     if(serialBytes < 10 || serialBuffer[0] !='C' || serialBuffer[1] != ' ' ||
         serialBuffer[10] != ' ' || (serialBytes-10)%2 != 0) return 1;
     
-    // Check that the amount of data provided matches sizeof(Config)
-    if(serialBytes != 12 + 2*sizeof(Config)) {
-        Serial.println(serialBytes,DEC);
-        Serial.println(sizeof(Config),DEC);
+    // Check that the amount of data provided matches sizeof(Config) corrected
+    // for the fixed config header.
+    if(serialBytes != 12 + 2*(sizeof(configData) - sizeof(configData.header))) {
         return 2;
     }
 
@@ -132,8 +131,12 @@ byte handleConfigCommand() {
     if(uintValue > 0xff) return 4;
     configAddress[0] = (byte)uintValue;
 
-    // Do a byte-wise copy of data from the command into our config buffer
-    ptr = (byte*)&configData;
+    // Config data always starts with a fixed header
+    configData.header = CONFIG_HEADER;
+
+    // Do a byte-wise copy of data from the command into the
+    // remaining bytes of our config buffer
+    ptr = (byte*)&configData + sizeof(configData.header);
     byteValue = 11;
     while(byteValue < serialBytes-1) { // up to but not including the final \0
         parseHex(serialBuffer + byteValue);

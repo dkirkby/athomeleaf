@@ -91,6 +91,52 @@ unsigned short temperatureMax = 7800; // degF x 100
 unsigned short temperatureMin = 7400; // degF x 100
 unsigned short selfHeatingCorrection = 0; // degF x 100
 
+// ---------------------------------------------------------------------
+// Handles a newly received packet on PIPELINE_CONFIG
+// ---------------------------------------------------------------------
+
+void handleConfigUpdate() {
+    
+    // Because our config address incoporates our serial number, it may
+    // have higher error rates (eg, if it is mostly zeros or ones).
+    // Start with some sanity checks...
+    if(config.header != CONFIG_HEADER ||
+        (conectionState == STATE_CONNECTED && config.networkID != packet.deviceID)) {
+        // this looks like a spurious config packet so ignore it
+        tone(750,100);
+        tone(1000,75);
+        tone(750,100);
+        tone(1000,75);
+        tone(750,100);
+        tone(1000,75);
+        return;
+    }
+    
+    // Use the provided networkID to identify our data packets
+    packet.deviceID = config.networkID;
+
+    // Remember this config in EEPROM so we have it available in case there
+    // is no hub the next time we power up.
+    // ...
+
+    // Have we been waiting for this config data?
+    if(connectionState == STATE_CONNECTING) {
+        // Play a rising sequence of tones to indicate success
+        tone(1500,50);
+        tone(1000,75);
+        tone(750,100);
+        // we are now officially connected
+        connectionState = STATE_CONNECTED;
+    }
+    else {
+        // Play alternating tones to indicate that we have updated our config
+        tone(1000,75);
+        tone(750,100);
+        tone(1000,75);
+        tone(750,100);
+    }
+}
+
 // =====================================================================
 // The setup() function is called once on startup.
 // =====================================================================
@@ -329,30 +375,10 @@ void loop() {
     // Check for any incoming wireless data
     //----------------------------------------------------------------------
     if(getNordic((byte*)&config,sizeof(config)) == PIPELINE_CONFIG) {
-        // Use the provided networkID to identify our data packets
-        packet.deviceID = config.networkID;
-        // Remember this config in EEPROM so we have it available in case there
-        // is no hub the next time we power up.
-        // ...
-        // Have we been waiting for this config data?
-        if(connectionState == STATE_CONNECTING) {
-            // Play a rising sequence of tones to indicate success
-            tone(1500,50);
-            tone(1000,75);
-            tone(750,100);
-            // we are now officially connected
-            connectionState = STATE_CONNECTED;
-        }
-        else {
-            // Play alternating tones to indicate that we have updated our config
-            tone(1000,75);
-            tone(750,100);
-            tone(1000,75);
-            tone(750,100);
-        }
+        handleConfigUpdate();
     }
     else {
-        // We clobbered our config above, so restore it from EEPROM now
+        // We clobbered our config in RAM above, so restore it from EEPROM now
         // ...
     }
     
