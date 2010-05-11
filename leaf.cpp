@@ -5,8 +5,10 @@
 // ---------------------------------------------------------------------
 // Connection state machine
 // ---------------------------------------------------------------------
-#define STATE_CONNECTING   1
-#define STATE_CONNECTED    2
+#define STATE_CONNECTING      0x80
+#define STATE_CONNECTED       0x40
+#define DROPPED_PACKETS_MASK  0x3F
+#define MAX_DROPPED_PACKETS   0x14 // corresponds to about one minute
 byte connectionState;
 
 // ---------------------------------------------------------------------
@@ -98,7 +100,7 @@ void handleConfigUpdate() {
     // have higher error rates (eg, if it is mostly zeros or ones).
     // Start with some sanity checks...
     if(config.header != CONFIG_HEADER ||
-        (connectionState == STATE_CONNECTED && config.networkID != packet.deviceID)) {
+        ((connectionState & STATE_CONNECTED) && config.networkID != packet.deviceID)) {
         // This looks like a spurious config packet so ignore it.
         packet.status |= STATUS_GOT_INVALID_CONFIG;
         tone(750,100);
@@ -118,7 +120,7 @@ void handleConfigUpdate() {
     saveConfig(&config);
 
     // Have we been waiting for this config data?
-    if(connectionState == STATE_CONNECTING) {
+    if(connectionState & STATE_CONNECTING) {
         packet.status |= STATUS_GOT_INITIAL_CONFIG;
         tone(1000,75);
         tone(750,100);
@@ -483,7 +485,7 @@ void loop() {
     packet.data[2] = lightingMean;
     packet.data[3] = lighting120Hz;
 
-    if(connectionState == STATE_CONNECTING) {
+    if(connectionState & STATE_CONNECTING) {
         // We are still waiting for a response from the hub. Send out another
         // request here...
         sendNordic(lamAddress, (byte*)&LAM, sizeof(LAM));
@@ -494,6 +496,23 @@ void loop() {
         packet.status =
             sendNordic(dataAddress, (byte*)&packet, sizeof(packet)) &
             STATUS_NUM_RETRANSMIT_MASK;
+        // Keep track of the number of consecutive dropped data packets
+        if(packet.status) {
+            // increment dropped packet counter
+            if((++connectionState & DROPPED_PACKETS_MASK) >= MAX_DROPPED_PACKETS) {
+                // give up on the hub and try reconnecting
+                connectionState = STATE_CONNECTING;
+                // play the same falling sequence that, on startup, indicates
+                // that no hub was found
+                tone(750,100);
+                tone(1000,75);
+                tone(1500,50);
+            }
+        }
+        else {
+            // zero out dropped-packet counter
+            connectionState = STATE_CONNECTED;
+        }
     }
     
     //----------------------------------------------------------------------
