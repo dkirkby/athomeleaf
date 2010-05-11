@@ -367,7 +367,10 @@ void loop() {
         else {
             byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW_SLOW))+0.5);
         }
-        if(whichLED) analogWrite(whichLED,byteValue);
+        // Supress visual lighting feedback if this capability has been disabled
+        if((config.capabilities & CAPABILITY_LIGHT_FEEDBACK) && whichLED) {
+            analogWrite(whichLED,byteValue);
+        }
         tick();
     }
     
@@ -428,7 +431,10 @@ void loop() {
         else {
             byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW_SLOW))+0.5);
         }
-        if(whichLED) analogWrite(whichLED,byteValue);
+        // Supress visual lighting feedback if this capability has been disabled
+        if((config.capabilities & CAPABILITY_LIGHT_FEEDBACK) && whichLED) {
+            analogWrite(whichLED,byteValue);
+        }
         tick();
     }
 
@@ -457,7 +463,9 @@ void loop() {
             }
             // The degree excess determines how many times we will flash. Max this out
             // at a small value.
-            if(uintValue > TEMP_MAX_FLASHES) uintValue = TEMP_MAX_FLASHES;
+            if(whichLED && uintValue > TEMP_MAX_FLASHES) uintValue = TEMP_MAX_FLASHES;
+            // Supress visual temperature feedback if this capability has been disabled
+            if(!(config.capabilities & CAPABILITY_TEMP_FEEDBACK)) whichLED = 0;
         }
     }
     // We always cycle through the max flash sequence so that the overall timing
