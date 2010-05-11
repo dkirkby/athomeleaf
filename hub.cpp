@@ -77,10 +77,10 @@ void parseHex(byte *ptr) {
         uintValue = (*ptr-'0') << 4;
     }
     else if(*ptr >= 'A' && *ptr <= 'F') {
-        uintValue = ((*ptr-'A')|0xA) << 4;
+        uintValue = ((*ptr-'A') + 0xA) << 4;
     }
     else if(*ptr >= 'a' && *ptr <= 'f') {
-        uintValue = ((*ptr-'a')|0xA) << 4;
+        uintValue = ((*ptr-'a') + 0xA) << 4;
     }
     else {
         uintValue = 0x100;
@@ -90,10 +90,10 @@ void parseHex(byte *ptr) {
         uintValue |= (*ptr-'0');
     }
     else if(*ptr >= 'A' && *ptr <= 'F') {
-        uintValue |= ((*ptr-'A')|0xA);
+        uintValue |= ((*ptr-'A') + 0xA);
     }
     else if(*ptr >= 'a' && *ptr <= 'f') {
-        uintValue = ((*ptr-'a')|0xA);
+        uintValue = ((*ptr-'a') + 0xA);
     }
     else {
         uintValue |= 0x200;
