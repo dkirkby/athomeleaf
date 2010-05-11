@@ -93,7 +93,7 @@ void parseHex(byte *ptr) {
         uintValue |= ((*ptr-'A') + 0xA);
     }
     else if(*ptr >= 'a' && *ptr <= 'f') {
-        uintValue = ((*ptr-'a') + 0xA);
+        uintValue |= ((*ptr-'a') + 0xA);
     }
     else {
         uintValue |= 0x200;

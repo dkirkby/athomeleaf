@@ -123,8 +123,6 @@ void handleConfigUpdate() {
     // Have we been waiting for this config data?
     if(connectionState == STATE_CONNECTING) {
         packet.status |= STATUS_GOT_INITIAL_CONFIG;
-        // Play a rising sequence of tones to indicate success
-        tone(1500,50);
         tone(1000,75);
         tone(750,100);
         // we are now officially connected
@@ -183,6 +181,8 @@ void setup() {
     // by the leaf's nordic chip... would be good to understand this better)
     if(sendNordic(lamAddress, (byte*)&LAM, sizeof(LAM)) < 0x10) {
         LCDprint("uci@home","connecting...");
+        tone(1500,50);
+        tone(1000,75);
     }
     else {
         if(!nordicOK) {

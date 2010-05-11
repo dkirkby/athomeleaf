@@ -10,8 +10,8 @@ typedef struct {
     unsigned long header; // a fixed header to help filter spurious config packets
     byte networkID; // a short identifier that uniquely identifies us on our local network
     byte capabilities; // a bitmask of user-selectable device capabilities
-    unsigned short temperatureMax; // comfort zone upper limit (degF x 100)
-    unsigned short temperatureMin; // comfort zone lower limit (degF x 100)
+    unsigned short temperatureMin; // comfort zone upper limit (degF x 100)
+    unsigned short temperatureMax; // comfort zone lower limit (degF x 100)
 } Config;
 
 #endif

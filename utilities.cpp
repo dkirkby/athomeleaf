@@ -36,15 +36,11 @@ void loadConfig(Config *config) {
 
 void saveConfig(const Config *config) {
     // Iterate over the bytes to save after skipping over the fixed header and network ID
-    byte newValue,offset = 0;
-    while(offset < sizeof(Config) - CONFIG_INITIAL_SKIP) {
+    byte newValue,offset = sizeof(config->networkID);
+    while(offset < sizeof(Config) - sizeof(config->header)) {
         // Do we need to change this byte in EEPROM?
-        newValue = *((byte*)config + CONFIG_INITIAL_SKIP + offset);
+        newValue = *((byte*)config + sizeof(config->header) + offset);
         if(eeprom_read_byte((const byte*)(CONFIG_ADDR+offset)) != newValue) {
-
-            Serial.print(newValue,HEX);
-            Serial.write(' ');
-
             eeprom_write_byte((byte*)(CONFIG_ADDR+offset),newValue);
         }        
         offset++;
