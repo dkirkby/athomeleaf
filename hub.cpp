@@ -207,12 +207,13 @@ void loop() {
         Serial.print(data->deviceID,HEX);
         Serial.write(' ');
         Serial.print(data->sequenceNumber,HEX);
+        Serial.write(' ');
+        Serial.print(data->status,HEX);
         for(byteValue = 0; byteValue < DATA_PACKET_VALUES; byteValue++) {
             Serial.write(' ');
             Serial.print(data->data[byteValue],DEC);
         }
-        Serial.write(' ');
-        Serial.println(data->status,HEX);
+        Serial.println();
         digitalWrite(RED_LED_PIN,LOW);
     }
     else if(pipeline == PIPELINE_LOOK_AT_ME) {
@@ -220,7 +221,6 @@ void loop() {
         lam = (const LookAtMe*)packetBuffer;
         Serial.print("LAM ");
         printLookAtMe(lam);
-        delay(500);
         digitalWrite(RED_LED_PIN,LOW);
     }
     else if(pipeline < 6) {
