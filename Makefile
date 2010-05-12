@@ -220,13 +220,16 @@ LIBOBJ = $(CORE_C_OBJ) $(CORE_CPP_OBJ) $(LOCAL_CPP_OBJ)
 sram : elf
 	$(NM) -n $(BUILD_DIR)/$(TARGET).elf
 
-$(BUILD_DIR): elf hex
+$(BUILD_DIR): elf hex asm
 
 elf: $(BUILD_DIR)/$(TARGET).elf
 hex: $(BUILD_DIR)/$(TARGET).hex
 eep: $(BUILD_DIR)/$(TARGET).eep
 lss: $(BUILD_DIR)/$(TARGET).lss 
 sym: $(BUILD_DIR)/$(TARGET).sym
+
+asm:
+	$(CC) -S $(ALL_CXXFLAGS) utilities.cpp -o $(BUILD_DIR)/utilties.s
 
 # --------------------------------------------------------------------------
 # Re-compile the target and library if any of these headers changes
