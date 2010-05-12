@@ -715,12 +715,13 @@ void tone(unsigned int halfPeriod,unsigned int cycles) {
 // byte of the input data is shifted from LSB to MSB.
 // =====================================================================
 
+#include <avr/pgmspace.h>
+
 void shiftOut(byte pin,unsigned int ndata,const byte *data) {
     
-    pinMode(pin,OUTPUT);
     unsigned int index;
     for(index = 0; index < 8*ndata; index++) {
-        digitalWrite(pin,data[index >> 3] & (1 << (index%8)));
+        digitalWrite(pin,pgm_read_byte_near(data + (index >> 3)) & (1 << (index%8)));
     }
 }
 
@@ -729,8 +730,6 @@ void shiftOut(byte pin,unsigned int ndata,const byte *data) {
 // =====================================================================
 
 #define CRICKET_SAMPLES 413
-
-#include <avr/pgmspace.h>
 
 prog_uint8_t cricketSample[CRICKET_SAMPLES] = {
     86, 85, 85, 149, 170, 170, 90, 85, 85, 170, 170, 90, 85, 85, 169, \
@@ -765,8 +764,10 @@ prog_uint8_t cricketSample[CRICKET_SAMPLES] = {
 
 void cricket(void) {
     shiftOut(PIEZO_PIN,CRICKET_SAMPLES,cricketSample);
+    /**
     delay(20);
     shiftOut(PIEZO_PIN,CRICKET_SAMPLES,cricketSample);
     delay(20);
     shiftOut(PIEZO_PIN,CRICKET_SAMPLES,cricketSample);
+    **/
 }
