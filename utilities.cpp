@@ -717,21 +717,42 @@ void tone(unsigned int halfPeriod,unsigned int cycles) {
 
 #include <avr/pgmspace.h>
 
-void shiftOut(byte pin,unsigned int ndata,const byte *data) {
+void shiftOut(byte pin,unsigned int ndata,const uint8_t *data) {
     
     unsigned int index;
-    for(index = 0; index < 8*ndata; index++) {
-        digitalWrite(pin,pgm_read_byte_near(data + (index >> 3)) & (1 << (index%8)));
+    byte bits;
+    
+    for(index = 0; index < ndata; index++) {
+        bits = pgm_read_byte_near(data + index);
+        digitalWrite(pin,bits & 1);
+        bits >>= 1;
+        digitalWrite(pin,bits & 1);
+        bits >>= 1;
+        digitalWrite(pin,bits & 1);
+        bits >>= 1;
+        digitalWrite(pin,bits & 1);
+        bits >>= 1;
+        digitalWrite(pin,bits & 1);
+        bits >>= 1;
+        digitalWrite(pin,bits & 1);
+        bits >>= 1;
+        digitalWrite(pin,bits & 1);
+        bits >>= 1;
+        digitalWrite(pin,bits & 1);
     }
+    
+    digitalWrite(pin,LOW);
 }
 
 // =====================================================================
 // Generates a cricket-like sound
 // =====================================================================
 
-#define CRICKET_SAMPLES 413
+#define CRICKET_SAMPLES 8 //413
 
-prog_uint8_t cricketSample[CRICKET_SAMPLES] = {
+uint8_t cricketSample[CRICKET_SAMPLES] PROGMEM = {
+    0x55,0x55,0x55,0x55,0x55,0x55,0x55,0x55
+/**
     86, 85, 85, 149, 170, 170, 90, 85, 85, 170, 170, 90, 85, 85, 169, \
     170, 106, 85, 85, 169, 210, 170, 213, 74, 165, 82, 173, 213, 170, \
     148, 82, 181, 214, 170, 146, 82, 213, 218, 170, 74, 82, 89, 219, 90, \
@@ -760,6 +781,7 @@ prog_uint8_t cricketSample[CRICKET_SAMPLES] = {
     74, 41, 85, 107, 173, 74, 165, 84, 171, 213, 74, 165, 74, 171, 86, \
     85, 149, 170, 170, 86, 85, 85, 170, 170, 90, 85, 85, 170, 170, 106, \
     85, 85, 85, 1
+**/
 };
 
 void cricket(void) {

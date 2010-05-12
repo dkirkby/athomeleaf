@@ -170,16 +170,11 @@ void setup() {
     pinMode(PIEZO_PIN,OUTPUT);
     pinMode(RED_LED_PIN,OUTPUT);
     
-    // tell the world we are alive
-    cricket();
-    delay(500);
-    cricket();
-    delay(500);
-    cricket();
-    delay(500);
-    
     // startup the serial port
     Serial.begin(115200);
+    
+    // tell the world we are alive
+    cricket();
     
     // print out our look-at-me config data (leading \n\n ensures that this
     // message is cleanly detected even with garbage in the serial input buffer)
