@@ -85,4 +85,4 @@ extern byte sendNordic(byte *address, byte *payload, byte payloadSize);
 
 extern void chirp(byte,byte);
 extern void tone(unsigned int, unsigned int);
-extern void cricket(void);
+extern void cricket(),bird(byte repetions=3);
