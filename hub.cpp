@@ -187,7 +187,7 @@ void setup() {
     // try to initialize the wireless interface and print the result
     initNordic(LAM.serialNumber);
     if(!nordicOK) {
-        Serial.println("ERROR 1 Unable to config wireless interface");
+        Serial.println("LOG 1 0"); // Unable to config wireless interface
     }
 }
 
@@ -222,11 +222,11 @@ void loop() {
         digitalWrite(RED_LED_PIN,LOW);
     }
     else if(pipeline < 6) {
-        Serial.print("ERROR 2 unexpected data in P");
+        Serial.print("LOG 2 ");  /* Unexpected data in pipeline */
         Serial.println(pipeline,DEC);
     }
     else if(pipeline < 8) {
-        Serial.print("ERROR 3 invalid RX_P_NO ");
+        Serial.print("LOG 3 "); /* invalid RX_P_NO */
         Serial.println(pipeline,DEC);
     }
     // Is there any serial input data?
@@ -234,26 +234,23 @@ void loop() {
         if((serialBuffer[serialBytes++]= (byte)Serial.read()) == '\n') {
             // we now have a complete command in the buffer
             serialBuffer[serialBytes-1] = '\0';
-            Serial.print("GOT ");
-            Serial.println((const char*)serialBuffer);
             // we only accept a config command (for now) - handle it here
             byteValue = handleConfigCommand();
             if(0 == byteValue) {
-                Serial.println("OK");
+                Serial.print("LOG 4 "); /* config command successfully handled */
+                Serial.println(configData.networkID,DEC);
             }
             else {
-                Serial.print("ERROR 4 ");
-                // the handler return value is our error sub-code
-                Serial.print(byteValue,DEC);
-                Serial.print(" bad cmd: ");
-                Serial.println((const char*)serialBuffer);                
+                Serial.print("LOG 5 "); /* config handler reported an error */
+                Serial.println(byteValue,DEC);
             }
             // Reset the serial buffer
             serialBytes = 0;
         }
         else if(serialBytes == SERIAL_BUFFER_SIZE) {
             // buffer is now full and we still have not received a complete command
-            Serial.println("ERROR 5 serial buffer overflow");
+            Serial.print("LOG 6 "); /* serial buffer overflow */
+            Serial.println(SERIAL_BUFFER_SIZE,DEC);
             serialBytes = 0;
         }
     }
