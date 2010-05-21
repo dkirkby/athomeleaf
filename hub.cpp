@@ -189,6 +189,9 @@ void setup() {
     if(!nordicOK) {
         Serial.println("LOG 1 0"); // Unable to config wireless interface
     }
+    else {
+        Serial.println("LOG 0 0"); // Hub started normally
+    }
 }
 
 // =====================================================================
