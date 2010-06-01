@@ -205,16 +205,27 @@ void loop() {
         digitalWrite(RED_LED_PIN,HIGH);
         data = (const DataPacket*)packetBuffer;
         Serial.print("DATA ");
-        Serial.print(data->deviceID,HEX);
+        Serial.print(data->networkID,HEX);
         Serial.write(' ');
         Serial.print(data->sequenceNumber,HEX);
         Serial.write(' ');
         Serial.print(data->status,HEX);
-        for(byteValue = 0; byteValue < DATA_PACKET_VALUES; byteValue++) {
-            Serial.write(' ');
-            Serial.print(data->data[byteValue],DEC);
-        }
-        Serial.println();
+        Serial.write(' ');
+        Serial.print(data->acPhase,HEX);
+        Serial.write(' ');
+        Serial.print(data->powerLoGain,HEX);
+        Serial.write(' ');
+        Serial.print(data->powerHiGain,HEX);
+        Serial.write(' ');
+        Serial.print(data->lightLevelLoGain,HEX);
+        Serial.write(' ');
+        Serial.print(data->lightLevelHiGain,HEX);
+        Serial.write(' ');
+        Serial.print(data->light120HzLoGain,HEX);
+        Serial.write(' ');
+        Serial.print(data->light120HzHiGain,HEX);
+        Serial.write(' ');
+        Serial.println(data->temperature,HEX);
         digitalWrite(RED_LED_PIN,LOW);
     }
     else if(pipeline == PIPELINE_LOOK_AT_ME) {
