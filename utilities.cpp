@@ -192,6 +192,7 @@ byte counter = 0;
 // final packet that is only partially used, the unused payload values
 // are not zeroed out.
 // ---------------------------------------------------------------------
+/**
 void dumpBuffer(byte dumpType) {
     // record the type of dump in the status byte
     dumpPacket.status = dumpType;
@@ -218,6 +219,7 @@ void dumpBuffer(byte dumpType) {
     // wait for the last packet to finish sending and return to listen mode
     while(Mirf.isSending()) ;
 }
+**/
 
 // ---------------------------------------------------------------------
 // Lighting analysis parameters

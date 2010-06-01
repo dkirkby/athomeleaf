@@ -1,6 +1,6 @@
 #include "utilities.h"
 
-#define PRINT_LIGHTING
+#define PRINT_SUMMARY
 
 // ---------------------------------------------------------------------
 // Connection state machine
@@ -100,7 +100,7 @@ void handleConfigUpdate() {
     // have higher error rates (eg, if it is mostly zeros or ones).
     // Start with some sanity checks...
     if(config.header != CONFIG_HEADER ||
-        ((connectionState & STATE_CONNECTED) && config.networkID != packet.deviceID)) {
+        ((connectionState & STATE_CONNECTED) && config.networkID != packet.networkID)) {
         // This looks like a spurious config packet so ignore it.
         packet.status |= STATUS_GOT_INVALID_CONFIG;
         tone(750,100);
@@ -113,7 +113,7 @@ void handleConfigUpdate() {
     }
     
     // Use the provided networkID to identify our data packets
-    packet.deviceID = config.networkID;
+    packet.networkID = config.networkID;
 
     // Remember this config in EEPROM so we have it available in case there
     // is no hub the next time we power up.
@@ -227,9 +227,6 @@ void setup() {
     // number counter for the passive feedback algorithms.
     packet.sequenceNumber = 0;
     packet.status = 0;
-    for(byteValue = 0; byteValue < DATA_PACKET_VALUES; byteValue++) {
-        packet.data[byteValue] = 0;
-    }
     
     // We start out in the connecting state, waiting for a config packet
     // in response to our LAM packet.
@@ -288,15 +285,8 @@ void loop() {
         whichLED = 0xff; // signals that we defer to the low-gain analysis
     }    
     
-    packet.data[0] = lightingMean;
-    packet.data[1] = lighting120Hz;
-    
-    #ifdef PRINT_LIGHTING
-    LCDclear();
-    Serial.print(lightingMean,DEC);
-    Serial.write(' ');
-    Serial.print(lighting120Hz,DEC);
-    #endif
+    packet.lightLevelHiGain = lightingMean;
+    packet.light120HzHiGain = lighting120Hz;
     
     // =====================================================================
     // Do a burst of 256 x 5kHz ADC samples lasting exactly 51,200 us
@@ -332,13 +322,9 @@ void loop() {
         }
     }
     
-    #ifdef PRINT_LIGHTING
-    LCDpos(1,0);
-    Serial.print(lightingMean,DEC);
-    Serial.write(' ');
-    Serial.print(lighting120Hz,DEC);
-    #endif
-    
+    packet.lightLevelLoGain = lightingMean;
+    packet.light120HzLoGain = lighting120Hz;
+
     // Dump every 16th lighting waveform
     //if((packet.sequenceNumber & 0x0f) == 0) dumpBuffer(PACKET_DUMP_LIGHTING);
     
@@ -413,7 +399,7 @@ void loop() {
     // Analyze the captured waveform and dump the results
     powerAnalysis();
     
-    packet.data[2] = (unsigned int)(10*rmsPower);
+    packet.powerLoGain = (unsigned int)(10*rmsPower);
     
     // update the click threshold based on the new power estimate
     clickThreshold = (unsigned long)(THRESHOLDSCALE*rmsPower*rmsPower);
@@ -441,14 +427,14 @@ void loop() {
     }
 
     // calculate the average temperature in degF x 100
-    packet.data[4] = (unsigned int)(100*temperatureSum*ADC2DEGF);
+    packet.temperature = (unsigned int)(100*temperatureSum*ADC2DEGF);
             
     //----------------------------------------------------------------------
     // Use the red/blue LEDs to indicate if the temperature is beyond the
     // comfort level. Don't flash every reading to minimize distraction.
     // Disable the temperature feedback when the room is dark (whichLED = 0)
     //----------------------------------------------------------------------
-    uintValue = packet.data[4] - SELF_HEATING_CORRECTION;
+    uintValue = packet.temperature - SELF_HEATING_CORRECTION;
     if(whichLED) {
         whichLED = 0;
         if((cycleCount >= SELF_HEATING_DELAY) &&
@@ -479,12 +465,6 @@ void loop() {
         if(whichLED && byteValue < uintValue) digitalWrite(whichLED,LOW);
     }
     
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    //!! Hijack the packet for lighting
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    packet.data[2] = lightingMean;
-    packet.data[3] = lighting120Hz;
-
     if(connectionState & STATE_CONNECTING) {
         // We are still waiting for a response from the hub. Send out another
         // request here...
@@ -520,33 +500,24 @@ void loop() {
     //----------------------------------------------------------------------
 #ifdef PRINT_SUMMARY
     LCDclear();
-    Serial.print(packet.data[0],DEC);
-    LCDpos(0,5);
-    Serial.print('/');
-    Serial.print(packet.data[1],DEC);
-    // sequence number $00-$FF in hex
-    LCDpos(0,14);
-    if(packet.sequenceNumber < 0x10) {
-        Serial.print('0'); // zero pad
-    }
-    Serial.print(packet.sequenceNumber,HEX);
-    // power reading
+    Serial.print(packet.lightLevelHiGain,HEX);
+    LCDpos(0,4);
+    Serial.print(packet.light120HzHiGain,HEX);
+    LCDpos(0,8);
+    Serial.print(packet.lightLevelLoGain,HEX);
+    LCDpos(0,4);
+    Serial.print(packet.light120HzLoGain,HEX);
     LCDpos(1,0);
-    Serial.print(packet.data[2],DEC);
-    // temperature reading
-    LCDpos(1,7);
-    Serial.print(packet.data[4]/100,DEC);
-    Serial.print('.');
-    uintValue = packet.data[4]%100;
-    if(uintValue < 10) {
-        Serial.print('0');
-    }
-    Serial.print(uintValue,DEC);
-    // status byte in hex
+    Serial.print(packet.powerHiGain,HEX);
+    LCDpos(1,4);
+    Serial.print(packet.powerHiGain,HEX);
+    LCDpos(1,8);
+    Serial.print(packet.acPhase,HEX);
+    LCDpos(1,10);
+    Serial.print((packet.temperature/100)%100,DEC);
+    LCDpos(1,12);
+    Serial.print(packet.sequenceNumber,HEX);
     LCDpos(1,14);
-    if(packet.status < 0x10) {
-        Serial.print('0');
-    }
     Serial.print(packet.status,HEX);
 #endif
 }
