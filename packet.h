@@ -28,6 +28,11 @@ typedef struct { // 29 bytes total
     uint8_t modified;
 } LookAtMe;
 
+typedef struct { // 32 bytes total
+    uint16_t header;
+    uint8_t packed[30];
+} BufferDump;
+
 // When the MSB of deviceID is set, the status byte identifies one of
 // the following special packet types
 
