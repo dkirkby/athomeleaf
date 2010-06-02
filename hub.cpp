@@ -32,6 +32,7 @@ byte packetBuffer[32];
 // of the appropriate packet type.
 const DataPacket *data;
 const LookAtMe *lam;
+const BufferDump *dump;
 
 // Serial input will be buffered here until we reach a newline that
 // indicates a complete command.
@@ -233,6 +234,12 @@ void loop() {
         lam = (const LookAtMe*)packetBuffer;
         Serial.print("LAM ");
         printLookAtMe(lam);
+        digitalWrite(RED_LED_PIN,LOW);
+    }
+    else if(pipeline == PIPELINE_BUFFER_DUMP) {
+        digitalWrite(RED_LED_PIN,HIGH);
+        dump = (const BufferDump*)packetBuffer;
+        Serial.println("DUMP");
         digitalWrite(RED_LED_PIN,LOW);
     }
     else if(pipeline < 6) {

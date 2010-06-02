@@ -260,6 +260,7 @@ void loop() {
     // First time round is the high-gain photoamp output.
     // =====================================================================
     bufptr = buffer;
+    timestamp = micros();
     noInterrupts();
     do {
         // toggle pin13 to allow scope timing measurements
@@ -303,6 +304,7 @@ void loop() {
     // Second time round is the low-gain photoamp output.
     // =====================================================================
     bufptr = buffer;
+    timestamp = micros();
     noInterrupts();
     do {
         // toggle pin13 to allow scope timing measurements
@@ -390,6 +392,7 @@ void loop() {
     // First time round uses the high-gain power channel.
     //----------------------------------------------------------------------
     bufptr = buffer;
+    timestamp = micros();
     noInterrupts();
     do {
         // toggle pin13 to allow scope timing measurements
@@ -416,6 +419,7 @@ void loop() {
     // Second time round uses the low-gain power channel.
     //----------------------------------------------------------------------
     bufptr = buffer;
+    timestamp = micros();
     noInterrupts();
     do {
         // toggle pin13 to allow scope timing measurements

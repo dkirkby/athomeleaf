@@ -187,6 +187,10 @@ byte counter = 0;
 
 #define WAVEDATA(K) buffer[(((K)+6)<<1)|1]
 
+// Used to latch the TIMER0 microsecond counter at a fixed time before
+// the first sample is latched.
+unsigned long timestamp;
+
 // ---------------------------------------------------------------------
 // Dump the buffer contents via the wireless interface. In case of a
 // final packet that is only partially used, the unused payload values
