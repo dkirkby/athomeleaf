@@ -58,8 +58,8 @@ extern void lightingAnalysis(float scaleFactor);
 
 // Power analysis
 
-extern float rmsPower;
-extern void powerAnalysis(void);
+extern unsigned short rmsPower;
+extern void powerAnalysis(float scaleFactor);
 
 // Wireless
 

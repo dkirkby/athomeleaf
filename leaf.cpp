@@ -73,6 +73,15 @@ Config config;
 // Power analysis parameters
 // ---------------------------------------------------------------------
 
+// The overall power conversion factor in 0.1 Watts(rms)/ADC calculated as:
+//
+//   (1/0.1)*120V(rms)*sqrt(2)/NPOWERSAMP*(5000mV)/(1024ADC)/G
+//
+// where G = 131 mV/A(pk) for the lo-gain channel (use nominal G/20 for hi-gain)
+
+#define POWERSCALE_HI 0.01265
+#define POWERSCALE_LO 0.2530200791
+
 // Power to threshold conversion factor: (1<<27)/(1000W)^2
 #define THRESHOLDSCALE 134.21772799999999
 
@@ -377,7 +386,34 @@ void loop() {
     
     //----------------------------------------------------------------------
     // Do a burst of 256 x 5kHz ADC samples lasting exactly 51,200 us
-    // 250 samples span exactly 3 60Hz powerline cycles
+    // 250 samples span exactly 3 60Hz powerline cycles.
+    // First time round uses the high-gain power channel.
+    //----------------------------------------------------------------------
+    bufptr = buffer;
+    noInterrupts();
+    do {
+        // toggle pin13 to allow scope timing measurements
+        digitalWrite(STROBE_PIN, HIGH);
+        *bufptr++ = TCNT0;
+        *bufptr++ = analogRead(ACPOWER_PIN_HI);
+        digitalWrite(STROBE_PIN, LOW);
+        // insert some idle delay (borrowed from delayMicroseconds() in wiring.c)
+        delayCycles = 328; // 4 CPU cycles = 0.25us per iteration
+        __asm__ __volatile__ (
+            "1: sbiw %0,1" "\n\t" // 2 cycles
+            "brne 1b" : "=w" (delayCycles) : "0" (delayCycles) // 2 cycles
+            );
+    } while(++counter); // wraps around at 256
+    interrupts();
+    
+    // Analyze the captured waveform and dump the results
+    powerAnalysis(POWERSCALE_HI);
+    packet.powerHiGain = rmsPower;
+    
+    //----------------------------------------------------------------------
+    // Do a burst of 256 x 5kHz ADC samples lasting exactly 51,200 us
+    // 250 samples span exactly 3 60Hz powerline cycles.
+    // Second time round uses the low-gain power channel.
     //----------------------------------------------------------------------
     bufptr = buffer;
     noInterrupts();
@@ -397,12 +433,11 @@ void loop() {
     interrupts();
     
     // Analyze the captured waveform and dump the results
-    powerAnalysis();
-    
-    packet.powerLoGain = (unsigned int)(10*rmsPower);
-    
+    powerAnalysis(POWERSCALE_LO);    
+    packet.powerLoGain = rmsPower;
+
     // update the click threshold based on the new power estimate
-    clickThreshold = (unsigned long)(THRESHOLDSCALE*rmsPower*rmsPower);
+    // clickThreshold = (unsigned long)(THRESHOLDSCALE*rmsPower*rmsPower);
     
     //----------------------------------------------------------------------
     // Temperature sampling set 2
@@ -505,12 +540,12 @@ void loop() {
     Serial.print(packet.light120HzHiGain,HEX);
     LCDpos(0,8);
     Serial.print(packet.lightLevelLoGain,HEX);
-    LCDpos(0,4);
+    LCDpos(0,12);
     Serial.print(packet.light120HzLoGain,HEX);
     LCDpos(1,0);
     Serial.print(packet.powerHiGain,HEX);
     LCDpos(1,4);
-    Serial.print(packet.powerHiGain,HEX);
+    Serial.print(packet.powerLoGain,HEX);
     LCDpos(1,8);
     Serial.print(packet.acPhase,HEX);
     LCDpos(1,10);

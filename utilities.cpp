@@ -241,9 +241,6 @@ void dumpBuffer(byte dumpType) {
 #define NPOWERSAMPBY4 63
 // The index period corresponding to 60 Hz = 2pi/(NPOWERSAMP/3)
 #define DPHI60 0.075398223686155036
-// The overall power conversion factor in Watts(rms)/ADC
-// calculated as 120V(rms)*sqrt(2)/NPOWERSAMP*(5000mV)/(1024ADC)/(90mV/A(pk))
-#define POWERSCALE 0.036828478186799352
 
 // ---------------------------------------------------------------------
 // Lighting and power analysis shared globals
@@ -386,11 +383,12 @@ void lightingAnalysis(float scaleFactor) {
 // relative to a 120V RMS 60Hz voltage. The algorithm assumes that
 // there is no clipping and that the load is purely resistive.
 // This function makes the following math calls: 62*sin, 62*cos, 1*sqrt.
+// The scale factor is used to scale the results from ADC counts.
 // =====================================================================
 
-float rmsPower;
+unsigned short rmsPower;
 
-void powerAnalysis() {
+void powerAnalysis(float scaleFactor) {
     cosSum = sinSum = 0;
     for(byteValue = 0; byteValue < NPOWERSAMPBY4; byteValue++) {
         if(byteValue == 0) {
@@ -429,8 +427,8 @@ void powerAnalysis() {
             sinSum += floatValue*sink;
         }
     }
-    // store the RMS power (Watts) in cosSum
-    rmsPower = POWERSCALE*sqrt(cosSum*cosSum+sinSum*sinSum);
+    // store the RMS power (Watts)
+    rmsPower = (unsigned short)(scaleFactor*sqrt(cosSum*cosSum+sinSum*sinSum)+0.5);
 }
 
 // =====================================================================
