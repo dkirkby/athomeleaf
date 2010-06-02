@@ -24,7 +24,6 @@ void saveConfig(const Config *config);
 extern byte byteValue;
 extern unsigned int uintValue;
 extern float floatValue;
-extern DataPacket packet,dumpPacket;
 
 // Printing support for float values
 
@@ -50,7 +49,13 @@ extern void tick(void);
 extern unsigned short buffer[],*bufptr,delayCycles;
 extern byte counter;
 extern unsigned long timestamp;
-extern void dumpBuffer(byte dumpType);
+extern void dumpBuffer(byte dumpType,const BufferDump *dump);
+
+#define DUMP_BUFFER_POWER_LO 0
+#define DUMP_BUFFER_POWER_HI 1
+#define DUMP_BUFFER_LIGHT_LO 2
+#define DUMP_BUFFER_LIGHT_HI 3
+#define DUMP_BUFFER_AC_PHASE 4
 
 // ---------------------------------------------------------------------
 // Do a burst of 256 x 5kHz ADC samples lasting exactly 51,200 us

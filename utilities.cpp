@@ -7,7 +7,6 @@
 byte byteValue;
 unsigned int uintValue;
 float floatValue;
-DataPacket packet,dumpPacket;
 
 // =====================================================================
 // Returns our 32-bit serial number read from EEPROM
@@ -196,8 +195,8 @@ unsigned long timestamp;
 // final packet that is only partially used, the unused payload values
 // are not zeroed out.
 // ---------------------------------------------------------------------
+void dumpBuffer(byte dumpType,const BufferDump *dump) {
 /**
-void dumpBuffer(byte dumpType) {
     // record the type of dump in the status byte
     dumpPacket.status = dumpType;
     // loop over buffer samples
@@ -222,8 +221,8 @@ void dumpBuffer(byte dumpType) {
     }
     // wait for the last packet to finish sending and return to listen mode
     while(Mirf.isSending()) ;
-}
 **/
+}
 
 // ---------------------------------------------------------------------
 // Lighting analysis parameters

@@ -12,7 +12,7 @@
 byte connectionState;
 
 // ---------------------------------------------------------------------
-// Declare our 'look-at-me' packet
+// Declare and initialize our 'look-at-me' packet
 // ---------------------------------------------------------------------
 LookAtMe LAM = {
     0, // serial number will be copied from EEPROM
@@ -24,9 +24,11 @@ LookAtMe LAM = {
 };
 
 // ---------------------------------------------------------------------
-// Declare our run-time configuration data
+// Declare our other packet buffers
 // ---------------------------------------------------------------------
 Config config;
+DataPacket packet;
+BufferDump dump;
 
 // ---------------------------------------------------------------------
 // Temperature monitoring parameters
@@ -299,9 +301,6 @@ void loop() {
     
     packet.lightLevelLoGain = lightingMean;
     packet.light120HzLoGain = lighting120Hz;
-
-    // Dump every 16th lighting waveform
-    //if((packet.sequenceNumber & 0x0f) == 0) dumpBuffer(PACKET_DUMP_LIGHTING);
     
     // =====================================================================
     // Calculate average of NTEMPSUM temperature ADC samples.
@@ -358,6 +357,9 @@ void loop() {
     // Analyze the captured waveform and dump the results
     powerAnalysis(POWERSCALE_HI);
     packet.powerHiGain = rmsPower;
+    
+    // Dump every 16th sample buffer
+    if((packet.sequenceNumber & 0x0f) == 0) dumpBuffer(DUMP_BUFFER_POWER_HI,&dump);
     
     //----------------------------------------------------------------------
     // Second time round uses the low-gain power channel.
