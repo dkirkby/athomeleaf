@@ -33,9 +33,4 @@ typedef struct { // 32 bytes total
     uint8_t packed[30];
 } BufferDump;
 
-// When the MSB of deviceID is set, the status byte identifies one of
-// the following special packet types
-
-#define PACKET_DUMP_LIGHTING 0x01
-
 #endif

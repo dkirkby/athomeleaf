@@ -68,14 +68,15 @@ extern void powerAnalysis(float scaleFactor);
 #define NORDIC_MAX_RETRIES 15
 
 // Hub pipelines
-#define PIPELINE_DATA       1
-#define PIPELINE_LOOK_AT_ME 2
+#define PIPELINE_DATA        1
+#define PIPELINE_LOOK_AT_ME  2
+#define PIPELINE_BUFFER_DUMP 3
 
 // Leaf pipelines
 #define PIPELINE_CONFIG     1
 
 extern byte nordicOK;
-extern byte idleAddress[],dataAddress[],configAddress[],lamAddress[];
+extern byte idleAddress[],dataAddress[],configAddress[],lamAddress[],dumpAddress[];
 
 extern void initNordic(unsigned long serialNumber);
 extern byte getNordic(byte *payload, byte payloadSize);

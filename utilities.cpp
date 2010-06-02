@@ -449,9 +449,10 @@ byte idleAddress[NORDIC_ADDR_LEN] =   { 0xEE, 0xEE, 0xEE };
 // The least-significant 2 bytes [0:1] of the config address will be set based
 // on a leaf node's serial number in initNoridc()
 byte configAddress[NORDIC_ADDR_LEN] = { 0xFF, 0xFF, 0x9A };
-// The data and LAM addresses must have the same last two (most-significant) bytes
+// The following addresses must have the same last two (most-significant) bytes
 byte dataAddress[NORDIC_ADDR_LEN] =   { 0xF2, 0xF2, 0xF2 };
 byte lamAddress[NORDIC_ADDR_LEN]=     { 0xC6, 0xF2, 0xF2 };
+byte dumpAddress[NORDIC_ADDR_LEN]=    { 0xA7, 0xF2, 0xF2 };
 
 void initNordic(unsigned long serialNumber) {
     
@@ -511,11 +512,15 @@ void initNordic(unsigned long serialNumber) {
         Mirf.writeRegister(RX_ADDR_P1,dataAddress,NORDIC_ADDR_LEN);
     	Mirf.configRegister(RX_PW_P1,sizeof(DataPacket));
     	// P2 listens for Look-at-Me (LAM) packets. We only write the
-    	// least-significant byte [0] (MS bytes [1:2] shared with P1)
+    	// least-significant byte [0] (MS bytes [1:2] shared with P1 and P3)
         Mirf.configRegister(RX_ADDR_P2,lamAddress[0]);
     	Mirf.configRegister(RX_PW_P2,sizeof(LookAtMe));
-        // Using P2,P1,P0
-        Mirf.configRegister(EN_RXADDR,0x07);
+    	// P3 listens for BufferDump packets. We only write the least-
+    	// sigficant byte [0] (MS bytes [1:2] shared with P1 and P2)
+        Mirf.configRegister(RX_ADDR_P3,dumpAddress[0]);
+    	Mirf.configRegister(RX_PW_P3,sizeof(BufferDump));
+        // Using P3,P2,P1,P0
+        Mirf.configRegister(EN_RXADDR,0x0f);
     }
     else {
         // Use a per-device config address based on our serial number
