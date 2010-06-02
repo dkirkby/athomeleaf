@@ -52,6 +52,30 @@ extern byte counter;
 extern unsigned long timestamp;
 extern void dumpBuffer(byte dumpType);
 
+// ---------------------------------------------------------------------
+// Do a burst of 256 x 5kHz ADC samples lasting exactly 51,200 us
+// 250 samples span exactly 3 60Hz powerline cycles.
+// ---------------------------------------------------------------------
+#define acquireADCSamples(ADC_CHANNEL) {\
+    bufptr = buffer; \
+    timestamp = micros(); \
+    noInterrupts(); \
+    do { \
+        /* toggle pin13 to allow scope timing measurements */ \
+        digitalWrite(STROBE_PIN, HIGH); \
+        *bufptr++ = TCNT0; \
+        *bufptr++ = analogRead(ADC_CHANNEL); \
+        digitalWrite(STROBE_PIN, LOW); \
+        /* insert some idle delay (borrowed from delayMicroseconds() in wiring.c) */ \
+        delayCycles = 328; /* 4 CPU cycles = 0.25us per iteration */ \
+        __asm__ __volatile__ ( \
+            "1: sbiw %0,1" "\n\t" /* 2 cycles */ \
+            "brne 1b" : "=w" (delayCycles) : "0" (delayCycles) /* 2 cycles */ \
+            ); \
+    } while(++counter); /* wraps around at 256 */ \
+    interrupts(); \
+}
+
 // Lighting analysis
 
 extern unsigned short lightingMean,lighting120Hz;

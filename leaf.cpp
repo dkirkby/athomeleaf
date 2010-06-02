@@ -255,27 +255,9 @@ void loop() {
     digitalWrite(GREEN_LED_PIN,LOW);
 
     // =====================================================================
-    // Do a burst of 256 x 5kHz ADC samples lasting exactly 51,200 us
-    // 250 samples span exactly 6 120Hz powerline cycles.
     // First time round is the high-gain photoamp output.
     // =====================================================================
-    bufptr = buffer;
-    timestamp = micros();
-    noInterrupts();
-    do {
-        // toggle pin13 to allow scope timing measurements
-        digitalWrite(STROBE_PIN, HIGH);
-        *bufptr++ = TCNT0;
-        *bufptr++ = analogRead(LIGHTING_PIN_HI);
-        digitalWrite(STROBE_PIN, LOW);
-        // insert some idle delay (borrowed from delayMicroseconds() in wiring.c)
-        delayCycles = 328; // 4 CPU cycles = 0.25us per iteration
-        __asm__ __volatile__ (
-            "1: sbiw %0,1" "\n\t" // 2 cycles
-            "brne 1b" : "=w" (delayCycles) : "0" (delayCycles) // 2 cycles
-            );
-    } while(++counter); // wraps around at 256
-    interrupts();
+    acquireADCSamples(LIGHTING_PIN_HI);
 
     // Analyze the captured waveform
     lightingAnalysis(16.0);
@@ -299,27 +281,9 @@ void loop() {
     packet.light120HzHiGain = lighting120Hz;
     
     // =====================================================================
-    // Do a burst of 256 x 5kHz ADC samples lasting exactly 51,200 us
-    // 250 samples span exactly 6 120Hz powerline cycles.
     // Second time round is the low-gain photoamp output.
     // =====================================================================
-    bufptr = buffer;
-    timestamp = micros();
-    noInterrupts();
-    do {
-        // toggle pin13 to allow scope timing measurements
-        digitalWrite(STROBE_PIN, HIGH);
-        *bufptr++ = TCNT0;
-        *bufptr++ = analogRead(LIGHTING_PIN);
-        digitalWrite(STROBE_PIN, LOW);
-        // insert some idle delay (borrowed from delayMicroseconds() in wiring.c)
-        delayCycles = 328; // 4 CPU cycles = 0.25us per iteration
-        __asm__ __volatile__ (
-            "1: sbiw %0,1" "\n\t" // 2 cycles
-            "brne 1b" : "=w" (delayCycles) : "0" (delayCycles) // 2 cycles
-            );
-    } while(++counter); // wraps around at 256
-    interrupts();
+    acquireADCSamples(LIGHTING_PIN);
 
     // Analyze the captured waveform
     lightingAnalysis(16.0);
@@ -387,54 +351,18 @@ void loop() {
     }
     
     //----------------------------------------------------------------------
-    // Do a burst of 256 x 5kHz ADC samples lasting exactly 51,200 us
-    // 250 samples span exactly 3 60Hz powerline cycles.
     // First time round uses the high-gain power channel.
-    //----------------------------------------------------------------------
-    bufptr = buffer;
-    timestamp = micros();
-    noInterrupts();
-    do {
-        // toggle pin13 to allow scope timing measurements
-        digitalWrite(STROBE_PIN, HIGH);
-        *bufptr++ = TCNT0;
-        *bufptr++ = analogRead(ACPOWER_PIN_HI);
-        digitalWrite(STROBE_PIN, LOW);
-        // insert some idle delay (borrowed from delayMicroseconds() in wiring.c)
-        delayCycles = 328; // 4 CPU cycles = 0.25us per iteration
-        __asm__ __volatile__ (
-            "1: sbiw %0,1" "\n\t" // 2 cycles
-            "brne 1b" : "=w" (delayCycles) : "0" (delayCycles) // 2 cycles
-            );
-    } while(++counter); // wraps around at 256
-    interrupts();
+    //----------------------------------------------------------------------    
+    acquireADCSamples(ACPOWER_PIN_HI);
     
     // Analyze the captured waveform and dump the results
     powerAnalysis(POWERSCALE_HI);
     packet.powerHiGain = rmsPower;
     
     //----------------------------------------------------------------------
-    // Do a burst of 256 x 5kHz ADC samples lasting exactly 51,200 us
-    // 250 samples span exactly 3 60Hz powerline cycles.
     // Second time round uses the low-gain power channel.
     //----------------------------------------------------------------------
-    bufptr = buffer;
-    timestamp = micros();
-    noInterrupts();
-    do {
-        // toggle pin13 to allow scope timing measurements
-        digitalWrite(STROBE_PIN, HIGH);
-        *bufptr++ = TCNT0;
-        *bufptr++ = analogRead(ACPOWER_PIN);
-        digitalWrite(STROBE_PIN, LOW);
-        // insert some idle delay (borrowed from delayMicroseconds() in wiring.c)
-        delayCycles = 328; // 4 CPU cycles = 0.25us per iteration
-        __asm__ __volatile__ (
-            "1: sbiw %0,1" "\n\t" // 2 cycles
-            "brne 1b" : "=w" (delayCycles) : "0" (delayCycles) // 2 cycles
-            );
-    } while(++counter); // wraps around at 256
-    interrupts();
+    acquireADCSamples(ACPOWER_PIN);
     
     // Analyze the captured waveform and dump the results
     powerAnalysis(POWERSCALE_LO);    
