@@ -181,7 +181,7 @@ void tick() {
 // Globals used for 60/120 Hz waveform captures (lighting + AC power)
 // ---------------------------------------------------------------------
 #define BUFFER_SIZE 512
-unsigned short buffer[BUFFER_SIZE],*bufptr,delayCycles;
+uint16_t buffer[BUFFER_SIZE],*bufptr,delayCycles;
 byte counter = 0;
 
 #define WAVEDATA(K) buffer[(((K)+6)<<1)|1]
@@ -191,11 +191,50 @@ byte counter = 0;
 unsigned long timestamp;
 
 // ---------------------------------------------------------------------
-// Dump the buffer contents via the wireless interface. In case of a
-// final packet that is only partially used, the unused payload values
-// are not zeroed out.
+// Packs four consecutive 10-bit samples stored in the 16-bit words
+// src[0:3] into the five consecutive bytes dst[0:4].
 // ---------------------------------------------------------------------
-void dumpBuffer(byte dumpType,const BufferDump *dump) {
+void packSamples(const uint16_t *src, uint8_t *dst) {
+    dst[0] = (uint8_t)(src[0] >> 2);
+    dst[1] = ((uint8_t)src[0] << 6) | (uint8_t)(src[1] >> 4);
+    dst[2] = ((uint8_t)src[0] << 4) | (uint8_t)(src[1] >> 6);
+    dst[3] = ((uint8_t)src[0] << 2) | (uint8_t)(src[1] >> 8);
+    dst[4] = ((uint8_t)src[0]);
+}
+
+// ---------------------------------------------------------------------
+// Unpacks the packing performed by packSamples
+// ---------------------------------------------------------------------
+void unpackSamples(const uint8_t *src, uint16_t *dst) {
+    dst[0] = (src[0] << 2) | (src[1] >> 6);
+    dst[1] = ((src[1] & 0x3f) << 4) | (src[2] >> 4);
+    dst[2] = ((src[2] & 0x0f) << 6) | (src[3] >> 2);
+    dst[3] = ((src[3] & 0x03) << 8) | (src[4]);
+}
+
+// ---------------------------------------------------------------------
+// Dump the buffer contents via the wireless interface. Values are
+// assumed to be 10-bit and packed accordingly.
+// ---------------------------------------------------------------------
+void dumpBuffer(byte dumpType,BufferDump *dump) {
+    // the first packet has a unique header...
+    dump->header = 0;
+    // ...followed by the dump type and timestamp
+    dump->packed[0] = dumpType;
+    dump->packed[1] = 0xff & (timestamp >> 24);
+    dump->packed[2] = 0xff & (timestamp >> 16);
+    dump->packed[3] = 0xff & (timestamp >>  8);
+    dump->packed[4] = 0xff & (timestamp);
+    // ...and the first 12 packed samples
+    packSamples(&buffer[0],&dump->packed[5]);
+    packSamples(&buffer[4],&dump->packed[10]);
+    packSamples(&buffer[8],&dump->packed[15]);
+    // try to send the first packet now
+    if(0x0f < sendNordic(dumpAddress, (byte*)dump, sizeof(BufferDump))) {
+        // don't keep going if our first packet didn't get through
+        return;
+    }
+
 /**
     // record the type of dump in the status byte
     dumpPacket.status = dumpType;

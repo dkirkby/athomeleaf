@@ -359,7 +359,12 @@ void loop() {
     packet.powerHiGain = rmsPower;
     
     // Dump every 16th sample buffer
-    if((packet.sequenceNumber & 0x0f) == 0) dumpBuffer(DUMP_BUFFER_POWER_HI,&dump);
+    if((packet.sequenceNumber & 0x0f) == 0) {
+        for(uintValue = 0; uintValue < 512; uintValue++) {
+            buffer[uintValue] = uintValue;
+        }
+        dumpBuffer(DUMP_BUFFER_POWER_HI,&dump);
+    }
     
     //----------------------------------------------------------------------
     // Second time round uses the low-gain power channel.

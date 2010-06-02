@@ -46,10 +46,10 @@ extern void tick(void);
 
 // Synchronous sampling
 
-extern unsigned short buffer[],*bufptr,delayCycles;
+extern uint16_t buffer[],*bufptr,delayCycles;
 extern byte counter;
 extern unsigned long timestamp;
-extern void dumpBuffer(byte dumpType,const BufferDump *dump);
+extern void dumpBuffer(byte dumpType,BufferDump *dump);
 
 #define DUMP_BUFFER_POWER_LO 0
 #define DUMP_BUFFER_POWER_HI 1
