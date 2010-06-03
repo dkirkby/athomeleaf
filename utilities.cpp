@@ -488,6 +488,18 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
 }
 
 // =====================================================================
+// Aanalyzes the zero-crossing fiducial signal to determine the
+// AC power factor.
+// =====================================================================
+
+void phaseAnalysis(BufferDump *dump) {
+    if(0 != dump) {
+        /* zero out the dump header */
+        for(byteValue = 0; byteValue < 15; byteValue++) dump->packed[byteValue] = 0;
+    }    
+}
+
+// =====================================================================
 // Initializes the Nordic nRF24L01+ transciever. Sets the value of
 // the global nordicOK byte to either 1 (true) or 0 (false) to indicate
 // if the initialization was successful. If successful, the transceiver

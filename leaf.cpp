@@ -367,7 +367,7 @@ void loop() {
     //----------------------------------------------------------------------    
     acquireADCSamples(ACPOWER_PIN_HI);
     
-    // Analyze the captured waveform and dump the results
+    // Analyze the captured waveform
     powerAnalysis(POWERSCALE_HI,&dump);
     packet.powerHiGain = uintValue;
     
@@ -382,7 +382,7 @@ void loop() {
     //----------------------------------------------------------------------
     acquireADCSamples(ACPOWER_PIN);
     
-    // Analyze the captured waveform and dump the results
+    // Analyze the captured waveform
     powerAnalysis(POWERSCALE_LO,&dump);    
     packet.powerLoGain = uintValue;
 
@@ -391,7 +391,22 @@ void loop() {
         connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 0) {
         dumpBuffer(DUMP_BUFFER_POWER_LO,&dump);
     }
+
+    //----------------------------------------------------------------------
+    // Finally, sample the AC zero-crossing fiducial channel.
+    //----------------------------------------------------------------------
+    acquireADCSamples(ACPHASE_PIN);
     
+    // Analyze the captured waveform
+    phaseAnalysis(&dump);
+    packet.acPhase = 0x80;
+    
+    // Dump every 16th sample buffer if requested
+    if((config.capabilities & CAPABILITY_POWER_DUMP) &&
+        connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 0) {
+        dumpBuffer(DUMP_BUFFER_AC_PHASE,&dump);
+    }
+
     // update the click threshold based on the new power estimate
     // clickThreshold = (unsigned long)(THRESHOLDSCALE*rmsPower*rmsPower);
     
