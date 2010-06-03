@@ -283,6 +283,12 @@ void loop() {
     packet.lightLevelHiGain = lightingMean;
     packet.light120HzHiGain = lighting120Hz;
     
+    // Dump every 16th sample buffer if requested
+    if((config.capabilities & CAPABILITY_LIGHT_DUMP) &&
+        connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 8) {
+        dumpBuffer(DUMP_BUFFER_LIGHT_HI,&dump);
+    }
+    
     // =====================================================================
     // Second time round is the low-gain photoamp output.
     // =====================================================================
@@ -303,6 +309,12 @@ void loop() {
     packet.lightLevelLoGain = lightingMean;
     packet.light120HzLoGain = lighting120Hz;
     
+    // Dump every 16th sample buffer if requested
+    if((config.capabilities & CAPABILITY_LIGHT_DUMP) &&
+        connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 8) {
+        dumpBuffer(DUMP_BUFFER_LIGHT_LO,&dump);
+    }
+
     // =====================================================================
     // Calculate average of NTEMPSUM temperature ADC samples.
     // Result is stored in 32-bit unsigned, so can average up to 2^22
