@@ -76,8 +76,8 @@ void printBufferDump(const BufferDump *dump) {
     Serial.print(dump->networkID,HEX);
     Serial.write(' ');
     Serial.print(dump->sequenceNumber,HEX);
-    Serial.write(' ');
     if(dump->sequenceNumber == 0) {
+        Serial.write(' ');
         // dump the first 15 bytes as one long hex string
         for(byteValue = 0; byteValue < 15; byteValue++) {
             if(dump->packed[byteValue] < 0x10) Serial.write('0');
@@ -103,8 +103,21 @@ void printBufferDump(const BufferDump *dump) {
             Serial.write(' ');
             Serial.print(unpacked[byteValue],HEX);
         }
-        Serial.println();
     }
+    else {
+        // The next 21 packets have identical formats and pack 24
+        // 10-bit ADC samples into 30 bytes. We unpack each sample
+        // and print its hex value here.
+        for(byteValue = 0; byteValue < 24; byteValue++) {
+            if(byteValue % 4 == 0) {
+                // refill our array of unpacked data
+                unpackSamples(&dump->packed[5*(byteValue>>2)],unpacked);
+            }
+            Serial.write(' ');
+            Serial.print(unpacked[byteValue % 4],HEX);
+        }
+    }
+    Serial.println();
 }
 
 // =====================================================================

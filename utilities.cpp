@@ -217,7 +217,8 @@ void unpackSamples(const uint8_t *src, uint16_t *dst) {
 // assumed to be 10-bit and packed accordingly. The first 15 bytes
 // of the dump buffer provided will be included in the first packet
 // sent (and overwritten as subsequent packets are sent). The dump
-// buffer should already have its networkID field set.
+// buffer should already have its networkID field set (and this will
+// not be overwritten). In total, 22 packets will be sent.
 // ---------------------------------------------------------------------
 void dumpBuffer(byte dumpType, BufferDump *dump) {
     // the first packet can be identified by its zero sequence number
@@ -237,7 +238,24 @@ void dumpBuffer(byte dumpType, BufferDump *dump) {
         // don't keep going if our first packet didn't get through
         return;
     }
-
+    // the remaining 21 packets have the same structure
+    uintValue = 8;
+    for(dump->sequenceNumber = 1; dump->sequenceNumber < 22; dump->sequenceNumber++) {
+        packSamples(&buffer[uintValue],&dump->packed[0]);
+        uintValue+= 4;
+        packSamples(&buffer[uintValue],&dump->packed[5]);
+        uintValue+= 4;
+        packSamples(&buffer[uintValue],&dump->packed[10]);
+        uintValue+= 4;
+        packSamples(&buffer[uintValue],&dump->packed[15]);
+        uintValue+= 4;
+        packSamples(&buffer[uintValue],&dump->packed[20]);
+        uintValue+= 4;
+        packSamples(&buffer[uintValue],&dump->packed[25]);
+        uintValue+= 4;
+        // try to send this packet now
+        if(0x0f < sendNordic(dumpAddress, (byte*)dump, sizeof(BufferDump))) return;
+    }
 /**
     // record the type of dump in the status byte
     dumpPacket.status = dumpType;
