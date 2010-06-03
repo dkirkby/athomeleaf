@@ -297,7 +297,7 @@ static float sink,cosk,cosSum,sinSum;
 
 unsigned short lightingMean,lighting120Hz;
 
-void lightingAnalysis(float scaleFactor) {
+void lightingAnalysis(float scaleFactor, BufferDump *dump) {
     
     static float beta0,beta1,beta2,alpha00,alpha01,alpha02,alpha11,alpha12,alpha22;
     
@@ -351,6 +351,11 @@ void lightingAnalysis(float scaleFactor) {
         }
     }
     
+    if(0 != dump) {
+        /* zero out the dump header */
+        for(byteValue = 0; byteValue < 15; byteValue++) dump->packed[byteValue] = 0;
+    }
+
     // Check for an almost singular matrix which signals an over/under-flow condition
     // in the sampling. At this point, alpha00 contains the number of unclipped samples
     // out of a possible NLIGHTSAMP maximum.
@@ -389,6 +394,13 @@ void lightingAnalysis(float scaleFactor) {
         // Store the 120 Hz peak amplitude in beta1
         beta1 = sqrt(beta1*beta1 + beta2*beta2);
         
+        // save our analysis results (in floating point ADC counts)
+        // in case this buffer gets dumped
+        if(0 != buffer) {
+            *(float*)(&dump->packed[0]) = beta0;
+            *(float*)(&dump->packed[4]) = beta1;
+        }
+
         // scale beta0 to lightingMean
         beta0 = scaleFactor*beta0 + 0.5;
         if(beta0 <= 0) {
@@ -412,6 +424,7 @@ void lightingAnalysis(float scaleFactor) {
         else {
             lighting120Hz = (unsigned short)beta1;
         }
+        
     }
 }
 

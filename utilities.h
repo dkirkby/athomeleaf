@@ -85,7 +85,7 @@ extern void unpackSamples(const uint8_t *src, uint16_t *dst);
 // Lighting analysis
 
 extern unsigned short lightingMean,lighting120Hz;
-extern void lightingAnalysis(float scaleFactor);
+extern void lightingAnalysis(float scaleFactor, BufferDump *dump);
 
 // Power analysis
 

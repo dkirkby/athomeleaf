@@ -263,7 +263,7 @@ void loop() {
     acquireADCSamples(LIGHTING_PIN_HI);
 
     // Analyze the captured waveform
-    lightingAnalysis(16.0);
+    lightingAnalysis(16.0,&dump);
     
     if(lightingMean < DARK_THRESHOLD) {
         whichLED = 0; // signals that the room is dark and the LED should be off
@@ -289,7 +289,7 @@ void loop() {
     acquireADCSamples(LIGHTING_PIN);
 
     // Analyze the captured waveform
-    lightingAnalysis(16.0);
+    lightingAnalysis(16.0,&dump);
     
     if(whichLED == 0xff) {
         if(lighting120Hz > lightingMean/ARTIFICIAL_THRESHOLD) {
