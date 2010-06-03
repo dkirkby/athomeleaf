@@ -256,32 +256,6 @@ void dumpBuffer(byte dumpType, BufferDump *dump) {
         // try to send this packet now
         if(0x0f < sendNordic(dumpAddress, (byte*)dump, sizeof(BufferDump))) return;
     }
-/**
-    // record the type of dump in the status byte
-    dumpPacket.status = dumpType;
-    // loop over buffer samples
-    dumpPacket.sequenceNumber = 0;
-    uintValue = BUFFER_SIZE;
-    counter = 0;
-    bufptr = buffer;
-    while(uintValue--) { // loop over pairs of buffer bytes to write
-        dumpPacket.data[counter++] = *bufptr++;
-        if(counter == DATA_PACKET_VALUES || uintValue == 0) {
-            // send the current packet contents
-            Mirf.send((byte*)&dumpPacket);
-            // get ready for the next packet
-            dumpPacket.sequenceNumber++;
-            counter = 0;
-            // If this delay is removed, the transmission is still ok
-            // (i.e., no dropped packets), but the hub can't keep up.
-            // TODO: debug this... is either the hub serial buffer
-            // or its Rx FIFO overrunning?
-            delay(10);
-        }
-    }
-    // wait for the last packet to finish sending and return to listen mode
-    while(Mirf.isSending()) ;
-**/
 }
 
 // ---------------------------------------------------------------------
