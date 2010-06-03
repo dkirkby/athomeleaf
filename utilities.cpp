@@ -423,7 +423,7 @@ void lightingAnalysis(float scaleFactor) {
 // The scale factor is used to scale the results from ADC counts.
 // =====================================================================
 
-void powerAnalysis(float scaleFactor) {
+void powerAnalysis(float scaleFactor, BufferDump *dump) {
     cosSum = sinSum = 0;
     for(byteValue = 0; byteValue < NPOWERSAMPBY4; byteValue++) {
         if(byteValue == 0) {
@@ -464,6 +464,12 @@ void powerAnalysis(float scaleFactor) {
     }
     // store the floating point 60 Hz RMS in ADC units
     floatValue = sqrt(cosSum*cosSum+sinSum*sinSum);
+    if(0 != dump) {
+        /* zero out the dump header */
+        for(byteValue = 0; byteValue < 15; byteValue++) dump->packed[byteValue] = 0;
+        /* send our floating point RMS in the dump header */
+        *(float*)(&dump->packed[0]) = floatValue;
+    }
     // convert to a 16-bit integer using the provided scale factor
     uintValue = (unsigned short)(scaleFactor*floatValue+0.5);
 }

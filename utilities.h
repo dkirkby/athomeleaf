@@ -89,7 +89,7 @@ extern void lightingAnalysis(float scaleFactor);
 
 // Power analysis
 
-extern void powerAnalysis(float scaleFactor);
+extern void powerAnalysis(float scaleFactor, BufferDump *dump);
 
 // Wireless
 

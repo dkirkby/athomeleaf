@@ -356,16 +356,12 @@ void loop() {
     acquireADCSamples(ACPOWER_PIN_HI);
     
     // Analyze the captured waveform and dump the results
-    powerAnalysis(POWERSCALE_HI);
+    powerAnalysis(POWERSCALE_HI,&dump);
     packet.powerHiGain = uintValue;
     
     // Dump every 16th sample buffer if requested
     if((config.capabilities & CAPABILITY_POWER_DUMP) &&
         connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 0) {
-        /* zero out the dump header */
-        for(byteValue = 0; byteValue < 15; byteValue++) dump.packed[byteValue] = 0;
-        /* send our floating point RMS in the dump header */
-        *(float*)(&dump.packed[0]) = floatValue;
         dumpBuffer(DUMP_BUFFER_POWER_HI,&dump);
     }
     
@@ -375,16 +371,12 @@ void loop() {
     acquireADCSamples(ACPOWER_PIN);
     
     // Analyze the captured waveform and dump the results
-    powerAnalysis(POWERSCALE_LO);    
+    powerAnalysis(POWERSCALE_LO,&dump);    
     packet.powerLoGain = uintValue;
 
     // Dump every 16th sample buffer if requested
     if((config.capabilities & CAPABILITY_POWER_DUMP) &&
         connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 0) {
-        /* zero out the dump header */
-        for(byteValue = 0; byteValue < 15; byteValue++) dump.packed[byteValue] = 0;
-        /* send our floating point RMS in the dump header */
-        *(float*)(&dump.packed[0]) = floatValue;
         dumpBuffer(DUMP_BUFFER_POWER_LO,&dump);
     }
     
