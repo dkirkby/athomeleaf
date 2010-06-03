@@ -67,6 +67,47 @@ void printLookAtMe(const LookAtMe *lam) {
 }
 
 // =====================================================================
+// Print the contents of a single dump buffer packet on one line.
+// =====================================================================
+
+void printBufferDump(const BufferDump *dump) {
+    uint16_t unpacked[4];
+    
+    Serial.print(dump->networkID,HEX);
+    Serial.write(' ');
+    Serial.print(dump->sequenceNumber,HEX);
+    Serial.write(' ');
+    if(dump->sequenceNumber == 0) {
+        // dump the first 15 bytes as one long hex string
+        for(byteValue = 0; byteValue < 15; byteValue++) {
+            if(dump->packed[byteValue] < 0x10) Serial.write('0');
+            Serial.print(dump->packed[byteValue],HEX);
+        }
+        Serial.write(' ');
+        // print the dump type
+        Serial.print(dump->packed[15],HEX);
+        Serial.write(' ');
+        // print the timestamp
+        for(byteValue = 16; byteValue < 20; byteValue++) {
+            if(dump->packed[byteValue] < 0x10) Serial.write('0');
+            Serial.print(dump->packed[byteValue],HEX);
+        }
+        // print the first 8 packed samples
+        unpackSamples(&dump->packed[20],unpacked);
+        for(byteValue = 0; byteValue < 4; byteValue++) {
+            Serial.write(' ');
+            Serial.print(unpacked[byteValue],HEX);
+        }
+        unpackSamples(&dump->packed[25],unpacked);
+        for(byteValue = 0; byteValue < 4; byteValue++) {
+            Serial.write(' ');
+            Serial.print(unpacked[byteValue],HEX);
+        }
+        Serial.println();
+    }
+}
+
+// =====================================================================
 // Parse the characters ptr[0:1] as a hex string and return the result
 // in the uintValue global. Returns a value > 0xff in case of a parse
 // error. Upper or lower-case hex digits are allowed.
@@ -239,7 +280,8 @@ void loop() {
     else if(pipeline == PIPELINE_BUFFER_DUMP) {
         digitalWrite(RED_LED_PIN,HIGH);
         dump = (const BufferDump*)packetBuffer;
-        Serial.println("DUMP");
+        Serial.print("DUMP ");
+        printBufferDump(dump);
         digitalWrite(RED_LED_PIN,LOW);
     }
     else if(pipeline < 6) {

@@ -50,6 +50,7 @@ extern uint16_t buffer[],*bufptr,delayCycles;
 extern byte counter;
 extern unsigned long timestamp;
 extern void dumpBuffer(byte dumpType,BufferDump *dump);
+extern void unpackSamples(const uint8_t *src, uint16_t *dst);
 
 #define DUMP_BUFFER_POWER_LO 0
 #define DUMP_BUFFER_POWER_HI 1

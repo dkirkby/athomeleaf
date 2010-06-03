@@ -29,7 +29,8 @@ typedef struct { // 29 bytes total
 } LookAtMe;
 
 typedef struct { // 32 bytes total
-    uint16_t header;
+    uint8_t networkID;
+    uint8_t sequenceNumber;
     uint8_t packed[30];
 } BufferDump;
 

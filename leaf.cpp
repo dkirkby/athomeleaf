@@ -125,6 +125,7 @@ void handleConfigUpdate() {
     
     // Use the provided networkID to identify our data packets
     packet.networkID = config.networkID;
+    dump.networkID = config.networkID;
 
     // Remember this config in EEPROM so we have it available in case there
     // is no hub the next time we power up.
@@ -359,7 +360,7 @@ void loop() {
     packet.powerHiGain = rmsPower;
     
     // Dump every 16th sample buffer
-    if((packet.sequenceNumber & 0x0f) == 0) {
+    if(connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 0) {
         for(uintValue = 0; uintValue < 512; uintValue++) {
             buffer[uintValue] = uintValue;
         }

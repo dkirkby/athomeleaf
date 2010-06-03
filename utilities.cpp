@@ -197,9 +197,9 @@ unsigned long timestamp;
 void packSamples(const uint16_t *src, uint8_t *dst) {
     dst[0] = (uint8_t)(src[0] >> 2);
     dst[1] = ((uint8_t)src[0] << 6) | (uint8_t)(src[1] >> 4);
-    dst[2] = ((uint8_t)src[0] << 4) | (uint8_t)(src[1] >> 6);
-    dst[3] = ((uint8_t)src[0] << 2) | (uint8_t)(src[1] >> 8);
-    dst[4] = ((uint8_t)src[0]);
+    dst[2] = ((uint8_t)src[1] << 4) | (uint8_t)(src[2] >> 6);
+    dst[3] = ((uint8_t)src[2] << 2) | (uint8_t)(src[3] >> 8);
+    dst[4] = ((uint8_t)src[3]);
 }
 
 // ---------------------------------------------------------------------
@@ -214,21 +214,24 @@ void unpackSamples(const uint8_t *src, uint16_t *dst) {
 
 // ---------------------------------------------------------------------
 // Dump the buffer contents via the wireless interface. Values are
-// assumed to be 10-bit and packed accordingly.
+// assumed to be 10-bit and packed accordingly. The first 15 bytes
+// of the dump buffer provided will be included in the first packet
+// sent (and overwritten as subsequent packets are sent). The dump
+// buffer should already have its networkID field set.
 // ---------------------------------------------------------------------
-void dumpBuffer(byte dumpType,BufferDump *dump) {
-    // the first packet has a unique header...
-    dump->header = 0;
-    // ...followed by the dump type and timestamp
-    dump->packed[0] = dumpType;
-    dump->packed[1] = 0xff & (timestamp >> 24);
-    dump->packed[2] = 0xff & (timestamp >> 16);
-    dump->packed[3] = 0xff & (timestamp >>  8);
-    dump->packed[4] = 0xff & (timestamp);
-    // ...and the first 12 packed samples
-    packSamples(&buffer[0],&dump->packed[5]);
-    packSamples(&buffer[4],&dump->packed[10]);
-    packSamples(&buffer[8],&dump->packed[15]);
+void dumpBuffer(byte dumpType, BufferDump *dump) {
+    // the first packet can be identified by its zero sequence number
+    dump->sequenceNumber = 0;
+    // skip over the first 15 bytes of packed data then...
+    // ...send the dump type, and timestamp
+    dump->packed[15] = dumpType;
+    dump->packed[16] = 0xff & (timestamp >> 24);
+    dump->packed[17] = 0xff & (timestamp >> 16);
+    dump->packed[18] = 0xff & (timestamp >>  8);
+    dump->packed[19] = 0xff & (timestamp);
+    // ...and the first 8 packed samples
+    packSamples(&buffer[0],&dump->packed[20]);
+    packSamples(&buffer[4],&dump->packed[25]);
     // try to send the first packet now
     if(0x0f < sendNordic(dumpAddress, (byte*)dump, sizeof(BufferDump))) {
         // don't keep going if our first packet didn't get through
