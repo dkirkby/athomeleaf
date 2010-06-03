@@ -89,7 +89,6 @@ extern void lightingAnalysis(float scaleFactor);
 
 // Power analysis
 
-extern unsigned short rmsPower;
 extern void powerAnalysis(float scaleFactor);
 
 // Wireless
