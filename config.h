@@ -5,6 +5,8 @@
 
 #define CAPABILITY_TEMP_FEEDBACK     (1<<0)
 #define CAPABILITY_LIGHT_FEEDBACK    (1<<1)
+#define CAPABILITY_LIGHT_DUMP        (1<<2)
+#define CAPABILITY_POWER_DUMP        (1<<3)
 
 typedef struct {
     unsigned long header; // a fixed header to help filter spurious config packets

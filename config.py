@@ -27,7 +27,7 @@ serialNumber = int(serialNumber,0)
 
 # hard-coded config defaults
 networkID = 0
-capabilities = 0xff
+capabilities = 0x03
 temperatureMin = 7000 # degF x 100
 temperatureMax = 8000 # degF x 100
 
