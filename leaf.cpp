@@ -359,8 +359,9 @@ void loop() {
     powerAnalysis(POWERSCALE_HI);
     packet.powerHiGain = uintValue;
     
-    // Dump every 16th sample buffer
-    if(connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 0) {
+    // Dump every 16th sample buffer if requested
+    if((config.capabilities & CAPABILITY_POWER_DUMP) &&
+        connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 0) {
         /* zero out the dump header */
         for(byteValue = 0; byteValue < 15; byteValue++) dump.packed[byteValue] = 0;
         /* send our floating point RMS in the dump header */
@@ -377,6 +378,16 @@ void loop() {
     powerAnalysis(POWERSCALE_LO);    
     packet.powerLoGain = uintValue;
 
+    // Dump every 16th sample buffer if requested
+    if((config.capabilities & CAPABILITY_POWER_DUMP) &&
+        connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 0) {
+        /* zero out the dump header */
+        for(byteValue = 0; byteValue < 15; byteValue++) dump.packed[byteValue] = 0;
+        /* send our floating point RMS in the dump header */
+        *(float*)(&dump.packed[0]) = floatValue;
+        dumpBuffer(DUMP_BUFFER_POWER_LO,&dump);
+    }
+    
     // update the click threshold based on the new power estimate
     // clickThreshold = (unsigned long)(THRESHOLDSCALE*rmsPower*rmsPower);
     
