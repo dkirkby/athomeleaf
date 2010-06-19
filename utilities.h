@@ -1,7 +1,7 @@
 #ifndef UTILITIES_H
 #define UTILITIES_H
 
-#include "pins.h"
+#include "pins.h" // move into .cpp when STROBE_PIN has been eliminated below
 #include "packet.h"
 
 #include <stdint.h>
@@ -47,12 +47,6 @@ extern uint8_t counter;
 extern uint32_t timestamp;
 extern void dumpBuffer(uint8_t dumpType,BufferDump *dump);
 extern void unpackSamples(const uint8_t *src, uint16_t *dst);
-
-#define DUMP_BUFFER_POWER_LO 0
-#define DUMP_BUFFER_POWER_HI 1
-#define DUMP_BUFFER_LIGHT_LO 2
-#define DUMP_BUFFER_LIGHT_HI 3
-#define DUMP_BUFFER_AC_PHASE 4
 
 // ---------------------------------------------------------------------
 // Do a burst of 256 x 5kHz ADC samples lasting exactly 51,200 us

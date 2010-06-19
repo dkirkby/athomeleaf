@@ -50,6 +50,12 @@ typedef struct { // 29 bytes total
     uint8_t modified;
 } LookAtMe;
 
+#define DUMP_BUFFER_POWER_LO 0
+#define DUMP_BUFFER_POWER_HI 1
+#define DUMP_BUFFER_LIGHT_LO 2
+#define DUMP_BUFFER_LIGHT_HI 3
+#define DUMP_BUFFER_AC_PHASE 4
+
 typedef struct { // 32 bytes total
     uint8_t networkID;
     uint8_t sequenceNumber;
