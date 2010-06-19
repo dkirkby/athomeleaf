@@ -23,17 +23,11 @@ extern float floatValue;
 
 // Printing support for float values
 
-#define printFloat(x,m) { floatToPrint = (x); printMultiplier = (m); _printFloat(); }
+#define PRINT_FLOAT(x,m) { floatToPrint = (x); printMultiplier = (m); _printFloat(); }
 
 extern float floatToPrint;
 extern uint32_t multiplier;
 extern void _printFloat(void);
-
-// Support for optional 16x2 LCD
-void LCDinit(uint8_t backlightLevel = 5); // range is 0 (off) to 29 (max)
-void LCDprint(const char *line1, const char *line2 = 0);
-void LCDclear();
-void LCDpos(uint8_t row, uint8_t col=0);
 
 // Geiger-clicking support 
 

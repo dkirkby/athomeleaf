@@ -6,16 +6,15 @@
 // Copyright (c) 2010 David Kirkby dkirkby@uci.edu
 // =====================================================================
 
-#include "WProgram.h" // arduino header
-
 #include "serialno.h"
 #include "wireless.h"
 #include "packet.h"
 #include "pins.h"
 #include "utilities.h"
 #include "audio.h"
+#include "lcd.h"
 
-#define PRINT_SUMMARY
+#include "WProgram.h" // arduino header
 
 // ---------------------------------------------------------------------
 // Connection state machine
@@ -519,7 +518,6 @@ void loop() {
     //----------------------------------------------------------------------
     // Display readings on the optional LCD
     //----------------------------------------------------------------------
-#ifdef PRINT_SUMMARY
     LCDclear();
     Serial.print(packet.lightLevelHiGain,HEX);
     LCDpos(0,4);
@@ -540,7 +538,6 @@ void loop() {
     Serial.print(packet.sequenceNumber,HEX);
     LCDpos(1,14);
     Serial.print(packet.status,HEX);
-#endif
 }
 
 int main(void) {
