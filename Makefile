@@ -220,7 +220,9 @@ LIBOBJ = $(CORE_C_OBJ) $(CORE_CPP_OBJ) $(LOCAL_CPP_OBJ)
 sram : elf
 	$(NM) -n $(BUILD_DIR)/$(TARGET).elf
 
-$(BUILD_DIR): elf hex asm
+# Add 'asm' to to this list to always create an assembly listing
+##$(BUILD_DIR): elf hex asm
+$(BUILD_DIR): elf hex
 
 elf: $(BUILD_DIR)/$(TARGET).elf
 hex: $(BUILD_DIR)/$(TARGET).hex
