@@ -7,7 +7,8 @@
 // Copyright (c) 2010 David Kirkby dkirkby@uci.edu
 // =====================================================================
 
-#include "utilities.h"
+#include "serialno.h"
+#include "wireless.h"
 
 // ---------------------------------------------------------------------
 // Declare our 'look-at-me' packet

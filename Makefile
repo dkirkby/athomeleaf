@@ -6,8 +6,8 @@
 
 # --------------------------------------------------------------------------
 # The name of the top-level program to build:
-# Select 'athome' for the monitoring program
-# Select 'hub' for the hub program
+# Select 'leaf' for the plug-in devices
+# Select 'hub' for the usb-nordic interface embedded within a hub
 # --------------------------------------------------------------------------
 TARGET = leaf
 
