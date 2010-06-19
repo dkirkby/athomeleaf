@@ -3,7 +3,6 @@
 #include "pins.h"
 #include "mirf.h"
 #include "packet.h"
-#include "config.h"
 
 // ---------------------------------------------------------------------
 // Configuration data read from EEPROM
