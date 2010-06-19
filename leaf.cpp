@@ -13,6 +13,7 @@
 #include "packet.h"
 #include "pins.h"
 #include "utilities.h"
+#include "audio.h"
 
 #define PRINT_SUMMARY
 

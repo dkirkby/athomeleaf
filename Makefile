@@ -54,7 +54,8 @@ CORE_CPP_SRC = HardwareSerial.cpp WMath.cpp Print.cpp
 # --------------------------------------------------------------------------
 # The local C++ sources to use
 # --------------------------------------------------------------------------
-LOCAL_CPP_SRC = serialno.cpp Spi.cpp mirf.cpp wireless.cpp utilities.cpp
+LOCAL_CPP_SRC = serialno.cpp Spi.cpp mirf.cpp wireless.cpp \
+	utilities.cpp audio.cpp random.cpp
 
 # ==========================================================================
 # Target device configuration
