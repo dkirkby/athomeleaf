@@ -1,11 +1,12 @@
 #ifndef PACKET_H
 #define PACKET_H
 // =====================================================================
-// Declares the packet data structures used for wireless communication
-// between the leaf nodes and the hub.
+// Declares the packet data structures used for
+// wireless communication between the leaf nodes and the hub.
 //
 // Copyright (c) 2010 David Kirkby dkirkby@uci.edu
 // =====================================================================
+#include <stdint.h>
 
 #define CONFIG_HEADER 0xDeadBeef
 
@@ -15,11 +16,11 @@
 #define CAPABILITY_POWER_DUMP        (1<<3)
 
 typedef struct {
-    unsigned long header; // a fixed header to help filter spurious config packets
-    byte networkID; // a short identifier that uniquely identifies us on our local network
-    byte capabilities; // a bitmask of user-selectable device capabilities
-    unsigned short temperatureMin; // comfort zone upper limit (degF x 100)
-    unsigned short temperatureMax; // comfort zone lower limit (degF x 100)
+    uint32_t header; // a fixed header to help filter spurious config packets
+    uint8_t networkID; // a short identifier that uniquely identifies us on our local network
+    uint8_t capabilities; // a bitmask of user-selectable device capabilities
+    uint16_t temperatureMin; // comfort zone upper limit (degF x 100)
+    uint16_t temperatureMax; // comfort zone lower limit (degF x 100)
 } Config;
 
 #define STATUS_NUM_RETRANSMIT_MASK 0x0f
@@ -54,5 +55,27 @@ typedef struct { // 32 bytes total
     uint8_t sequenceNumber;
     uint8_t packed[30];
 } BufferDump;
+
+// ---------------------------------------------------------------------
+// Packs four consecutive 10-bit samples stored in the 16-bit words
+// src[0:3] into the five consecutive bytes dst[0:4].
+// ---------------------------------------------------------------------
+inline void packSamples(const uint16_t *src, uint8_t *dst) {
+    dst[0] = (uint8_t)(src[0] >> 2);
+    dst[1] = ((uint8_t)src[0] << 6) | (uint8_t)(src[1] >> 4);
+    dst[2] = ((uint8_t)src[1] << 4) | (uint8_t)(src[2] >> 6);
+    dst[3] = ((uint8_t)src[2] << 2) | (uint8_t)(src[3] >> 8);
+    dst[4] = ((uint8_t)src[3]);
+}
+
+// ---------------------------------------------------------------------
+// Unpacks the dump buffer packing performed by packSamples
+// ---------------------------------------------------------------------
+inline void unpackSamples(const uint8_t *src, uint16_t *dst) {
+    dst[0] = (src[0] << 2) | (src[1] >> 6);
+    dst[1] = ((src[1] & 0x3f) << 4) | (src[2] >> 4);
+    dst[2] = ((src[2] & 0x0f) << 6) | (src[3] >> 2);
+    dst[3] = ((src[3] & 0x03) << 8) | (src[4]);
+}
 
 #endif

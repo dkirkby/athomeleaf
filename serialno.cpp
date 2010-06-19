@@ -13,6 +13,6 @@
 // =====================================================================
 // Returns our 32-bit serial number read from EEPROM
 // =====================================================================
-unsigned long serialNumber() {
+uint32_t serialNumber() {
     return eeprom_read_dword((uint32_t*)SERIAL_NUMBER_ADDR);
 }

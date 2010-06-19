@@ -1,4 +1,17 @@
+// =====================================================================
+// The leaf program runs on an embedded microcontroller collecting
+// sensor data, giving immediate audio-visual feedback and sending
+// sensor data wirelessly to a hub.
+//
+// Copyright (c) 2010 David Kirkby dkirkby@uci.edu
+// =====================================================================
+
+#include "serialno.h"
+#include "wireless.h"
+#include "packet.h"
 #include "utilities.h"
+
+#include "WProgram.h" // arduino header
 
 #define PRINT_SUMMARY
 

@@ -1,19 +1,13 @@
 #include "WProgram.h"
 #include <math.h>
 #include "pins.h"
-#include "mirf.h"
 #include "packet.h"
 
 // ---------------------------------------------------------------------
 // Configuration data read from EEPROM
 // ---------------------------------------------------------------------
-#define SERIAL_NUMBER_ADDR 0x10 // EEPROM offset where the serial number starts
 #define CONFIG_ADDR        0x14 // EEPROM offset where saved config data starts
 
-#define HUB_SERIAL_NUMBER_MASK 0xff000000 // all hubs have these bits set in their SN
-#define IS_HUB(sn) (((sn) & HUB_SERIAL_NUMBER_MASK) == HUB_SERIAL_NUMBER_MASK)
-
-extern unsigned long serialNumber();
 void loadConfig(Config *config);
 void saveConfig(const Config *config);
 
@@ -90,27 +84,6 @@ extern void lightingAnalysis(float scaleFactor, BufferDump *dump);
 
 extern void powerAnalysis(float scaleFactor, BufferDump *dump);
 extern void phaseAnalysis(BufferDump *dump);
-
-// Wireless
-
-#define RADIO_CHANNEL 0
-#define NORDIC_ADDR_LEN 3
-#define NORDIC_MAX_RETRIES 15
-
-// Hub pipelines
-#define PIPELINE_DATA        1
-#define PIPELINE_LOOK_AT_ME  2
-#define PIPELINE_BUFFER_DUMP 3
-
-// Leaf pipelines
-#define PIPELINE_CONFIG     1
-
-extern byte nordicOK;
-extern byte idleAddress[],dataAddress[],configAddress[],lamAddress[],dumpAddress[];
-
-extern void initNordic(unsigned long serialNumber);
-extern byte getNordic(byte *payload, byte payloadSize);
-extern byte sendNordic(byte *address, byte *payload, byte payloadSize);
 
 // Signalling
 

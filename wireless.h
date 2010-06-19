@@ -5,6 +5,7 @@
 //
 // Copyright (c) 2010 David Kirkby dkirkby@uci.edu
 // =====================================================================
+#include <stdint.h> // for uint8_t,uint32_t
 
 // Hub pipelines
 #define PIPELINE_DATA        1
@@ -14,11 +15,11 @@
 // Leaf pipelines
 #define PIPELINE_CONFIG      1
 
-extern byte nordicOK;
-extern byte idleAddress[],dataAddress[],configAddress[],lamAddress[],dumpAddress[];
+extern uint8_t nordicOK;
+extern uint8_t idleAddress[],dataAddress[],configAddress[],lamAddress[],dumpAddress[];
 
-extern void initNordic(unsigned long serialNumber);
-extern byte getNordic(byte *payload, byte payloadSize);
-extern byte sendNordic(byte *address, byte *payload, byte payloadSize);
+extern void initNordic(uint32_t serialNumber);
+extern uint8_t getNordic(uint8_t *payload, uint8_t payloadSize);
+extern uint8_t sendNordic(uint8_t *address, uint8_t *payload, uint8_t payloadSize);
 
 #endif

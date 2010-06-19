@@ -12,6 +12,9 @@
 // Wireless packet formats
 #include "packet.h"
 
+// Use the serial number to customize the nordic configuration
+#include "serialno.h"
+
 // Serial Peripheral Interface (SPI) pin assignments
 #define SPI_SSEL        10
 #define SPI_MOSI        11
@@ -29,21 +32,21 @@
 
 // Global status byte indicates if the nordic transceiver is alive (which
 // does not require that anyone is listening)
-byte nordicOK;
+uint8_t nordicOK;
 
 // Nordic Tx/Rx addresses: should not alternate 101010... or have only one
 // level transition. First array element is least-significant byte.
-byte idleAddress[NORDIC_ADDR_LEN] =   { 0xEE, 0xEE, 0xEE };
+uint8_t idleAddress[NORDIC_ADDR_LEN] =   { 0xEE, 0xEE, 0xEE };
 // The least-significant 2 bytes [0:1] of the config address will be set based
 // on a leaf node's serial number in initNoridc()
-byte configAddress[NORDIC_ADDR_LEN] = { 0xFF, 0xFF, 0x9A };
+uint8_t configAddress[NORDIC_ADDR_LEN] = { 0xFF, 0xFF, 0x9A };
 // The following addresses must have the same last two (most-significant) bytes
-byte dataAddress[NORDIC_ADDR_LEN] =   { 0xF2, 0xF2, 0xF2 };
-byte lamAddress[NORDIC_ADDR_LEN]=     { 0xC6, 0xF2, 0xF2 };
-byte dumpAddress[NORDIC_ADDR_LEN]=    { 0xA7, 0xF2, 0xF2 };
+uint8_t dataAddress[NORDIC_ADDR_LEN] =   { 0xF2, 0xF2, 0xF2 };
+uint8_t lamAddress[NORDIC_ADDR_LEN]=     { 0xC6, 0xF2, 0xF2 };
+uint8_t dumpAddress[NORDIC_ADDR_LEN]=    { 0xA7, 0xF2, 0xF2 };
 
 // Locally shared globals
-static byte _wirelessByte;
+static uint8_t _wirelessByte;
 
 // =====================================================================
 // Initializes the Nordic nRF24L01+ transciever. Sets the value of
@@ -53,7 +56,7 @@ static byte _wirelessByte;
 // for hub / leaf operation based on the serial number provided.
 // =====================================================================
 
-void initNordic(unsigned long serialNumber) {
+void initNordic(uint32_t serialNumber) {
     
     // nordic wireless initialization
     Mirf.csnPin = SPI_SSEL;
@@ -79,7 +82,7 @@ void initNordic(unsigned long serialNumber) {
     // retransmit delays based on the low-order bits of the serial number:
     // 1250,1500,1750,2000us.
     Mirf.configRegister(SETUP_RETR,
-        NORDIC_MAX_RETRIES | 0x40 | ((byte)(serialNumber & 3) << 4));
+        NORDIC_MAX_RETRIES | 0x40 | ((uint8_t)(serialNumber & 3) << 4));
     
     // Use a 1-byte CRC which catches all error bursts that last for no
     // more than 8 bits (32us at 250 kbps) and catches 255/256 = 99.61%
@@ -123,8 +126,8 @@ void initNordic(unsigned long serialNumber) {
     }
     else {
         // Use a per-device config address based on our serial number
-        configAddress[0] = (byte)(serialNumber & 0xff);
-        configAddress[1] = (byte)((serialNumber >> 8) & 0xff);
+        configAddress[0] = (uint8_t)(serialNumber & 0xff);
+        configAddress[1] = (uint8_t)((serialNumber >> 8) & 0xff);
         // P1 listens for Config packets
         Mirf.writeRegister(RX_ADDR_P1,configAddress,NORDIC_ADDR_LEN);
     	Mirf.configRegister(RX_PW_P1,sizeof(Config));
@@ -159,7 +162,7 @@ void initNordic(unsigned long serialNumber) {
 // garbage bytes.
 // =====================================================================
 
-byte getNordic(byte *payload, byte payloadSize) {
+uint8_t getNordic(uint8_t *payload, uint8_t payloadSize) {
 
     if(!nordicOK) return 0xff;
 
@@ -203,7 +206,7 @@ byte getNordic(byte *payload, byte payloadSize) {
 // initialized by initNordic().
 // =====================================================================
 
-byte sendNordic(byte *address, byte *payload, byte payloadSize) {
+uint8_t sendNordic(uint8_t *address, uint8_t *payload, uint8_t payloadSize) {
 
     if(!nordicOK)  return 0xff;
     
@@ -252,7 +255,7 @@ byte sendNordic(byte *address, byte *payload, byte payloadSize) {
     // Wait until the transmission is complete or fails
     Mirf.readRegister(STATUS,&_wirelessByte,1);
     // does this loop need a timeout? (no problems so far)
-    while((_wirelessByte & (byte)((1 << MAX_RT)|(1 << TX_DS))) == 0) {
+    while((_wirelessByte & (uint8_t)((1 << MAX_RT)|(1 << TX_DS))) == 0) {
         Mirf.readRegister(STATUS,&_wirelessByte,1);
     }
     
@@ -261,7 +264,7 @@ byte sendNordic(byte *address, byte *payload, byte payloadSize) {
 
     // Fetch the contents of the transmit observe register, which gives
     // statistics on retransmissions. We will return this at the end.
-    Mirf.readRegister(OBSERVE_TX,(byte*)&_wirelessByte,1);
+    Mirf.readRegister(OBSERVE_TX,(uint8_t*)&_wirelessByte,1);
     
     // In case we dropped any packets, reset the counter now.
     if(_wirelessByte & 0xf0) {

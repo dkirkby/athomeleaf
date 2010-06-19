@@ -9,6 +9,9 @@
 
 #include "serialno.h"
 #include "wireless.h"
+#include "packet.h"
+
+#include "WProgram.h" // arduino header
 
 // ---------------------------------------------------------------------
 // Declare our 'look-at-me' packet
@@ -24,10 +27,10 @@ LookAtMe LAM = {
 
 // A pipeline number allows us to distinguish between different types
 // of incoming wireless messages. 
-byte pipeline;
+uint8_t pipeline;
 
 // Define a buffer big enough for any nordic packet.
-byte packetBuffer[32];
+uint8_t packetBuffer[32];
 
 // Use the pipeline number to cast the generic buffer to a pointer
 // of the appropriate packet type.
@@ -38,11 +41,15 @@ const BufferDump *dump;
 // Serial input will be buffered here until we reach a newline that
 // indicates a complete command.
 #define SERIAL_BUFFER_SIZE 128
-byte serialBuffer[SERIAL_BUFFER_SIZE];
-byte serialBytes = 0;
+uint8_t serialBuffer[SERIAL_BUFFER_SIZE];
+uint8_t serialBytes = 0;
 
 // Config data received via serial input will be assembled here
 Config configData;
+
+// Private globals used as shared temporaries to avoid stack locals
+static uint8_t _byteValue;
+static uint16_t _uintValue;
 
 // =====================================================================
 // Dump the contents of a Look-at-Me packet to the serial port on
@@ -50,18 +57,18 @@ Config configData;
 // =====================================================================
 
 void printLookAtMe(const LookAtMe *lam) {
-    byte index;
+    uint8_t index;
 
     Serial.print(lam->serialNumber,HEX);
     Serial.write(' ');
     Serial.print(lam->commitTimestamp,DEC);
     Serial.write(' ');
     for(index = 0; index < 20; index++) {
-        byteValue = lam->commitID[index];
-        if(byteValue < 0x10) {
+        _byteValue = lam->commitID[index];
+        if(_byteValue < 0x10) {
             Serial.write('0');
         }
-        Serial.print(byteValue,HEX);
+        Serial.print(_byteValue,HEX);
     }
     Serial.write(' ');
     Serial.println(lam->modified,DEC);    
@@ -80,42 +87,42 @@ void printBufferDump(const BufferDump *dump) {
     if(dump->sequenceNumber == 0) {
         Serial.write(' ');
         // dump the first 15 bytes as one long hex string
-        for(byteValue = 0; byteValue < 15; byteValue++) {
-            if(dump->packed[byteValue] < 0x10) Serial.write('0');
-            Serial.print(dump->packed[byteValue],HEX);
+        for(_byteValue = 0; _byteValue < 15; _byteValue++) {
+            if(dump->packed[_byteValue] < 0x10) Serial.write('0');
+            Serial.print(dump->packed[_byteValue],HEX);
         }
         Serial.write(' ');
         // print the dump type
         Serial.print(dump->packed[15],HEX);
         Serial.write(' ');
         // print the timestamp
-        for(byteValue = 16; byteValue < 20; byteValue++) {
-            if(dump->packed[byteValue] < 0x10) Serial.write('0');
-            Serial.print(dump->packed[byteValue],HEX);
+        for(_byteValue = 16; _byteValue < 20; _byteValue++) {
+            if(dump->packed[_byteValue] < 0x10) Serial.write('0');
+            Serial.print(dump->packed[_byteValue],HEX);
         }
         // print the first 8 packed samples
         unpackSamples(&dump->packed[20],unpacked);
-        for(byteValue = 0; byteValue < 4; byteValue++) {
+        for(_byteValue = 0; _byteValue < 4; _byteValue++) {
             Serial.write(' ');
-            Serial.print(unpacked[byteValue],HEX);
+            Serial.print(unpacked[_byteValue],HEX);
         }
         unpackSamples(&dump->packed[25],unpacked);
-        for(byteValue = 0; byteValue < 4; byteValue++) {
+        for(_byteValue = 0; _byteValue < 4; _byteValue++) {
             Serial.write(' ');
-            Serial.print(unpacked[byteValue],HEX);
+            Serial.print(unpacked[_byteValue],HEX);
         }
     }
     else {
         // The next 21 packets have identical formats and pack 24
         // 10-bit ADC samples into 30 bytes. We unpack each sample
         // and print its hex value here.
-        for(byteValue = 0; byteValue < 24; byteValue++) {
-            if(byteValue % 4 == 0) {
+        for(_byteValue = 0; _byteValue < 24; _byteValue++) {
+            if(_byteValue % 4 == 0) {
                 // refill our array of unpacked data
-                unpackSamples(&dump->packed[5*(byteValue>>2)],unpacked);
+                unpackSamples(&dump->packed[5*(_byteValue>>2)],unpacked);
             }
             Serial.write(' ');
-            Serial.print(unpacked[byteValue % 4],HEX);
+            Serial.print(unpacked[_byteValue % 4],HEX);
         }
     }
     Serial.println();
@@ -127,32 +134,32 @@ void printBufferDump(const BufferDump *dump) {
 // error. Upper or lower-case hex digits are allowed.
 // =====================================================================
 
-void parseHex(byte *ptr) {
-    uintValue = 0;
+void parseHex(uint8_t *ptr) {
+    _uintValue = 0;
     if(*ptr >= '0' && *ptr <= '9') {
-        uintValue = (*ptr-'0') << 4;
+        _uintValue = (*ptr-'0') << 4;
     }
     else if(*ptr >= 'A' && *ptr <= 'F') {
-        uintValue = ((*ptr-'A') + 0xA) << 4;
+        _uintValue = ((*ptr-'A') + 0xA) << 4;
     }
     else if(*ptr >= 'a' && *ptr <= 'f') {
-        uintValue = ((*ptr-'a') + 0xA) << 4;
+        _uintValue = ((*ptr-'a') + 0xA) << 4;
     }
     else {
-        uintValue = 0x100;
+        _uintValue = 0x100;
     }
     ptr++;
     if(*ptr >= '0' && *ptr <= '9') {
-        uintValue |= (*ptr-'0');
+        _uintValue |= (*ptr-'0');
     }
     else if(*ptr >= 'A' && *ptr <= 'F') {
-        uintValue |= ((*ptr-'A') + 0xA);
+        _uintValue |= ((*ptr-'A') + 0xA);
     }
     else if(*ptr >= 'a' && *ptr <= 'f') {
-        uintValue |= ((*ptr-'a') + 0xA);
+        _uintValue |= ((*ptr-'a') + 0xA);
     }
     else {
-        uintValue |= 0x200;
+        _uintValue |= 0x200;
     }
 }
 
@@ -161,9 +168,9 @@ void parseHex(byte *ptr) {
 // zero for success or else a non-zero error code (1-6).
 // =====================================================================
 
-byte handleConfigCommand() {
+uint8_t handleConfigCommand() {
 
-    byte *ptr;
+    uint8_t *ptr;
 
     // A valid config command looks like:
     // C ssssssss dddddd...dd\0
@@ -181,30 +188,30 @@ byte handleConfigCommand() {
     // Extract the least-significant 2 bytes of serial number and
     // copy them into the configAddress buffer
     parseHex(serialBuffer+6);
-    if(uintValue > 0xff) return 3;
-    configAddress[1] = (byte)uintValue;
+    if(_uintValue > 0xff) return 3;
+    configAddress[1] = (uint8_t)_uintValue;
     parseHex(serialBuffer+8);
-    if(uintValue > 0xff) return 4;
-    configAddress[0] = (byte)uintValue;
+    if(_uintValue > 0xff) return 4;
+    configAddress[0] = (uint8_t)_uintValue;
 
     // Config data always starts with a fixed header
     configData.header = CONFIG_HEADER;
 
     // Do a byte-wise copy of data from the command into the
     // remaining bytes of our config buffer
-    ptr = (byte*)&configData + sizeof(configData.header);
-    byteValue = 11;
-    while(byteValue < serialBytes-1) { // up to but not including the final \0
-        parseHex(serialBuffer + byteValue);
-        if(uintValue > 0xff) return 5;
-        *ptr++ = (byte)uintValue;
-        byteValue += 2;
+    ptr = (uint8_t*)&configData + sizeof(configData.header);
+    _byteValue = 11;
+    while(_byteValue < serialBytes-1) { // up to but not including the final \0
+        parseHex(serialBuffer + _byteValue);
+        if(_uintValue > 0xff) return 5;
+        *ptr++ = (uint8_t)_uintValue;
+        _byteValue += 2;
     }
 
     // If we get here, configAdddress and configData should be ready to go.
     // Send the config packet now.
-    byteValue = sendNordic(configAddress,(byte*)&configData,sizeof(configData));
-    if(byteValue > 0x0f) {
+    _byteValue = sendNordic(configAddress,(uint8_t*)&configData,sizeof(configData));
+    if(_byteValue > 0x0f) {
         // Config packet was never acknowledged
         return 6;
     }
@@ -250,7 +257,6 @@ void loop() {
     // is there any wireless data in our receive pipeline?
     pipeline = getNordic(packetBuffer,32);
     if(pipeline == PIPELINE_DATA) {
-        digitalWrite(RED_LED_PIN,HIGH);
         data = (const DataPacket*)packetBuffer;
         Serial.print("DATA ");
         Serial.print(data->networkID,HEX);
@@ -274,21 +280,16 @@ void loop() {
         Serial.print(data->light120HzHiGain,HEX);
         Serial.write(' ');
         Serial.println(data->temperature,HEX);
-        digitalWrite(RED_LED_PIN,LOW);
     }
     else if(pipeline == PIPELINE_LOOK_AT_ME) {
-        digitalWrite(RED_LED_PIN,HIGH);
         lam = (const LookAtMe*)packetBuffer;
         Serial.print("LAM ");
         printLookAtMe(lam);
-        digitalWrite(RED_LED_PIN,LOW);
     }
     else if(pipeline == PIPELINE_BUFFER_DUMP) {
-        digitalWrite(RED_LED_PIN,HIGH);
         dump = (const BufferDump*)packetBuffer;
         Serial.print("DUMP ");
         printBufferDump(dump);
-        digitalWrite(RED_LED_PIN,LOW);
     }
     else if(pipeline < 6) {
         Serial.print("LOG 2 ");  /* Unexpected data in pipeline */
@@ -300,18 +301,18 @@ void loop() {
     }
     // Is there any serial input data?
     while(Serial.available() > 0 && serialBytes < SERIAL_BUFFER_SIZE) {
-        if((serialBuffer[serialBytes++]= (byte)Serial.read()) == '\n') {
+        if((serialBuffer[serialBytes++]= (uint8_t)Serial.read()) == '\n') {
             // we now have a complete command in the buffer
             serialBuffer[serialBytes-1] = '\0';
             // we only accept a config command (for now) - handle it here
-            byteValue = handleConfigCommand();
-            if(0 == byteValue) {
+            _byteValue = handleConfigCommand();
+            if(0 == _byteValue) {
                 Serial.print("LOG 4 "); /* config command successfully handled */
                 Serial.println(configData.networkID,DEC);
             }
             else {
                 Serial.print("LOG 5 "); /* config handler reported an error */
-                Serial.println(byteValue,DEC);
+                Serial.println(_byteValue,DEC);
             }
             // Reset the serial buffer
             serialBytes = 0;
