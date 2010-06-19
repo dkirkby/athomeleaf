@@ -13,6 +13,17 @@
 
 #include "WProgram.h" // arduino header
 
+#define ADC_TO_MV 4.8828125 // assuming V(ref) = 5000 mV
+#define MV_TO_DEGF 0.1 // nominal conversion for LM34
+
+// based on values in the HIH-5030 datasheet
+#define RH_SLOPE 0.1535475629 // 1/(1024*0.00636)
+#define RH_OFFSET 23.820754717 // 0.1515/0.00636
+
+// Sensor ADC pin assignments
+#define HUB_HUMIDITY_PIN 0
+#define HUB_TEMPERATURE_PIN 6
+
 // ---------------------------------------------------------------------
 // Declare our 'look-at-me' packet
 // ---------------------------------------------------------------------
@@ -46,6 +57,15 @@ uint8_t serialBytes = 0;
 
 // Config data received via serial input will be assembled here
 Config configData;
+
+#define SENSOR_READING_PERIOD 100 // interval in ms between readings
+#define SENSOR_READING_COUNT 10 // number of readings to accumulate for each update
+
+// Sensor reading globals
+uint32_t now,lastReading = 0;
+uint16_t elapsed,nSensorSum = 0;
+uint32_t temperatureSum,humiditySum;
+float temperature,humidity;
 
 // Private globals used as shared temporaries to avoid stack locals
 static uint8_t _byteValue;
@@ -322,6 +342,34 @@ void loop() {
             Serial.print("LOG 6 "); /* serial buffer overflow */
             Serial.println(SERIAL_BUFFER_SIZE,DEC);
             serialBytes = 0;
+        }
+    }
+    // Is it time for periodic sensor readings?
+    now = millis();
+    if(now < lastReading) {
+        elapsed = (uint16_t)(0xFFFFFFFF - lastReading + now);
+    }
+    else {
+        elapsed = (uint16_t)(now - lastReading);
+    }
+    if(elapsed >= SENSOR_READING_PERIOD) {
+        temperatureSum += analogRead(HUB_TEMPERATURE_PIN);
+        humiditySum += analogRead(HUB_HUMIDITY_PIN);
+        lastReading = now;
+        nSensorSum++;
+        // time to report sensor readings?
+        if(nSensorSum >= SENSOR_READING_COUNT) {
+            Serial.print("SENS ");
+            // calculate the temperature in degF
+            temperature = (temperatureSum*ADC_TO_MV*MV_TO_DEGF)/nSensorSum;
+            Serial.print(temperature);
+            Serial.write(' ');
+            // calculate the relative humidity in percent
+            humidity = (humiditySum*RH_SLOPE)/nSensorSum - RH_OFFSET;
+            Serial.println(humidity);
+            // reset for next accumulation cycle
+            temperatureSum = humiditySum = 0;
+            nSensorSum = 0;
         }
     }
 }
