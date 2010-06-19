@@ -232,9 +232,9 @@ asm:
 	$(CC) -S $(ALL_CXXFLAGS) utilities.cpp -o $(BUILD_DIR)/utilties.s
 
 # --------------------------------------------------------------------------
-# Re-compile the target and library if any of these headers changes
+# Re-compile the target and library if any headers changes
 # --------------------------------------------------------------------------
-HEADERS = packet.h utilities.h pins.h Mirf.h nRF24L01.h Spi.h
+HEADERS := $(wildcard *.h)
 
 $(BUILD_DIR)/$(TARGET).elf : $(HEADERS)
 
