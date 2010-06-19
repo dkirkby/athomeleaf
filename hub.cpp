@@ -222,17 +222,8 @@ void setup() {
     // copy our serial number from EEPROM to our LAM buffer
     LAM.serialNumber = serialNumber();
 
-    pinMode(PIEZO_PIN,OUTPUT);
-    pinMode(RED_LED_PIN,OUTPUT);
-    pinMode(STROBE_PIN,OUTPUT);
-    
     // startup the serial port
     Serial.begin(115200);
-    
-    // tell the world we are alive
-    cricket();
-    delay(500);
-    bird();
     
     // print out our look-at-me config data (leading \n\n ensures that this
     // message is cleanly detected even with garbage in the serial input buffer)
@@ -254,6 +245,7 @@ void setup() {
 // =====================================================================
 
 void loop() {
+    
     // is there any wireless data in our receive pipeline?
     pipeline = getNordic(packetBuffer,32);
     if(pipeline == PIPELINE_DATA) {
