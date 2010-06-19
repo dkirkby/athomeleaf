@@ -13,7 +13,7 @@
 
 #include "WProgram.h" // arduino header
 
-#define ADC_TO_MV 4.8828125 // assuming V(ref) = 5000 mV
+#define ADC_TO_MV 4.79421875 // 4910 mV / 1024
 #define MV_TO_DEGF 0.1 // nominal conversion for LM34
 
 // based on values in the HIH-5030 datasheet
@@ -23,6 +23,10 @@
 // Sensor ADC pin assignments
 #define HUB_HUMIDITY_PIN 0
 #define HUB_TEMPERATURE_PIN 6
+
+// report sensor readings every minute ( = 600 x 100ms)
+#define SENSOR_READING_PERIOD 100 // interval in ms between readings
+#define SENSOR_READING_COUNT 600 // number of readings to accumulate for each update
 
 // ---------------------------------------------------------------------
 // Declare our 'look-at-me' packet
@@ -57,9 +61,6 @@ uint8_t serialBytes = 0;
 
 // Config data received via serial input will be assembled here
 Config configData;
-
-#define SENSOR_READING_PERIOD 100 // interval in ms between readings
-#define SENSOR_READING_COUNT 10 // number of readings to accumulate for each update
 
 // Sensor reading globals
 uint32_t now,lastReading = 0;
@@ -366,6 +367,9 @@ void loop() {
             Serial.write(' ');
             // calculate the relative humidity in percent
             humidity = (humiditySum*RH_SLOPE)/nSensorSum - RH_OFFSET;
+            // apply temperature correction
+            temperature = (temperature - 32.0)/1.8; // degF -> degC
+            humidity /= (1.0546 - 0.00216*temperature);
             Serial.println(humidity);
             // reset for next accumulation cycle
             temperatureSum = humiditySum = 0;
