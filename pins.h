@@ -1,5 +1,7 @@
+#ifndef PINS_H
+#define PINS_H
 // ---------------------------------------------------------------------
-// Pin Assignments
+// Leaf node MCU I/O pin assignments
 // ---------------------------------------------------------------------
 
 // analog inputs:
@@ -20,12 +22,6 @@
 #define GREEN_LED_PIN    5
 #define AMBER_LED_PIN    6
 
-// Serial Peripheral Interface pins (SPI)
-#define SPI_SSEL        10
-#define SPI_MOSI        11
-#define SPI_MISO        12
-#define SPI_SCLK        13
-
 // digital I/O: use pins 2,4,5,6,7,8
 // reserved: 0,1(UART); 3,5,6,9(PWM); 10-13(SPI)
 #define PIEZO_PIN        2
@@ -33,7 +29,6 @@
 #define RED_LED_PIN      3
 #define BLUE_LED_PIN     4
 
-#define NORDIC_CE        8
-#define NORDIC_IRQ       7
-
 #define STROBE_PIN       9
+
+#endif

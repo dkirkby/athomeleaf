@@ -1,7 +1,10 @@
-#include "WProgram.h"
-#include <math.h>
+#ifndef UTILITIES_H
+#define UTILITIES_H
+
 #include "pins.h"
 #include "packet.h"
+
+#include <stdint.h>
 
 // ---------------------------------------------------------------------
 // Configuration data read from EEPROM
@@ -14,8 +17,8 @@ void saveConfig(const Config *config);
 // ---------------------------------------------------------------------
 // Shared globals
 // ---------------------------------------------------------------------
-extern byte byteValue;
-extern unsigned int uintValue;
+extern uint8_t byteValue;
+extern uint16_t uintValue;
 extern float floatValue;
 
 // Printing support for float values
@@ -23,26 +26,26 @@ extern float floatValue;
 #define printFloat(x,m) { floatToPrint = (x); printMultiplier = (m); _printFloat(); }
 
 extern float floatToPrint;
-extern unsigned long multiplier;
+extern uint32_t multiplier;
 extern void _printFloat(void);
 
 // Support for optional 16x2 LCD
-void LCDinit(byte backlightLevel = 5); // range is 0 (off) to 29 (max)
+void LCDinit(uint8_t backlightLevel = 5); // range is 0 (off) to 29 (max)
 void LCDprint(const char *line1, const char *line2 = 0);
 void LCDclear();
-void LCDpos(byte row, byte col=0);
+void LCDpos(uint8_t row, uint8_t col=0);
 
 // Geiger-clicking support 
 
-extern unsigned long clickThreshold;
+extern uint32_t clickThreshold;
 extern void tick(void);
 
 // Synchronous sampling
 
 extern uint16_t buffer[],*bufptr,delayCycles;
-extern byte counter;
-extern unsigned long timestamp;
-extern void dumpBuffer(byte dumpType,BufferDump *dump);
+extern uint8_t counter;
+extern uint32_t timestamp;
+extern void dumpBuffer(uint8_t dumpType,BufferDump *dump);
 extern void unpackSamples(const uint8_t *src, uint16_t *dst);
 
 #define DUMP_BUFFER_POWER_LO 0
@@ -77,7 +80,7 @@ extern void unpackSamples(const uint8_t *src, uint16_t *dst);
 
 // Lighting analysis
 
-extern unsigned short lightingMean,lighting120Hz;
+extern uint16_t lightingMean,lighting120Hz;
 extern void lightingAnalysis(float scaleFactor, BufferDump *dump);
 
 // Power analysis
@@ -87,6 +90,8 @@ extern void phaseAnalysis(BufferDump *dump);
 
 // Signalling
 
-extern void chirp(byte,byte);
-extern void tone(unsigned int, unsigned int);
-extern void cricket(),bird(byte repetions=3);
+extern void chirp(uint8_t,uint8_t);
+extern void tone(uint16_t, uint16_t);
+extern void cricket(),bird(uint8_t repetions=3);
+
+#endif

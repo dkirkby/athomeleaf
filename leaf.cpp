@@ -6,12 +6,13 @@
 // Copyright (c) 2010 David Kirkby dkirkby@uci.edu
 // =====================================================================
 
+#include "WProgram.h" // arduino header
+
 #include "serialno.h"
 #include "wireless.h"
 #include "packet.h"
+#include "pins.h"
 #include "utilities.h"
-
-#include "WProgram.h" // arduino header
 
 #define PRINT_SUMMARY
 

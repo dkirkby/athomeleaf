@@ -1,12 +1,16 @@
+#include "WProgram.h" // arduino header
+
 #include "utilities.h"
 #include "wireless.h"
+
+#include <math.h>
 #include <avr/eeprom.h>
 
 // ---------------------------------------------------------------------
 // Shared globals
 // ---------------------------------------------------------------------
-byte byteValue;
-unsigned int uintValue;
+uint8_t byteValue;
+uint16_t uintValue;
 float floatValue;
 
 // =====================================================================
@@ -29,12 +33,12 @@ void loadConfig(Config *config) {
 
 void saveConfig(const Config *config) {
     // Iterate over the bytes to save after skipping over the fixed header and network ID
-    byte newValue,offset = sizeof(config->networkID);
+    uint8_t newValue,offset = sizeof(config->networkID);
     while(offset < sizeof(Config) - sizeof(config->header)) {
         // Do we need to change this byte in EEPROM?
-        newValue = *((byte*)config + sizeof(config->header) + offset);
-        if(eeprom_read_byte((const byte*)(CONFIG_ADDR+offset)) != newValue) {
-            eeprom_write_byte((byte*)(CONFIG_ADDR+offset),newValue);
+        newValue = *((uint8_t*)config + sizeof(config->header) + offset);
+        if(eeprom_read_byte((const uint8_t*)(CONFIG_ADDR+offset)) != newValue) {
+            eeprom_write_byte((uint8_t*)(CONFIG_ADDR+offset),newValue);
         }        
         offset++;
     }
@@ -46,11 +50,11 @@ void saveConfig(const Config *config) {
 // =====================================================================
 
 float floatToPrint;
-unsigned long printMultiplier;
+uint32_t printMultiplier;
 
 void _printFloat() {
 
-    static unsigned long printULong;
+    static uint32_t printULong;
 
     // convert +/-ABC.XYZ to ABCXYZ with rounding
     if(floatToPrint < 0) {
@@ -80,7 +84,7 @@ void _printFloat() {
 // Initializes an optional 16x2 serial LCD. There is no way to know
 // if one is connected since the device is write-only.
 // =====================================================================
-void LCDinit(byte backlightLevel) {
+void LCDinit(uint8_t backlightLevel) {
     Serial.begin(9600);
     // turn cursor off
     Serial.write(0xfe);
@@ -88,7 +92,7 @@ void LCDinit(byte backlightLevel) {
     delay(100); // needed to allow LCD serial decoder to keep up?
     // turn backlight off
     Serial.write(0x7c);
-    Serial.write((byte)(0x80 | (backlightLevel % 30)));
+    Serial.write((uint8_t)(0x80 | (backlightLevel % 30)));
     delay(100); // needed to allow LCD serial decoder to keep up?
 }
 
@@ -125,13 +129,13 @@ void LCDclear() {
 // row = 0 is the top line, row = 1 is the bottom line.
 // valid col values are 0 (leftmost) to 15.
 // =====================================================================
-void LCDpos(byte row, byte col) {
+void LCDpos(uint8_t row, uint8_t col) {
     Serial.write(0xfe);
     if(row == 0) {
-        Serial.write((byte)(0x80 | (col & 0x0f)));
+        Serial.write((uint8_t)(0x80 | (col & 0x0f)));
     }
     else {
-        Serial.write((byte)(0xc0 | (col & 0x0f)));
+        Serial.write((uint8_t)(0xc0 | (col & 0x0f)));
     }
     //delay(100);
 }
@@ -140,7 +144,7 @@ void LCDpos(byte row, byte col) {
 // Generates a pseudo-random sequence of 32-bit unsigned integers
 // =====================================================================
 
-unsigned long randomValue = 24071966UL;
+uint32_t randomValue = 24071966UL;
 
 void nextRandom() {
     randomValue = randomValue*2891336453UL + 1640531513UL;
@@ -155,11 +159,11 @@ void nextRandom() {
 // by the value of the clickThreshold global.
 // =====================================================================
 
-unsigned long clickThreshold = 0;
+uint32_t clickThreshold = 0;
 
 void tick() {
 
-    static byte doClick;
+    static uint8_t doClick;
 
     // generate a pseudo-random unsigned long
     nextRandom();
@@ -176,13 +180,13 @@ void tick() {
 // ---------------------------------------------------------------------
 #define BUFFER_SIZE 512
 uint16_t buffer[BUFFER_SIZE],*bufptr,delayCycles;
-byte counter = 0;
+uint8_t counter = 0;
 
 #define WAVEDATA(K) buffer[(((K)+6)<<1)|1]
 
 // Used to latch the TIMER0 microsecond counter at a fixed time before
 // the first sample is latched.
-unsigned long timestamp;
+uint32_t timestamp;
 
 // ---------------------------------------------------------------------
 // Dump the buffer contents via the wireless interface. Values are
@@ -192,7 +196,7 @@ unsigned long timestamp;
 // buffer should already have its networkID field set (and this will
 // not be overwritten). In total, 22 packets will be sent.
 // ---------------------------------------------------------------------
-void dumpBuffer(byte dumpType, BufferDump *dump) {
+void dumpBuffer(uint8_t dumpType, BufferDump *dump) {
     // the first packet can be identified by its zero sequence number
     dump->sequenceNumber = 0;
     // skip over the first 15 bytes of packed data then...
@@ -206,7 +210,7 @@ void dumpBuffer(byte dumpType, BufferDump *dump) {
     packSamples(&buffer[0],&dump->packed[20]);
     packSamples(&buffer[4],&dump->packed[25]);
     // try to send the first packet now
-    if(0x0f < sendNordic(dumpAddress, (byte*)dump, sizeof(BufferDump))) {
+    if(0x0f < sendNordic(dumpAddress, (uint8_t*)dump, sizeof(BufferDump))) {
         // don't keep going if our first packet didn't get through
         return;
     }
@@ -226,7 +230,7 @@ void dumpBuffer(byte dumpType, BufferDump *dump) {
         packSamples(&buffer[uintValue],&dump->packed[25]);
         uintValue+= 4;
         // try to send this packet now
-        if(0x0f < sendNordic(dumpAddress, (byte*)dump, sizeof(BufferDump))) return;
+        if(0x0f < sendNordic(dumpAddress, (uint8_t*)dump, sizeof(BufferDump))) return;
     }
 }
 
@@ -254,7 +258,7 @@ void dumpBuffer(byte dumpType, BufferDump *dump) {
 // ---------------------------------------------------------------------
 // Lighting and power analysis shared globals
 // ---------------------------------------------------------------------
-static byte cycle,nzero;
+static uint8_t cycle,nzero;
 static float sink,cosk,cosSum,sinSum;
 
 // =====================================================================
@@ -267,7 +271,7 @@ static float sink,cosk,cosSum,sinSum;
 // to the unsigned short globals lightingMean and lighting120Hz.
 // =====================================================================
 
-unsigned short lightingMean,lighting120Hz;
+uint16_t lightingMean,lighting120Hz;
 
 void lightingAnalysis(float scaleFactor, BufferDump *dump) {
     
@@ -475,10 +479,10 @@ void phaseAnalysis(BufferDump *dump) {
 // Generates a frequency chirp
 // =====================================================================
 
-void chirp(byte cycles, byte timebase) {
+void chirp(uint8_t cycles, uint8_t timebase) {
 
-    byte counter = cycles;
-    unsigned int delay = cycles*timebase;
+    uint8_t counter = cycles;
+    uint16_t delay = cycles*timebase;
     
     //digitalWrite(RED_LED_PIN,HIGH);
     do {
@@ -504,8 +508,8 @@ void chirp(byte cycles, byte timebase) {
 // Generates a square-wave tone
 // =====================================================================
 
-void tone(unsigned int halfPeriod,unsigned int cycles) {
-    unsigned int counter = cycles;
+void tone(uint16_t halfPeriod,uint16_t cycles) {
+    uint16_t counter = cycles;
     while(counter--) {
         digitalWrite(PIEZO_PIN,HIGH);
         delayMicroseconds(halfPeriod);
@@ -575,7 +579,7 @@ void tone(unsigned int halfPeriod,unsigned int cycles) {
 
 void shiftOut(uint16_t nData, const uint8_t *data) {
     
-    byte bits;
+    uint8_t bits;
     // The loop overhead is 13 cycles and writing each bit takes 7 cycles.
     // Add 3 cycles delay between bits for a total period of 23 cycles.
     while(nData--) {
@@ -928,7 +932,7 @@ uint8_t birdSample2[BIRD2_SAMPLES] PROGMEM = {
     170,82,85,169,170
 };
 
-void bird(byte repetitions) {
+void bird(uint8_t repetitions) {
     while(repetitions--) {
         shiftOut(BIRD1_SAMPLES,birdSample1);
         delay(63);
