@@ -95,8 +95,11 @@ BufferDump dump;
 //
 // where G = 131 mV/A(pk) for the lo-gain channel (use nominal G/20 for hi-gain)
 
-#define POWERSCALE_HI 0.01265
-#define POWERSCALE_LO 0.2530200791
+//#define POWERSCALE_HI 0.01265
+//#define POWERSCALE_LO 0.2530200791
+
+#define POWERSCALE_HI 6.90534 // sqrt(2)*5000mV/1024
+#define POWERSCALE_LO 6.90534 // sqrt(2)*5000mV/1024
 
 // Power to threshold conversion factor: (1<<27)/(1000W)^2
 #define THRESHOLDSCALE 134.21772799999999
@@ -383,7 +386,8 @@ void loop() {
     
     // Analyze the captured waveform
     powerAnalysis(POWERSCALE_HI,&dump);
-    packet.powerHiGain = uintValue;
+    packet.powerHiGain = currentRMS;
+    packet.acPhase = nClipped;
     
     // Dump every 16th sample buffer if requested
     if((config.capabilities & CAPABILITY_POWER_DUMP) &&
@@ -398,7 +402,7 @@ void loop() {
     
     // Analyze the captured waveform
     powerAnalysis(POWERSCALE_LO,&dump);    
-    packet.powerLoGain = uintValue;
+    packet.powerLoGain = currentRMS;
 
     // Dump every 16th sample buffer if requested
     if((config.capabilities & CAPABILITY_POWER_DUMP) &&
@@ -413,7 +417,7 @@ void loop() {
     
     // Analyze the captured waveform
     phaseAnalysis(&dump);
-    packet.acPhase = 0x80;
+    // packet.acPhase = 0x80;
     
     // Dump every 16th sample buffer if requested
     if((config.capabilities & CAPABILITY_POWER_DUMP) &&

@@ -73,6 +73,8 @@ extern void lightingAnalysis(float scaleFactor, BufferDump *dump);
 
 // Power analysis
 
+extern uint8_t nClipped;
+extern uint16_t currentRMS,currentPhase,voltagePhase;
 extern void powerAnalysis(float scaleFactor, BufferDump *dump);
 extern void phaseAnalysis(BufferDump *dump);
 

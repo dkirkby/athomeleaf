@@ -182,6 +182,10 @@ void dumpBuffer(uint8_t dumpType, BufferDump *dump) {
 #define NPOWERSAMPBY4 63
 // The index period corresponding to 60 Hz = 2pi/(NPOWERSAMP/3)
 #define DPHI60 0.075398223686155036
+#define RMS_NORM 5.52427172802e-3 // sqrt(2)/NPOWERSAMP
+#define RAD_TO_MICROS 2652.58238486 // 10^6/(2pi*60)
+#define POWER_CYCLE_MICROS 16666.6666667 // 10^6/60
+#define POWER_CYCLE_MICROS_BY_4 4166.66666667
 
 // ---------------------------------------------------------------------
 // Lighting and power analysis shared globals
@@ -340,7 +344,11 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
 // The scale factor is used to scale the results from ADC counts.
 // =====================================================================
 
+uint8_t nClipped;
+uint16_t currentRMS,currentPhase;
+
 void powerAnalysis(float scaleFactor, BufferDump *dump) {
+    nClipped = 0;
     cosSum = sinSum = 0;
     for(byteValue = 0; byteValue < NPOWERSAMPBY4; byteValue++) {
         if(byteValue == 0) {
@@ -374,13 +382,14 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
                 cosk = -cosk;
                 break;
             }
+            if(uintValue < 3 || uintValue > 1020) nClipped++;
             floatValue = uintValue;
             cosSum += floatValue*cosk;
             sinSum += floatValue*sink;
         }
     }
     // store the floating point 60 Hz RMS in ADC units
-    floatValue = sqrt(cosSum*cosSum+sinSum*sinSum);
+    floatValue = sqrt(cosSum*cosSum+sinSum*sinSum)*RMS_NORM;
     if(0 != dump) {
         /* zero out the dump header */
         for(byteValue = 0; byteValue < 15; byteValue++) dump->packed[byteValue] = 0;
@@ -388,13 +397,28 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
         *(float*)(&dump->packed[0]) = floatValue;
     }
     // convert to a 16-bit integer using the provided scale factor
-    uintValue = (unsigned short)(scaleFactor*floatValue+0.5);
+    currentRMS = (unsigned short)(scaleFactor*floatValue+0.5);
+    
+    // Calculate the phase offset in microseconds of an equivalent 60 Hz
+    // sine wave. Offset is relative to sample[6] and not sample[0] !
+    // (6 samples = 1200us)  
+    floatValue = atan2(sinSum,cosSum)*RAD_TO_MICROS - POWER_CYCLE_MICROS_BY_4;
+    if(floatValue < POWER_CYCLE_MICROS) floatValue+= POWER_CYCLE_MICROS;
+    if(0 != dump) {
+        /* send our floating-point phase offset in the dump header */
+        *(float*)(&dump->packed[4]) = floatValue;
+    }
+    
+    // round to the nearest microsecond and store as a 16-bit integer
+    currentPhase = (unsigned short)(floatValue + 0.5);
 }
 
 // =====================================================================
 // Aanalyzes the zero-crossing fiducial signal to determine the
 // AC power factor.
 // =====================================================================
+
+uint16_t voltagePhase;
 
 void phaseAnalysis(BufferDump *dump) {
     if(0 != dump) {
