@@ -417,6 +417,8 @@ void loop() {
     
     // Analyze the captured waveform
     phaseAnalysis(&dump);
+    packet.lightLevelHiGain = (uint16_t)(phaseDenominator >> 3);
+    packet.lightLevelLoGain = voltagePhase;
     // packet.acPhase = 0x80;
     
     // Dump every 16th sample buffer if requested

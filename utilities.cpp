@@ -186,6 +186,7 @@ void dumpBuffer(uint8_t dumpType, BufferDump *dump) {
 #define RAD_TO_MICROS 2652.58238486 // 10^6/(2pi*60)
 #define POWER_CYCLE_MICROS 16666.6666667 // 10^6/60
 #define POWER_CYCLE_MICROS_BY_4 4166.66666667
+#define MICROS_PER_SAMPLE 200
 
 // ---------------------------------------------------------------------
 // Lighting and power analysis shared globals
@@ -419,8 +420,31 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
 // =====================================================================
 
 uint16_t voltagePhase;
+uint32_t phaseNumerator,phaseDenominator;
 
 void phaseAnalysis(BufferDump *dump) {
+    phaseNumerator = phaseDenominator = 0;
+    for(byteValue = 0; byteValue < 250; byteValue++) {
+        uintValue = WAVEDATA(byteValue);
+        phaseDenominator += uintValue;
+        phaseNumerator += ((3*byteValue)%125)*uintValue;
+    }
+    // The denominator measures the integral of the fiducial signal and
+    // provides a phase-independent check that we have a valid signal.
+    // If this check fails then there is either something wrong with the
+    // fiducial circuit or else there is no AC input voltage.
+    if(phaseDenominator < 15000 || phaseDenominator > 150000) {
+        voltagePhase = 0xffff;
+    }
+    else {
+        // Convert the fiducial offset to microseconds with rounding.
+        // Offset is relative to sample[6] and not sample[0] !
+        // (6 samples = 1200us)
+        voltagePhase = (uint16_t)(
+            (MICROS_PER_SAMPLE*phaseNumerator+phaseDenominator+(phaseDenominator>>1))
+            /(3*phaseDenominator));
+    }
+    
     if(0 != dump) {
         /* zero out the dump header */
         for(byteValue = 0; byteValue < 15; byteValue++) dump->packed[byteValue] = 0;
