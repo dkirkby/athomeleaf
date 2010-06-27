@@ -118,45 +118,54 @@ uint32_t timestamp;
 
 // ---------------------------------------------------------------------
 // Dump the buffer contents via the wireless interface. Values are
-// assumed to be 10-bit and packed accordingly. The first 15 bytes
+// assumed to be 10-bit and packed accordingly. The first 11 bytes
 // of the dump buffer provided will be included in the first packet
 // sent (and overwritten as subsequent packets are sent). The dump
 // buffer should already have its networkID field set (and this will
-// not be overwritten). In total, 22 packets will be sent.
+// not be overwritten). In total, 11 packets will be sent.
 // ---------------------------------------------------------------------
 void dumpBuffer(uint8_t dumpType, BufferDump *dump) {
+    uint16_t src[4];
     // the first packet can be identified by its zero sequence number
     dump->sequenceNumber = 0;
-    // skip over the first 15 bytes of packed data then...
+    // skip over the first 11 bytes of packed data then...
     // ...send the dump type, and timestamp
-    dump->packed[15] = dumpType;
-    dump->packed[16] = 0xff & (timestamp >> 24);
-    dump->packed[17] = 0xff & (timestamp >> 16);
-    dump->packed[18] = 0xff & (timestamp >>  8);
-    dump->packed[19] = 0xff & (timestamp);
-    // ...and the first 8 packed samples
-    packSamples(&buffer[0],&dump->packed[20]);
-    packSamples(&buffer[4],&dump->packed[25]);
+    dump->packed[11] = dumpType;
+    *(uint32_t*)(&dump->packed[12]) = timestamp;
+    // ...the first two samples are unpacked
+    *(uint16_t*)(&dump->packed[16]) = WAVEDATA(0);
+    *(uint16_t*)(&dump->packed[18]) = WAVEDATA(1);
+    // ...the next 8 samples are packed into the remainder of the buffer packet
+    src[0]= WAVEDATA(2); src[1]= WAVEDATA(3); src[2]= WAVEDATA(4); src[3]= WAVEDATA(5);
+    packSamples(src,&dump->packed[20]);
+    src[0]= WAVEDATA(6); src[1]= WAVEDATA(7); src[2]= WAVEDATA(8); src[3]= WAVEDATA(9);
+    packSamples(src,&dump->packed[25]);
     // try to send the first packet now
     if(0x0f < sendNordic(dumpAddress, (uint8_t*)dump, sizeof(BufferDump))) {
         // don't keep going if our first packet didn't get through
         return;
     }
-    // the remaining 21 packets have the same structure
-    uintValue = 8;
-    for(dump->sequenceNumber = 1; dump->sequenceNumber < 22; dump->sequenceNumber++) {
-        packSamples(&buffer[uintValue],&dump->packed[0]);
-        uintValue+= 4;
-        packSamples(&buffer[uintValue],&dump->packed[5]);
-        uintValue+= 4;
-        packSamples(&buffer[uintValue],&dump->packed[10]);
-        uintValue+= 4;
-        packSamples(&buffer[uintValue],&dump->packed[15]);
-        uintValue+= 4;
-        packSamples(&buffer[uintValue],&dump->packed[20]);
-        uintValue+= 4;
-        packSamples(&buffer[uintValue],&dump->packed[25]);
-        uintValue+= 4;
+    // the remaining 10 packets use the same structure
+    uintValue = 10;
+    for(dump->sequenceNumber = 1; dump->sequenceNumber < 11; dump->sequenceNumber++) {
+        src[0] = WAVEDATA(uintValue++); src[1] = WAVEDATA(uintValue++);
+        src[2] = WAVEDATA(uintValue++); src[3] = WAVEDATA(uintValue++);
+        packSamples(src,&dump->packed[0]);
+        src[0] = WAVEDATA(uintValue++); src[1] = WAVEDATA(uintValue++);
+        src[2] = WAVEDATA(uintValue++); src[3] = WAVEDATA(uintValue++);
+        packSamples(src,&dump->packed[5]);
+        src[0] = WAVEDATA(uintValue++); src[1] = WAVEDATA(uintValue++);
+        src[2] = WAVEDATA(uintValue++); src[3] = WAVEDATA(uintValue++);
+        packSamples(src,&dump->packed[10]);
+        src[0] = WAVEDATA(uintValue++); src[1] = WAVEDATA(uintValue++);
+        src[2] = WAVEDATA(uintValue++); src[3] = WAVEDATA(uintValue++);
+        packSamples(src,&dump->packed[15]);
+        src[0] = WAVEDATA(uintValue++); src[1] = WAVEDATA(uintValue++);
+        src[2] = WAVEDATA(uintValue++); src[3] = WAVEDATA(uintValue++);
+        packSamples(src,&dump->packed[20]);
+        src[0] = WAVEDATA(uintValue++); src[1] = WAVEDATA(uintValue++);
+        src[2] = WAVEDATA(uintValue++); src[3] = WAVEDATA(uintValue++);
+        packSamples(src,&dump->packed[25]);
         // try to send this packet now
         if(0x0f < sendNordic(dumpAddress, (uint8_t*)dump, sizeof(BufferDump))) return;
     }
