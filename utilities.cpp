@@ -436,6 +436,7 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
 // AC power factor.
 // =====================================================================
 
+uint8_t wrapOffset;
 uint16_t voltagePhase;
 uint32_t phaseNumerator,phaseDenominator,tzero;
 
@@ -444,10 +445,20 @@ void phaseAnalysis(BufferDump *dump) {
     // comparison with the current analysis timestamps
     tzero = timestamp;
     phaseNumerator = phaseDenominator = 0;
-    for(byteValue = 0; byteValue < 250; byteValue++) {
+    // use an 8 sample window to check if the fiducial pulse wraps around
+    if((WAVEDATA(0)+WAVEDATA(1)+WAVEDATA(2)+WAVEDATA(3) > 400) &&
+        (WAVEDATA(NPOWERSAMP-4)+WAVEDATA(NPOWERSAMP-3)+
+        WAVEDATA(NPOWERSAMP-2)+WAVEDATA(NPOWERSAMP-1) > 400)) {
+        wrapOffset = NPOWERSAMPBY2;
+    }
+    else {
+        wrapOffset = 0;
+    }
+    // Calculate the center-of-gravity moments of the fiducial pulse.
+    for(byteValue = 0; byteValue < NPOWERSAMP; byteValue++) {
         uintValue = WAVEDATA(byteValue);
         phaseDenominator += uintValue;
-        phaseNumerator += ((3*byteValue)%125)*uintValue;
+        phaseNumerator += (wrapOffset+(6*byteValue+wrapOffset)%NPOWERSAMP)*uintValue;
     }
     // The denominator measures the integral of the fiducial signal and
     // provides a phase-independent check that we have a valid signal.
@@ -461,12 +472,17 @@ void phaseAnalysis(BufferDump *dump) {
         // Offset is relative to sample[6] and not sample[0] !
         // (6 samples = 1200us)
         voltagePhase = (uint16_t)(
-            (MICROS_PER_SAMPLE*phaseNumerator+phaseDenominator+(phaseDenominator>>1))
-            /(3*phaseDenominator));
+            (MICROS_PER_SAMPLE*phaseNumerator+3*phaseDenominator)
+            /(6*phaseDenominator));
     }
     
     if(0 != dump) {
         /* zero out the dump header */
         for(byteValue = 0; byteValue < 15; byteValue++) dump->packed[byteValue] = 0;
-    }    
+        // Save the COG moments and wrap offset
+        *(uint32_t*)(&dump->packed[0]) = phaseNumerator;
+        *(uint32_t*)(&dump->packed[4]) = phaseDenominator;
+        *(uint16_t*)(&dump->packed[8]) = voltagePhase;
+        *(uint8_t*)(&dump->packed[10]) = wrapOffset;
+    }
 }
