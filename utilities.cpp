@@ -346,12 +346,14 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
 // The scale factor is used to scale the results from ADC counts.
 // =====================================================================
 
-uint8_t nClipped;
+uint8_t nClipped,currentComplexity;
 uint16_t currentRMS,currentPhase;
+float totalVariance;
 
 void powerAnalysis(float scaleFactor, BufferDump *dump) {
     nClipped = 0;
     cosSum = sinSum = 0;
+    moment0 = moment1 = 0;
     for(byteValue = 0; byteValue < NPOWERSAMPBY4; byteValue++) {
         if(byteValue == 0) {
             sink = 0;
@@ -385,6 +387,8 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
                 break;
             }
             if(uintValue < 3 || uintValue > 1020) nClipped++;
+            moment0 += uintValue;
+            moment1 += (uint32_t)uintValue*uintValue;
             floatValue = uintValue;
             cosSum += floatValue*cosk;
             sinSum += floatValue*sink;
@@ -392,15 +396,23 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
     }
     // store the floating point 60 Hz RMS in ADC units
     floatValue = sqrt(cosSum*cosSum+sinSum*sinSum)*RMS_NORM;
-    if(0 != dump) {
-        /* zero out the dump header */
-        for(byteValue = 0; byteValue < 15; byteValue++) dump->packed[byteValue] = 0;
-        /* send our floating point RMS in the dump header */
-        *(float*)(&dump->packed[0]) = floatValue;
-    }
+
     // convert to a 16-bit integer using the provided scale factor
     currentRMS = (unsigned short)(scaleFactor*floatValue+0.5);
     
+    totalVariance = (float)moment1/NPOWERSAMP -
+        (float)moment0*moment0/(NPOWERSAMP*NPOWERSAMP);
+    currentComplexity =
+        (uint8_t)(255*(totalVariance - floatValue*floatValue)/totalVariance + 0.5);
+
+    if(0 != dump) {
+        /* zero out the dump header */
+        for(byteValue = 0; byteValue < 15; byteValue++) dump->packed[byteValue] = 0;
+        /* send our floating point RMS values in the dump header */
+        *(float*)(&dump->packed[0]) = floatValue;
+        *(float*)(&dump->packed[4]) = totalVariance;
+    }
+
     // Calculate the delay (in us) of the current sampling compared
     // with the earlier voltage-fiducial sampling.
     if(timestamp > tzero) {
@@ -424,7 +436,7 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
 
     if(0 != dump) {
         /* send our floating-point phase offset in the dump header */
-        *(float*)(&dump->packed[4]) = floatValue;
+        *(float*)(&dump->packed[8]) = floatValue;
     }
     
     // round to the nearest microsecond and store as a 16-bit integer
