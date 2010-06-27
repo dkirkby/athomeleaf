@@ -216,7 +216,10 @@ LIBOBJ = $(CORE_C_OBJ) $(CORE_CPP_OBJ) $(LOCAL_CPP_OBJ)
 # --------------------------------------------------------------------------
 
 # --------------------------------------------------------------------------
-# Check amount of statically allocated SRAM being used (look for _end)
+# Check amount of statically allocated SRAM being used.
+# Look for the offset of the _end symbol which should be less than
+# $800 = 2048 bytes. The difference between these is the available
+# space for heap and stack allocation.
 # --------------------------------------------------------------------------
 sram : elf
 	$(NM) -n $(BUILD_DIR)/$(TARGET).elf
