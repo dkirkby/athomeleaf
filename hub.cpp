@@ -101,27 +101,33 @@ void printLookAtMe(const LookAtMe *lam) {
 
 void printBufferDump(const BufferDump *dump) {
     uint16_t unpacked[4];
+    uint32_t timestamp;
     
     Serial.print(dump->networkID,HEX);
     Serial.write(' ');
     Serial.print(dump->sequenceNumber,HEX);
     if(dump->sequenceNumber == 0) {
         Serial.write(' ');
-        // dump the first 15 bytes as one long hex string
-        for(_byteValue = 0; _byteValue < 15; _byteValue++) {
+        // dump the first 11 bytes as one long hex string
+        for(_byteValue = 0; _byteValue < 11; _byteValue++) {
             if(dump->packed[_byteValue] < 0x10) Serial.write('0');
             Serial.print(dump->packed[_byteValue],HEX);
         }
         Serial.write(' ');
         // print the dump type
-        Serial.print(dump->packed[15],HEX);
+        Serial.print(dump->packed[11],HEX);
         Serial.write(' ');
         // print the timestamp
-        for(_byteValue = 16; _byteValue < 20; _byteValue++) {
-            if(dump->packed[_byteValue] < 0x10) Serial.write('0');
-            Serial.print(dump->packed[_byteValue],HEX);
-        }
-        // print the first 8 packed samples
+        timestamp = *(uint32_t*)(&dump->packed[12]);
+        Serial.print(timestamp,HEX);
+        // the first two samples are unpacked
+        unpacked[0] = *(uint16_t*)(&dump->packed[16]);
+        Serial.write(' ');
+        Serial.print(unpacked[0],HEX);
+        unpacked[1] = *(uint16_t*)(&dump->packed[18]);
+        Serial.write(' ');
+        Serial.print(unpacked[1],HEX);
+        // the next 8 samples are packed        
         unpackSamples(&dump->packed[20],unpacked);
         for(_byteValue = 0; _byteValue < 4; _byteValue++) {
             Serial.write(' ');
@@ -134,7 +140,7 @@ void printBufferDump(const BufferDump *dump) {
         }
     }
     else {
-        // The next 21 packets have identical formats and pack 24
+        // The next 10 packets have identical formats and pack 24
         // 10-bit ADC samples into 30 bytes. We unpack each sample
         // and print its hex value here.
         for(_byteValue = 0; _byteValue < 24; _byteValue++) {
