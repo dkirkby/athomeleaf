@@ -380,6 +380,23 @@ void loop() {
     }
     
     //----------------------------------------------------------------------
+    // Start the power analysis by measuring the AC voltage phase
+    //----------------------------------------------------------------------
+    acquireADCSamples(ACPHASE_PIN);
+    
+    // Analyze the captured waveform
+    phaseAnalysis(&dump);
+    //packet.light120HzHiGain = (uint16_t)(phaseDenominator >> 3);
+    //packet.light120HzLoGain = voltagePhase;
+    // packet.acPhase = 0x80;
+    
+    // Dump every 16th sample buffer if requested
+    if((config.capabilities & CAPABILITY_POWER_DUMP) &&
+        connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 0) {
+        dumpBuffer(DUMP_BUFFER_AC_PHASE,&dump);
+    }
+
+    //----------------------------------------------------------------------
     // First time round uses the high-gain power channel.
     //----------------------------------------------------------------------    
     acquireADCSamples(ACPOWER_PIN_HI);
@@ -387,6 +404,8 @@ void loop() {
     // Analyze the captured waveform
     powerAnalysis(POWERSCALE_HI,&dump);
     packet.powerHiGain = currentRMS;
+    packet.lightLevelHiGain = currentPhase;
+    packet.light120HzHiGain = uintValue;
     packet.acPhase = nClipped;
     
     // Dump every 16th sample buffer if requested
@@ -403,28 +422,13 @@ void loop() {
     // Analyze the captured waveform
     powerAnalysis(POWERSCALE_LO,&dump);    
     packet.powerLoGain = currentRMS;
+    packet.lightLevelLoGain = currentPhase;
+    packet.light120HzLoGain = uintValue;
 
     // Dump every 16th sample buffer if requested
     if((config.capabilities & CAPABILITY_POWER_DUMP) &&
         connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 0) {
         dumpBuffer(DUMP_BUFFER_POWER_LO,&dump);
-    }
-
-    //----------------------------------------------------------------------
-    // Finally, sample the AC zero-crossing fiducial channel.
-    //----------------------------------------------------------------------
-    acquireADCSamples(ACPHASE_PIN);
-    
-    // Analyze the captured waveform
-    phaseAnalysis(&dump);
-    packet.lightLevelHiGain = (uint16_t)(phaseDenominator >> 3);
-    packet.lightLevelLoGain = voltagePhase;
-    // packet.acPhase = 0x80;
-    
-    // Dump every 16th sample buffer if requested
-    if((config.capabilities & CAPABILITY_POWER_DUMP) &&
-        connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 0) {
-        dumpBuffer(DUMP_BUFFER_AC_PHASE,&dump);
     }
 
     // update the click threshold based on the new power estimate

@@ -185,6 +185,7 @@ void dumpBuffer(uint8_t dumpType, BufferDump *dump) {
 #define RMS_NORM 5.52427172802e-3 // sqrt(2)/NPOWERSAMP
 #define RAD_TO_MICROS 2652.58238486 // 10^6/(2pi*60)
 #define POWER_CYCLE_MICROS 16666.6666667 // 10^6/60
+#define POWER_CYCLE_MICROS_BY_2 8333.33333333
 #define POWER_CYCLE_MICROS_BY_4 4166.66666667
 #define MICROS_PER_SAMPLE 200
 
@@ -400,11 +401,27 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
     // convert to a 16-bit integer using the provided scale factor
     currentRMS = (unsigned short)(scaleFactor*floatValue+0.5);
     
+    // Calculate the relative phase (in us) of the current sampling compared
+    // with the earlier voltage-fiducial sampling.
+    if(timestamp > tzero) {
+        uintValue = (uint16_t)(timestamp - tzero);
+    }
+    else {
+        // handle the (unlikely) case where the micros counter rolled over
+        uintValue = (uint16_t)(0xffffffff - tzero + timestamp);
+    }
+    
     // Calculate the phase offset in microseconds of an equivalent 60 Hz
     // sine wave. Offset is relative to sample[6] and not sample[0] !
-    // (6 samples = 1200us)  
+    // (6 samples = 1200us)
     floatValue = atan2(sinSum,cosSum)*RAD_TO_MICROS - POWER_CYCLE_MICROS_BY_4;
-    if(floatValue < POWER_CYCLE_MICROS) floatValue+= POWER_CYCLE_MICROS;
+    if(floatValue < POWER_CYCLE_MICROS) floatValue += POWER_CYCLE_MICROS;
+
+    // Calculate the relative phase (in us) of the voltage and current
+    // fiducials modulus a 120 Hz cycle.
+    ////uintValue -= voltagePhase; // cannot underflow for a sensible voltagePhase
+    // floatValue = fmod(uintValue - voltagePhase + floatValue,POWER_CYCLE_MICROS_BY_2);
+
     if(0 != dump) {
         /* send our floating-point phase offset in the dump header */
         *(float*)(&dump->packed[4]) = floatValue;
@@ -420,9 +437,12 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
 // =====================================================================
 
 uint16_t voltagePhase;
-uint32_t phaseNumerator,phaseDenominator;
+uint32_t phaseNumerator,phaseDenominator,tzero;
 
 void phaseAnalysis(BufferDump *dump) {
+    // save the timestamp of the voltage phase analysis for later
+    // comparison with the current analysis timestamps
+    tzero = timestamp;
     phaseNumerator = phaseDenominator = 0;
     for(byteValue = 0; byteValue < 250; byteValue++) {
         uintValue = WAVEDATA(byteValue);
