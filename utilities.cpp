@@ -438,13 +438,13 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
 
 uint8_t wrapOffset;
 uint16_t voltagePhase;
-uint32_t phaseNumerator,phaseDenominator,tzero;
+uint32_t moment0,moment1,tzero;
 
 void phaseAnalysis(BufferDump *dump) {
     // save the timestamp of the voltage phase analysis for later
     // comparison with the current analysis timestamps
     tzero = timestamp;
-    phaseNumerator = phaseDenominator = 0;
+    moment0 = moment1 = 0;
     // use an 8 sample window to check if the fiducial pulse wraps around
     if((WAVEDATA(0)+WAVEDATA(1)+WAVEDATA(2)+WAVEDATA(3) > 400) &&
         (WAVEDATA(NPOWERSAMP-4)+WAVEDATA(NPOWERSAMP-3)+
@@ -457,14 +457,14 @@ void phaseAnalysis(BufferDump *dump) {
     // Calculate the center-of-gravity moments of the fiducial pulse.
     for(byteValue = 0; byteValue < NPOWERSAMP; byteValue++) {
         uintValue = WAVEDATA(byteValue);
-        phaseDenominator += uintValue;
-        phaseNumerator += (wrapOffset+(6*byteValue+wrapOffset)%NPOWERSAMP)*uintValue;
+        moment0 += uintValue;
+        moment1 += (wrapOffset+(6*byteValue+wrapOffset)%NPOWERSAMP)*uintValue;
     }
     // The denominator measures the integral of the fiducial signal and
     // provides a phase-independent check that we have a valid signal.
     // If this check fails then there is either something wrong with the
     // fiducial circuit or else there is no AC input voltage.
-    if(phaseDenominator < 15000 || phaseDenominator > 150000) {
+    if(moment0 < 15000 || moment0 > 150000) {
         voltagePhase = 0xffff;
     }
     else {
@@ -472,16 +472,16 @@ void phaseAnalysis(BufferDump *dump) {
         // Offset is relative to sample[6] and not sample[0] !
         // (6 samples = 1200us)
         voltagePhase = (uint16_t)(
-            (MICROS_PER_SAMPLE*phaseNumerator+3*phaseDenominator)
-            /(6*phaseDenominator));
+            (MICROS_PER_SAMPLE*moment1+3*moment0)
+            /(6*moment0));
     }
     
     if(0 != dump) {
         /* zero out the dump header */
         for(byteValue = 0; byteValue < 15; byteValue++) dump->packed[byteValue] = 0;
         // Save the COG moments and wrap offset
-        *(uint32_t*)(&dump->packed[0]) = phaseNumerator;
-        *(uint32_t*)(&dump->packed[4]) = phaseDenominator;
+        *(uint32_t*)(&dump->packed[0]) = moment1;
+        *(uint32_t*)(&dump->packed[4]) = moment0;
         *(uint16_t*)(&dump->packed[8]) = voltagePhase;
         *(uint8_t*)(&dump->packed[10]) = wrapOffset;
     }
