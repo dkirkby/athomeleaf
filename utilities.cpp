@@ -506,9 +506,9 @@ void phaseAnalysis(BufferDump *dump) {
         /* zero out the dump header */
         for(byteValue = 0; byteValue < 15; byteValue++) dump->packed[byteValue] = 0;
         // Save the COG moments and wrap offset
-        *(uint32_t*)(&dump->packed[0]) = moment1;
-        *(uint32_t*)(&dump->packed[4]) = moment0;
-        *(uint16_t*)(&dump->packed[8]) = voltagePhase;
-        *(uint8_t*)(&dump->packed[10]) = wrapOffset;
+        DUMP_ANALYSIS_SAVE(0,uint32_t,moment1);
+        DUMP_ANALYSIS_SAVE(4,uint32_t,moment0);
+        DUMP_ANALYSIS_SAVE(8,uint16_t,voltagePhase);
+        DUMP_ANALYSIS_SAVE(10,uint8_t,wrapOffset);
     }
 }
