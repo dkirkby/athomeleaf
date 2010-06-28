@@ -423,7 +423,7 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
         /* start filling our dump header */
         DUMP_ANALYSIS_SAVE(0,uint8_t,nClipped);
         DUMP_ANALYSIS_SAVE(1,uint8_t,currentComplexity);
-        DUMP_ANALYSIS_SAVE(2,uint16_t,currentRMS);
+        DUMP_ANALYSIS_SAVE(2,float,floatValue);
     }
 
     // Calculate the delay (in us) of the current sampling compared
@@ -442,7 +442,7 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
     floatValue = atan2(sinSum,cosSum)*RAD_TO_MICROS - POWER_CYCLE_MICROS_BY_4;
     if(floatValue < 0) floatValue += POWER_CYCLE_MICROS;    
     if(0 != dump) {
-        DUMP_ANALYSIS_SAVE(4,uint16_t,(uint16_t)(floatValue+0.5));
+        DUMP_ANALYSIS_SAVE(6,uint16_t,(uint16_t)(floatValue+0.5));
     }
 
     // Calculate the relative phase (in us) of the voltage and current
@@ -453,7 +453,7 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
     // round to the nearest microsecond and store as a 16-bit integer
     currentPhase = (unsigned short)(floatValue + 0.5);
     if(0 != dump) {
-        DUMP_ANALYSIS_SAVE(6,uint16_t,currentPhase);
+        DUMP_ANALYSIS_SAVE(8,uint16_t,currentPhase);
     }
 }
 
