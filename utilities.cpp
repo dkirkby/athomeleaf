@@ -197,6 +197,8 @@ void dumpBuffer(uint8_t dumpType, BufferDump *dump) {
 #define POWER_CYCLE_MICROS_BY_2 8333.33333333
 #define POWER_CYCLE_MICROS_BY_4 4166.66666667
 #define MICROS_PER_SAMPLE 200
+#define ONE_OVER_NPOWERSAMP 4e-3 // 1/250
+#define ONE_OVER_NPOWERSAMP_SQ 16e-6 // 1/(250*250)
 
 // ---------------------------------------------------------------------
 // Lighting and power analysis shared globals
@@ -410,8 +412,8 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
     // convert to a 16-bit integer using the provided scale factor
     currentRMS = (unsigned short)(scaleFactor*floatValue+0.5);
     
-    totalVariance = (float)moment1/NPOWERSAMP -
-        (float)moment0*moment0/(NPOWERSAMP*NPOWERSAMP);
+    totalVariance = ONE_OVER_NPOWERSAMP*moment1 -
+        ONE_OVER_NPOWERSAMP_SQ*moment0*moment0;
     currentComplexity =
         (uint8_t)(255*(totalVariance - floatValue*floatValue)/totalVariance + 0.5);
 
