@@ -84,4 +84,7 @@ inline void unpackSamples(const uint8_t *src, uint16_t *dst) {
     dst[3] = ((src[3] & 0x03) << 8) | (src[4]);
 }
 
+#define DUMP_ANALYSIS_SAVE(OFFSET,TYPE,VALUE) \
+    *(TYPE*)(&dump->packed[OFFSET]) = VALUE;
+
 #endif

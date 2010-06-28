@@ -357,6 +357,7 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
 
 uint8_t nClipped,currentComplexity;
 uint16_t currentRMS,currentPhase;
+uint32_t elapsed;
 float totalVariance;
 
 void powerAnalysis(float scaleFactor, BufferDump *dump) {
@@ -417,39 +418,41 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
     if(0 != dump) {
         /* zero out the dump header */
         for(byteValue = 0; byteValue < 15; byteValue++) dump->packed[byteValue] = 0;
-        /* send our floating point RMS values in the dump header */
-        *(float*)(&dump->packed[0]) = floatValue;
-        *(float*)(&dump->packed[4]) = totalVariance;
+        /* start filling our dump header */
+        DUMP_ANALYSIS_SAVE(0,uint8_t,nClipped);
+        DUMP_ANALYSIS_SAVE(1,uint8_t,currentComplexity);
+        DUMP_ANALYSIS_SAVE(2,uint16_t,currentRMS);
     }
 
     // Calculate the delay (in us) of the current sampling compared
     // with the earlier voltage-fiducial sampling.
     if(timestamp > tzero) {
-        timestamp -= tzero;
+        elapsed = timestamp - tzero;
     }
     else {
         // handle the (unlikely) case where the micros counter rolled over
-        timestamp += 0xffffffff - tzero;
+        elapsed = 0xffffffff - tzero;
+        elapsed += timestamp;
     }
     
     // Calculate the phase offset in microseconds of an equivalent 60 Hz
-    // sine wave. Offset is relative to sample[6] and not sample[0] !
-    // (6 samples = 1200us)
+    // sine wave. Offset is relative to WAVEDATA(0)=sample[6].
     floatValue = atan2(sinSum,cosSum)*RAD_TO_MICROS - POWER_CYCLE_MICROS_BY_4;
-    if(floatValue < 0) floatValue += POWER_CYCLE_MICROS;
+    if(floatValue < 0) floatValue += POWER_CYCLE_MICROS;    
+    if(0 != dump) {
+        DUMP_ANALYSIS_SAVE(4,uint16_t,(uint16_t)(floatValue+0.5));
+    }
 
     // Calculate the relative phase (in us) of the voltage and current
     // fiducials modulus a 120 Hz cycle.
-    timestamp -= voltagePhase; // cannot underflow for a sensible voltagePhase
-    floatValue = fmod(floatValue + timestamp,POWER_CYCLE_MICROS_BY_2);
+    elapsed -= voltagePhase; // cannot underflow for a sensible voltagePhase
+    floatValue = fmod(floatValue + elapsed,POWER_CYCLE_MICROS_BY_2);
 
-    if(0 != dump) {
-        /* send our floating-point phase offset in the dump header */
-        *(float*)(&dump->packed[8]) = floatValue;
-    }
-    
     // round to the nearest microsecond and store as a 16-bit integer
     currentPhase = (unsigned short)(floatValue + 0.5);
+    if(0 != dump) {
+        DUMP_ANALYSIS_SAVE(6,uint16_t,currentPhase);
+    }
 }
 
 // =====================================================================
@@ -490,8 +493,7 @@ void phaseAnalysis(BufferDump *dump) {
     }
     else {
         // Convert the fiducial offset to microseconds with rounding.
-        // Offset is relative to sample[6] and not sample[0] !
-        // (6 samples = 1200us)
+        // Offset is relative to WAVEDATA(0)=sample[6].
         voltagePhase = (uint16_t)(
             (MICROS_PER_SAMPLE*moment1+3*moment0)
             /(6*moment0));
