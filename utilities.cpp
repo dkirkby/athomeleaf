@@ -484,7 +484,8 @@ void phaseAnalysis(BufferDump *dump) {
     for(byteValue = 0; byteValue < NPOWERSAMP; byteValue++) {
         uintValue = WAVEDATA(byteValue);
         moment0 += uintValue;
-        moment1 += (wrapOffset+(6*byteValue+wrapOffset)%NPOWERSAMP)*uintValue;
+        // the UL below is to force the RHS to be evaluated as uint32_t
+        moment1 += (wrapOffset+(6UL*byteValue+wrapOffset)%NPOWERSAMP)*uintValue;
     }
     // The denominator measures the integral of the fiducial signal and
     // provides a phase-independent check that we have a valid signal.
