@@ -241,11 +241,11 @@ void setup() {
     LCDclear();
     Serial.print(LAM.serialNumber,HEX);
     LCDpos(0,11);
-    Serial.print(config.temperatureMax,DEC);
+    Serial.print(config.comfortTempMin,DEC);
     LCDpos(1,0);
     Serial.print(config.capabilities,BIN);
     LCDpos(1,11);
-    Serial.print(config.temperatureMin,DEC);
+    Serial.print(config.comfortTempMax,DEC);
 
     // Send another LAM with our real serial number after a short delay.
     delay(2000);
@@ -469,14 +469,14 @@ void loop() {
         whichLED = 0;
         if((cycleCount >= SELF_HEATING_DELAY) &&
             (packet.sequenceNumber % TEMP_FLASH_INTERVAL == 0)) {
-            if(uintValue > config.temperatureMax) {
+            if(uintValue > 100U*config.comfortTempMax) {
                 // how many degrees over are we? (round up so the answer is at least one)
-                uintValue = 1 + (uintValue - config.temperatureMax)/100;
+                uintValue = 1 + uintValue/100 - config.comfortTempMax;
                 whichLED = RED_LED_PIN;
             }
-            else if(uintValue < config.temperatureMin) {
+            else if(uintValue < 100U*config.comfortTempMin) {
                 // how many degrees under are we? (round up so the answer is at least one)
-                uintValue = 1 + (config.temperatureMin - uintValue)/100;
+                uintValue = 1 + config.comfortTempMin - uintValue/100;
                 whichLED = BLUE_LED_PIN;
             }
             // The degree excess determines how many times we will flash. Max this out
