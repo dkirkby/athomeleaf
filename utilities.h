@@ -21,7 +21,11 @@ extern uint8_t byteValue;
 extern uint16_t uintValue;
 extern float floatValue;
 
-// Printing support for float values
+// Printing support
+
+extern void pprint(uint8_t value);
+extern void pprint(uint16_t value);
+extern void pprint(uint32_t value);
 
 #define PRINT_FLOAT(x,m) { floatToPrint = (x); printMultiplier = (m); _printFloat(); }
 

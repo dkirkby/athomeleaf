@@ -166,6 +166,44 @@ void handleConfigUpdate() {
     }
 }
 
+// ---------------------------------------------------------------------
+// Prints the current configuration to the optional LCD screen
+// ---------------------------------------------------------------------
+
+void printConfig() {
+    // page 1, line 1
+    LCDclear();
+    pprint(LAM.serialNumber);
+    LCDpos(0,8);
+    pprint(config.networkID);
+    LCDpos(0,10);
+    pprint(config.capabilities);
+    LCDpos(0,12);
+    pprint(config.dumpInterval);
+    LCDpos(0,14);
+    pprint(config.selfHeatDelay);
+    // page 1, line 2
+    LCDpos(1,0);
+    pprint(config.powerGainLo);
+    LCDpos(1,4);
+    pprint(config.powerGainHi);
+    LCDpos(1,8);
+    pprint(config.comfortTempMin);
+    LCDpos(1,10);
+    pprint(config.comfortTempMax);
+    LCDpos(1,12);
+    pprint(config.selfHeatOffset);
+    // wait 30s before displaying the next page
+    delay(30000);
+    // page 2, line 1
+    LCDclear();
+    pprint(config.fiducialShiftHi);
+    LCDpos(0,4);
+    pprint(config.fiducialHiLoDelta);
+    // keep the last page displayed for 30s
+    delay(30000);
+}
+
 // =====================================================================
 // The setup() function is called once on startup.
 // =====================================================================
@@ -238,19 +276,12 @@ void setup() {
 
     // Print our startup config to the optional LCD display
     delay(2000);
-    LCDclear();
-    Serial.print(LAM.serialNumber,HEX);
-    LCDpos(0,11);
-    Serial.print(config.comfortTempMin,DEC);
-    LCDpos(1,0);
-    Serial.print(config.capabilities,BIN);
-    LCDpos(1,11);
-    Serial.print(config.comfortTempMax,DEC);
+    printConfig();
 
     // Send another LAM with our real serial number after a short delay.
     delay(2000);
     sendNordic(lamAddress, (byte*)&LAM, sizeof(LAM));
-
+    
     // Initialize our data packet. The device ID will be filled in later.
     // Even if there is no hub listening, we still use the packet's sequence
     // number counter for the passive feedback algorithms.

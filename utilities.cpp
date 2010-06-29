@@ -46,6 +46,19 @@ void saveConfig(const Config *config) {
 }
 
 // =====================================================================
+// Print integer values in upper-case hex with zero padding.
+// =====================================================================
+void pprint(uint8_t value) {
+    Serial.print(value,HEX);
+}
+void pprint(uint16_t value) {
+    Serial.print(value,HEX);
+}
+void pprint(uint32_t value) {
+    Serial.print(value,HEX);
+}
+
+// =====================================================================
 // Print a floating point value as a fixed-precision decimal.
 // Uses Serial.write() and Serial.print(). Does not emit a newline.
 // =====================================================================
