@@ -15,12 +15,23 @@
 #define CAPABILITY_LIGHT_DUMP        (1<<2)
 #define CAPABILITY_POWER_DUMP        (1<<3)
 
-typedef struct {
+typedef struct { // 20 bytes total
+    /*** General Configuration ***/
     uint32_t header; // a fixed header to help filter spurious config packets
     uint8_t networkID; // a short identifier that uniquely identifies us on our local network
     uint8_t capabilities; // a bitmask of user-selectable device capabilities
-    uint16_t temperatureMin; // comfort zone upper limit (degF x 100)
-    uint16_t temperatureMax; // comfort zone lower limit (degF x 100)
+    uint8_t dumpInterval; // number of cycles between buffer dumps (when enabled)
+    /*** Temperature Configurtion ***/
+    uint8_t comfortTempMin; // comfort zone upper limit (degF)
+    uint8_t comfortTempMax; // comfort zone lower limit (degF)
+    uint16_t selfHeatOffset; // self-heating amount (degF/100)
+    uint8_t selfHeatDelay; // time to wait for self-heating to stabilize (secs*10)
+    /*** Power Analysis Configuration ***/
+    uint8_t fiducialHiLoDelta; // hi-lo fiducial phase shift delta (us)
+    uint16_t fiducialShiftHi; // hi-gain fiducial phase shift (us)
+    uint16_t powerGainHi; // hi-gain calibration (mW/ADC)
+    uint16_t powerGainLo; // lo-gain calibration (mW/ADC)
+    uint8_t nClipCut; // do not use hi-gain when clipping exceeds this threshold
 } Config;
 
 #define STATUS_NUM_RETRANSMIT_MASK 0x0f
