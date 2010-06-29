@@ -46,16 +46,38 @@ void saveConfig(const Config *config) {
 }
 
 // =====================================================================
-// Print integer values in upper-case hex with zero padding.
+// Print integer values in upper-case hex with zero padding. No
+// globals are used and output is only via Serial.write()
 // =====================================================================
 void pprint(uint8_t value) {
-    Serial.print(value,HEX);
+    // print high-order nibble
+    if((value & 0xF0) < 0xA0) {
+        // hex digit is 0-9
+        Serial.write((value >> 4) + '0');
+    }
+    else {
+        // hex digit is A-F
+        Serial.write((value >> 4) + 'A' - 10);
+    }
+    // print low-order nibble
+    if((value & 0x0F) < 0x0A) {
+        // hex digit 0-9
+        Serial.write((value&0x0F) + '0');
+    }
+    else {
+        // hex digit A-F
+        Serial.write((value&0x0F) + 'A' - 10);
+    }
 }
 void pprint(uint16_t value) {
-    Serial.print(value,HEX);
+    pprint((uint8_t)(value >> 8));
+    pprint((uint8_t)value);
 }
 void pprint(uint32_t value) {
-    Serial.print(value,HEX);
+    pprint((uint8_t)(value >> 24));
+    pprint((uint8_t)(value >> 16));
+    pprint((uint8_t)(value >> 8));
+    pprint((uint8_t)value);
 }
 
 // =====================================================================
