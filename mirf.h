@@ -33,8 +33,20 @@
 #include "nRF24L01.h"
 // Nrf24l settings
 
-#define mirf_ADDR_LEN	5
-#define mirf_CONFIG     ( (1 << MASK_TX_DS) | (1<<EN_CRC) | (0<<CRCO) )
+//=======================================================================
+// The next two #defines have been changed for the uci@home application.
+// Their original values are:
+//
+// #define mirf_ADDR_LEN	5
+// #define mirf_CONFIG     ( (1 << MASK_TX_DS) | (1<<EN_CRC) | (0<<CRCO) )
+//
+// The change to ADDR_LEN is purely cosmetic since wireless.cpp never
+// uses any mirf functions that depend on this value.
+//
+// The change to CONFIG specifies a 2-byte CRC instead of 1 byte.
+//=======================================================================
+#define mirf_ADDR_LEN	3
+#define mirf_CONFIG     ( (1 << MASK_TX_DS) | (1<<EN_CRC) | (1<<CRCO) )
 
 class Nrf24l {
 	public:

@@ -84,10 +84,10 @@ void initNordic(uint32_t serialNumber) {
     Mirf.configRegister(SETUP_RETR,
         NORDIC_MAX_RETRIES | 0x40 | ((uint8_t)(serialNumber & 3) << 4));
     
-    // Use a 1-byte CRC which catches all error bursts that last for no
-    // more than 8 bits (32us at 250 kbps) and catches 255/256 = 99.61%
+    // Use a 2-byte CRC which catches all error bursts that last for no
+    // more than 8 bits (32us at 250 kbps) and catches 65535/65536
     // of any longer error burst (assuming random packet bits?).
-    // A 2-byte CRC would reduce the undetected error rate but increase
+    // A 1-byte CRC would increase the undetected error rate while reducing
     // the packet length and therefore collision rate.
 
     //...this is set by a #define mirf_CONFIG in mirf.h...
