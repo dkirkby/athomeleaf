@@ -335,9 +335,10 @@ void loop() {
     packet.lightLevelHiGain = lightingMean;
     packet.light120HzHiGain = lighting120Hz;
     
-    // Dump every 16th sample buffer if requested
+    // Periodically dump sample buffer if requested
     if((config.capabilities & CAPABILITY_LIGHT_DUMP) &&
-        connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 8) {
+        connectionState == STATE_CONNECTED &&
+        (packet.sequenceNumber % config.dumpInterval) == (config.dumpInterval>>1)) {
         dumpBuffer(DUMP_BUFFER_LIGHT_HI,&dump);
     }
     
@@ -361,9 +362,10 @@ void loop() {
     packet.lightLevelLoGain = lightingMean;
     packet.light120HzLoGain = lighting120Hz;
     
-    // Dump every 16th sample buffer if requested
+    // Periodically dump sample buffer if requested
     if((config.capabilities & CAPABILITY_LIGHT_DUMP) &&
-        connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 8) {
+        connectionState == STATE_CONNECTED &&
+        (packet.sequenceNumber % config.dumpInterval) == (config.dumpInterval>>1)) {
         dumpBuffer(DUMP_BUFFER_LIGHT_LO,&dump);
     }
 
@@ -425,9 +427,10 @@ void loop() {
     //packet.light120HzLoGain = voltagePhase;
     // packet.acPhase = 0x80;
     
-    // Dump every 16th sample buffer if requested
+    // Periodically dump sample buffer if requested
     if((config.capabilities & CAPABILITY_POWER_DUMP) &&
-        connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 0) {
+        connectionState == STATE_CONNECTED &&
+        (packet.sequenceNumber % config.dumpInterval) == 0) {
         dumpBuffer(DUMP_BUFFER_AC_PHASE,&dump);
     }
 
@@ -443,9 +446,10 @@ void loop() {
     packet.light120HzHiGain = uintValue;
     packet.acPhase = nClipped;
     
-    // Dump every 16th sample buffer if requested
+    // Periodically dump sample buffer if requested
     if((config.capabilities & CAPABILITY_POWER_DUMP) &&
-        connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 0) {
+        connectionState == STATE_CONNECTED &&
+        (packet.sequenceNumber % config.dumpInterval) == 0) {
         dumpBuffer(DUMP_BUFFER_POWER_HI,&dump);
     }
     
@@ -460,9 +464,10 @@ void loop() {
     packet.lightLevelLoGain = currentPhase;
     packet.light120HzLoGain = uintValue;
 
-    // Dump every 16th sample buffer if requested
+    // Periodically dump sample buffer if requested
     if((config.capabilities & CAPABILITY_POWER_DUMP) &&
-        connectionState == STATE_CONNECTED && (packet.sequenceNumber & 0x0f) == 0) {
+        connectionState == STATE_CONNECTED &&
+        (packet.sequenceNumber % config.dumpInterval) == 0) {
         dumpBuffer(DUMP_BUFFER_POWER_LO,&dump);
     }
 
