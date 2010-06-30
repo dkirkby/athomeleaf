@@ -4,18 +4,28 @@
 
 // =====================================================================
 // Initializes an optional 16x2 serial LCD. There is no way to know
-// if one is connected since the device is write-only.
+// if one is connected since the device is write-only. The backlight
+// level range is 0 (off) to 29 (max).
 // =====================================================================
-void LCDinit(uint8_t backlightLevel) {
+void LCDinit(uint8_t backlightLevel, uint8_t doConfig) {
     Serial.begin(9600);
     // turn cursor off
     Serial.write(0xfe);
     Serial.write(0x0c);
     delay(100); // needed to allow LCD serial decoder to keep up?
-    // turn backlight off
-    Serial.write(0x7c);
-    Serial.write((uint8_t)(0x80 | (backlightLevel % 30)));
-    delay(100); // needed to allow LCD serial decoder to keep up?
+
+    // update configuration data in the LCD EEPROM?
+    if(doConfig) {
+        // set backlight level
+        Serial.write(0x7c);
+        Serial.write((uint8_t)(0x80 | (backlightLevel % 30)));
+        delay(100); // needed to allow LCD serial decoder to keep up?
+
+        // configure wrap-around for a 16-character display
+        Serial.write(0x7c);
+        Serial.write(4);
+        delay(100);
+    }
 }
 
 // =====================================================================

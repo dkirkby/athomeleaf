@@ -167,7 +167,9 @@ void handleConfigUpdate() {
 }
 
 // ---------------------------------------------------------------------
-// Prints the current configuration to the optional LCD screen
+// Prints the current configuration to the optional LCD screen.
+// There are two screens of hex values that are each displayed
+// for 30 seconds.
 // ---------------------------------------------------------------------
 
 void printConfig() {
@@ -235,7 +237,7 @@ void setup() {
 
     // startup the serial port for talking to an optional debugging LCD
     LCDinit();
-    
+
     // nordic wireless initialization
     initNordic(serialNumber());
     
