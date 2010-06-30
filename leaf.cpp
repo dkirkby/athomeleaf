@@ -177,7 +177,7 @@ void printConfig() {
     LCDclear();
     pprint(LAM.serialNumber);
     LCDpos(0,8);
-    pprint(config.networkID);
+    pprint(config.networkID); // will not be valid until after handshake with hub
     LCDpos(0,10);
     pprint(config.capabilities);
     LCDpos(0,12);
@@ -202,6 +202,8 @@ void printConfig() {
     pprint(config.fiducialShiftHi);
     LCDpos(0,4);
     pprint(config.fiducialHiLoDelta);
+    LCDpos(0,6);
+    pprint(config.nClipCut);
     // keep the last page displayed for 30s
     delay(30000);
 }
@@ -276,9 +278,9 @@ void setup() {
     // copy our config data from EEPROM
     loadConfig(&config);
 
-    // Print our startup config to the optional LCD display
-    delay(2000);
-    printConfig();
+    // Dispaly our startup config to the optional LCD display.
+    // Since this displays for 30s it should only be used for debug.
+    // printConfig();
 
     // Send another LAM with our real serial number after a short delay.
     delay(2000);
