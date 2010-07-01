@@ -25,17 +25,27 @@ if len(sys.argv) != 2:
 # perform string conversions
 serialNumber = int(serialNumber,0)
 
-# hard-coded config defaults
-networkID = 0
-capabilities = 0x03
-temperatureMin = 7000 # degF x 100
-temperatureMax = 8000 # degF x 100
+# hard-coded config defaults:
+networkID = 0 # value written here is ignored
+capabilities = 0x03 # see packet.h for bit defns
+dumpInterval = 16 # samples
+comfortTempMin = 70 # degF
+comfortTempMax = 80 # degF
+selfHeatOffset = 0 # degF/100
+selfHeatDelay = 0 # secs*10
+fiducialHiLoDelta = 90 # us
+fiducialShiftHi = 3000 # us
+powerGainHi = 253 # mW/ADC
+powerGainLo = 4500 # mW/ADC
+nClipCut = 8 # samples
 
 # pack the config data into a mutable buffer, leaving space for the 3-byte line header
 buf = ctypes.create_string_buffer(64)
-struct.pack_into('<IBBHH',buf,3,
-    serialNumber,networkID,capabilities,temperatureMin,temperatureMax)
-dataSize = 4 + 1 + 1 + 2 + 2
+struct.pack_into('<IBBBBBHBBHHHB',buf,3,
+    serialNumber,networkID,capabilities,dumpInterval,
+    comfortTempMin,comfortTempMax,selfHeatOffset,selfHeatDelay,
+    fiducialHiLoDelta,fiducialShiftHi,powerGainHi,powerGainLo,nClipCut)
+dataSize = 20 # bytes
 
 # store the header (byte count, start address)
 byteCount = 3 + dataSize
