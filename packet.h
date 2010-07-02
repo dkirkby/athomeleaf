@@ -14,12 +14,24 @@
 #define CAPABILITY_LIGHT_FEEDBACK    (1<<1)
 #define CAPABILITY_LIGHT_DUMP        (1<<2)
 #define CAPABILITY_POWER_DUMP        (1<<3)
+#define CAPABILITY_AUDIO_DIAGNOSTICS (1<<4)
+#define CAPABILITY_POWER_EDGE_AUDIO  (1<<5)
+#define CAPABILITY_POWER_LEVEL_AUDIO (1<<6)
+#define CAPABILITY_GREEN_GLOW        (1<<7)
+#define CAPABILITY_AMBER_GLOW        (1<<8)
+#define CAPABILITY_RED_GLOW          (1<<9)
+#define CAPABILITY_GREEN_FLASH       (1<<10)
+#define CAPABILITY_AMBER_FLASH       (1<<11)
+#define CAPABILITY_RED_FLASH         (1<<12)
+#define CAPABILITY_BLUE_FLASH        (1<<13)
+//#define CAPABILITY_15 (1<<14)
+//#define CAPABILITY_16 (1<<15)
 
 typedef struct { // 20 bytes total
     /*** General Configuration ***/
     uint32_t header; // a fixed header to help filter spurious config packets
     uint8_t networkID; // a short identifier that uniquely identifies us on our local network
-    uint8_t capabilities; // a bitmask of user-selectable device capabilities
+    uint16_t capabilities; // a bitmask of runtime-selectable device capabilities
     uint8_t dumpInterval; // number of cycles between buffer dumps (when enabled)
     /*** Temperature Configurtion ***/
     uint8_t comfortTempMin; // comfort zone upper limit (degF)

@@ -180,10 +180,8 @@ void printConfig() {
     pprint(config.networkID); // will not be valid until after handshake with hub
     LCDpos(0,10);
     pprint(config.capabilities);
-    LCDpos(0,12);
-    pprint(config.dumpInterval);
     LCDpos(0,14);
-    pprint(config.selfHeatDelay);
+    pprint(config.dumpInterval);
     // page 1, line 2
     LCDpos(1,0);
     pprint(config.powerGainLo);
@@ -204,6 +202,8 @@ void printConfig() {
     pprint(config.fiducialHiLoDelta);
     LCDpos(0,6);
     pprint(config.nClipCut);
+    LCDpos(0,8);
+    pprint(config.selfHeatDelay);
     // keep the last page displayed for 30s
     delay(30000);
 }
