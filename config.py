@@ -41,11 +41,11 @@ nClipCut = 8 # samples
 
 # pack the config data into a mutable buffer, leaving space for the 3-byte line header
 buf = ctypes.create_string_buffer(64)
-struct.pack_into('<IBBBBBHBBHHHB',buf,3,
+struct.pack_into('<IBHBBBHBBHHHB',buf,3,
     serialNumber,networkID,capabilities,dumpInterval,
     comfortTempMin,comfortTempMax,selfHeatOffset,selfHeatDelay,
     fiducialHiLoDelta,fiducialShiftHi,powerGainHi,powerGainLo,nClipCut)
-dataSize = 20 # bytes
+dataSize = 21 # bytes
 
 # store the header (byte count, start address)
 byteCount = 3 + dataSize
