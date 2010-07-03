@@ -139,6 +139,8 @@ uint8_t ledControl;
 
 #define LED_INIT { ledControl = 0x7f & (uint8_t)(config.capabilities >> 7); }
 
+#define LED_ALL_OFF { ledControl &= (1<<RAMP_UP); }
+
 #define LED_ENABLE(FEATURE) { ledControl |= (1<<(FEATURE)); }
 #define LED_DISABLE(FEATURE) { ledControl &= ~(1<<(FEATURE)); }
 #define LED_IS_ENABLED(FEATURE) (ledControl & (1<<(FEATURE)))
@@ -303,19 +305,23 @@ void lightingSequence(BufferDump *dump) {
     // Analyze the captured waveform
     lightingAnalysis(16.0,dump);
     
+    _u8val = 0;
     if(lightingMean < DARK_THRESHOLD) {
-        whichLED = 0; // signals that the room is dark and the LED should be off
+        // the room is dark and the LED should be off
+        LED_ALL_OFF;
     }
     else if(lightingMean < LIGHTING_CROSSOVER) {
         if(lighting120Hz > lightingMean/ARTIFICIAL_THRESHOLD) {
-            whichLED = AMBER_LED_PIN;
+            // artificial light is present
+            if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(AMBER_GLOW);
         }
         else {
-            whichLED = GREEN_LED_PIN;
+            // no artificial light detected
+            if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(GREEN_GLOW);
         }
     }
     else {
-        whichLED = 0xff; // signals that we defer to the low-gain analysis
+        _u8val = 1; // signals that we defer to the low-gain analysis
     }    
     
     packet.lightLevelHiGain = lightingMean;
@@ -336,12 +342,14 @@ void lightingSequence(BufferDump *dump) {
     // Analyze the captured waveform
     lightingAnalysis(16.0,dump);
     
-    if(whichLED == 0xff) {
+    if(_u8val) {
         if(lighting120Hz > lightingMean/ARTIFICIAL_THRESHOLD) {
-            whichLED = AMBER_LED_PIN;
+            // artificial light is present
+            if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(AMBER_GLOW);
         }
         else {
-            whichLED = GREEN_LED_PIN;
+            // no artificial light detected
+            if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(GREEN_GLOW);
         }
     }
     
