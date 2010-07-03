@@ -135,11 +135,16 @@ uint8_t ledControl;
 #define AMBER_FLASH 4
 #define RED_FLASH   5
 #define BLUE_FLASH  6
+#define RAMP_UP     7
 
 #define LED_INIT { ledControl = 0x7f & (uint8_t)(config.capabilities >> 7); }
+
 #define LED_ENABLE(FEATURE) { ledControl |= (1<<(FEATURE)); }
 #define LED_DISABLE(FEATURE) { ledControl &= ~(1<<(FEATURE)); }
 #define LED_IS_ENABLED(FEATURE) (ledControl & (1<<(FEATURE)))
+
+#define LED_RAMP_TOGGLE { ledControl ^= (1<<RAMP_UP); }
+#define LED_IS_RAMPING_UP (ledControl & (1<<RAMP_UP))
 
 // ---------------------------------------------------------------------
 // Temperature monitoring globals
@@ -415,6 +420,75 @@ void powerSequence(BufferDump *dump) {
 }
 
 // =====================================================================
+// Performs a "glow" sequence in which LEDs slowly glow on/off, the
+// temperature is repeatedly sampled, and audio feedback on the
+// power level is provided.
+//
+// Results are saved in:
+//  - temperatureSum
+//  - MS-bit of ledControl (tracks phase of glow ramp up/down)
+// =====================================================================
+void glowSequence() {
+
+    // =====================================================================
+    // Calculate average of NTEMPSUM temperature ADC samples.
+    // Result is stored in 32-bit unsigned, so can average up to 2^22
+    // 10-bit ADC samples without overflow. The temperature sampling is
+    // split into two sets, with the LED ramping on during the first set
+    // and off during the second set. AC power sampling is performed
+    // between the two sets. The green LED is used if there is no artificial
+    // lighting detected, and otherwise the amber LED is used.
+    // =====================================================================
+
+    // The first temperature sample sometimes reads low so don't use it
+    analogRead(TEMPERATURE_PIN);
+    tick();
+
+    if(LED_IS_RAMPING_UP) {
+        //----------------------------------------------------------------------
+        // Temperature sampling set 1
+        //----------------------------------------------------------------------
+        for(temperatureIndex = 0; temperatureIndex <  NTEMPSUMBY2; temperatureIndex++) {
+            temperatureSum += analogRead(TEMPERATURE_PIN);
+            // gradually ramp the LED during the first set of temperature samples
+            if(whichLED == AMBER_LED_PIN) {
+                _u8val = (uint8_t)(127.*(1.-cos(temperatureIndex*DPHIGLOW_FAST))+0.5);
+            }
+            else {
+                _u8val = (uint8_t)(127.*(1.-cos(temperatureIndex*DPHIGLOW_SLOW))+0.5);
+            }
+            // Supress visual lighting feedback if this capability has been disabled
+            if((config.capabilities & CAPABILITY_LIGHT_FEEDBACK) && whichLED) {
+                analogWrite(whichLED,_u8val);
+            }
+            tick();
+        }
+    }
+    else {
+        //----------------------------------------------------------------------
+        // Temperature sampling set 2
+        //----------------------------------------------------------------------
+        for(temperatureIndex = NTEMPSUMBY2; temperatureIndex < NTEMPSUM; temperatureIndex++) {
+            temperatureSum += analogRead(TEMPERATURE_PIN);
+            // gradually ramp the LED during the second set of temperature samples
+            if(whichLED == AMBER_LED_PIN) {
+                _u8val = (uint8_t)(127.*(1.-cos(temperatureIndex*DPHIGLOW_FAST))+0.5);
+            }
+            else {
+                _u8val = (uint8_t)(127.*(1.-cos(temperatureIndex*DPHIGLOW_SLOW))+0.5);
+            }
+            // Supress visual lighting feedback if this capability has been disabled
+            if((config.capabilities & CAPABILITY_LIGHT_FEEDBACK) && whichLED) {
+                analogWrite(whichLED,_u8val);
+            }
+            tick();
+        }
+    }
+    // toggle the glow on/off phase for next time
+    LED_RAMP_TOGGLE;
+}
+
+// =====================================================================
 // The setup() function is called once on startup.
 // =====================================================================
 
@@ -511,44 +585,22 @@ void loop() {
     // update our packet counter (which cycles from $00-$ff)
     if(++packet.sequenceNumber == 0) cycleCount++;
     
+    // initialize the LED control register
+    LED_INIT;
+    
+    // initialize our slow average temperature accumulator
+    temperatureSum = 0;
+
     //----------------------------------------------------------------------
     // Measure the lighting conditions
     //----------------------------------------------------------------------
     lightingSequence(&dump);
 
-    // =====================================================================
-    // Calculate average of NTEMPSUM temperature ADC samples.
-    // Result is stored in 32-bit unsigned, so can average up to 2^22
-    // 10-bit ADC samples without overflow. The temperature sampling is
-    // split into two sets, with the LED ramping on during the first set
-    // and off during the second set. AC power sampling is performed
-    // between the two sets. The green LED is used if there is no artificial
-    // lighting detected, and otherwise the amber LED is used.
-    // =====================================================================
-    
-    temperatureSum = 0;
-
     //----------------------------------------------------------------------
-    // Temperature sampling set 1
+    // Ramp the glowing LEDs up while measuring temperature and giving
+    // audio feedback on the power consumption level
     //----------------------------------------------------------------------
-    // The first sample sometimes reads low so don't use it
-    analogRead(TEMPERATURE_PIN);
-    tick();
-    for(temperatureIndex = 0; temperatureIndex <  NTEMPSUMBY2; temperatureIndex++) {
-        temperatureSum += analogRead(TEMPERATURE_PIN);
-        // gradually ramp the LED during the first set of temperature samples
-        if(whichLED == AMBER_LED_PIN) {
-            _u8val = (uint8_t)(127.*(1.-cos(temperatureIndex*DPHIGLOW_FAST))+0.5);
-        }
-        else {
-            _u8val = (uint8_t)(127.*(1.-cos(temperatureIndex*DPHIGLOW_SLOW))+0.5);
-        }
-        // Supress visual lighting feedback if this capability has been disabled
-        if((config.capabilities & CAPABILITY_LIGHT_FEEDBACK) && whichLED) {
-            analogWrite(whichLED,_u8val);
-        }
-        tick();
-    }
+    glowSequence();
     
     //----------------------------------------------------------------------
     // Check for any incoming wireless data
@@ -569,26 +621,10 @@ void loop() {
     powerSequence(&dump);
     
     //----------------------------------------------------------------------
-    // Temperature sampling set 2
+    // Ramp the glowing LEDs down while measuring temperature and giving
+    // audio feedback on the power consumption level
     //----------------------------------------------------------------------
-    // The first sample sometimes reads low so don't use it
-    analogRead(TEMPERATURE_PIN);
-    tick();
-    for(temperatureIndex = NTEMPSUMBY2; temperatureIndex < NTEMPSUM; temperatureIndex++) {
-        temperatureSum += analogRead(TEMPERATURE_PIN);
-        // gradually ramp the LED during the second set of temperature samples
-        if(whichLED == AMBER_LED_PIN) {
-            _u8val = (uint8_t)(127.*(1.-cos(temperatureIndex*DPHIGLOW_FAST))+0.5);
-        }
-        else {
-            _u8val = (uint8_t)(127.*(1.-cos(temperatureIndex*DPHIGLOW_SLOW))+0.5);
-        }
-        // Supress visual lighting feedback if this capability has been disabled
-        if((config.capabilities & CAPABILITY_LIGHT_FEEDBACK) && whichLED) {
-            analogWrite(whichLED,_u8val);
-        }
-        tick();
-    }
+    glowSequence();
 
     // calculate the average temperature in degF x 100
     packet.temperature = (unsigned int)(100*temperatureSum*ADC2DEGF);
