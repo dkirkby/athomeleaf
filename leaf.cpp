@@ -131,12 +131,15 @@ void handleConfigUpdate() {
         ((connectionState & STATE_CONNECTED) && config.networkID != packet.networkID)) {
         // This looks like a spurious config packet so ignore it.
         packet.status |= STATUS_GOT_INVALID_CONFIG;
-        tone(750,100);
-        tone(1000,75);
-        tone(750,100);
-        tone(1000,75);
-        tone(750,100);
-        tone(1000,75);
+        if(config.capabilities & CAPABILITY_AUDIO_DIAGNOSTICS) {
+            // a repeated (3X) falling tone sequence
+            tone(750,100);
+            tone(1000,75);
+            tone(750,100);
+            tone(1000,75);
+            tone(750,100);
+            tone(1000,75);
+        }
         return;
     }
     
@@ -151,18 +154,23 @@ void handleConfigUpdate() {
     // Have we been waiting for this config data?
     if(connectionState & STATE_CONNECTING) {
         packet.status |= STATUS_GOT_INITIAL_CONFIG;
-        tone(1000,75);
-        tone(750,100);
+        if(config.capabilities & CAPABILITY_AUDIO_DIAGNOSTICS) {
+            // a single rising tone sequence
+            tone(1000,75);
+            tone(750,100);
+        }
         // we are now officially connected
         connectionState = STATE_CONNECTED;
     }
     else {
         packet.status |= STATUS_GOT_UPDATED_CONFIG;
-        // Play alternating tones to indicate that we have updated our config
-        tone(1000,75);
-        tone(750,100);
-        tone(1000,75);
-        tone(750,100);
+        if(config.capabilities & CAPABILITY_AUDIO_DIAGNOSTICS) {
+            // a repeated (2X) rising tone sequence
+            tone(1000,75);
+            tone(750,100);
+            tone(1000,75);
+            tone(750,100);
+        }
     }
 }
 
@@ -554,9 +562,11 @@ void loop() {
                 connectionState = STATE_CONNECTING;
                 // play the same falling sequence that, on startup, indicates
                 // that no hub was found
-                tone(750,100);
-                tone(1000,75);
-                tone(1500,50);
+                if(config.capabilities & CAPABILITY_AUDIO_DIAGNOSTICS) {
+                    tone(750,100);
+                    tone(1000,75);
+                    tone(1500,50);
+                }
             }
         }
         else {
