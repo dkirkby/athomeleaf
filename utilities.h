@@ -14,13 +14,6 @@
 void loadConfig(Config *config);
 void saveConfig(const Config *config);
 
-// ---------------------------------------------------------------------
-// Shared globals
-// ---------------------------------------------------------------------
-extern uint8_t byteValue;
-extern uint16_t uintValue;
-extern float floatValue;
-
 // Printing support
 
 extern void pprint(uint8_t value);

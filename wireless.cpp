@@ -46,7 +46,7 @@ uint8_t lamAddress[NORDIC_ADDR_LEN]=     { 0xC6, 0xF2, 0xF2 };
 uint8_t dumpAddress[NORDIC_ADDR_LEN]=    { 0xA7, 0xF2, 0xF2 };
 
 // Locally shared globals
-static uint8_t _wirelessByte;
+static uint8_t _u8val;
 
 // =====================================================================
 // Initializes the Nordic nRF24L01+ transciever. Sets the value of
@@ -138,8 +138,8 @@ void initNordic(uint32_t serialNumber) {
     // Read back the least-significant byte [0] of the auto-ack pipeline (P0)
     // address to check that we are really talking to a nordic transceiver.
     // Use this register since it is configured the same in a hub and leaf.
-	Mirf.readRegister(RX_ADDR_P0,&_wirelessByte,1);
-	if(_wirelessByte == idleAddress[0]) {
+	Mirf.readRegister(RX_ADDR_P0,&_u8val,1);
+	if(_u8val == idleAddress[0]) {
         nordicOK = 1;
         // Start receiver
         Mirf.powerUpRx();
@@ -168,23 +168,23 @@ uint8_t getNordic(uint8_t *payload, uint8_t payloadSize) {
 
     // Read our status register to check for a new packet and, if there
     // is one, find out which pipeline it came through.
-//    Mirf.readRegister(STATUS,&_wirelessByte,1);
-//    Serial.print(_wirelessByte,BIN);
+//    Mirf.readRegister(STATUS,&_u8val,1);
+//    Serial.print(_u8val,BIN);
 //    Serial.write(' ');
-    Mirf.readRegister(FIFO_STATUS,&_wirelessByte,1);
-//    Serial.println(_wirelessByte,BIN);
+    Mirf.readRegister(FIFO_STATUS,&_u8val,1);
+//    Serial.println(_u8val,BIN);
 //    delay(500);
     
     // Is there any data ready in our Rx FIFO?
-    //Mirf.readRegister(FIFO_STATUS,&_wirelessByte,1);
-    if(_wirelessByte & (1 << RX_EMPTY)) {
+    //Mirf.readRegister(FIFO_STATUS,&_u8val,1);
+    if(_u8val & (1 << RX_EMPTY)) {
         return 0xf0;
     }
     
     // Which pipeline is the next payload from? This will be our
     // return value.
-    Mirf.readRegister(STATUS,&_wirelessByte,1);
-    _wirelessByte = (_wirelessByte >> RX_P_NO) & 0x07;
+    Mirf.readRegister(STATUS,&_u8val,1);
+    _u8val = (_u8val >> RX_P_NO) & 0x07;
     
     // Read the payload from the pipeline
     Mirf.csnLow();
@@ -195,7 +195,7 @@ uint8_t getNordic(uint8_t *payload, uint8_t payloadSize) {
     // Reset the RX_DR interrupt bit in the status register
     Mirf.configRegister(STATUS,(1<<RX_DR));
     
-    return _wirelessByte;
+    return _u8val;
 }
 
 // =====================================================================
@@ -218,8 +218,8 @@ uint8_t sendNordic(uint8_t *address, uint8_t *payload, uint8_t payloadSize) {
     // This really isn't necessary as long as all data is sent using this
     // function, since it ends with a call to powerUpRx() that sets PTX=0
     while (Mirf.PTX) {
-        Mirf.readRegister(STATUS,&_wirelessByte,1);
-	    if((_wirelessByte & ((1 << TX_DS)  | (1 << MAX_RT)))){
+        Mirf.readRegister(STATUS,&_u8val,1);
+	    if((_u8val & ((1 << TX_DS)  | (1 << MAX_RT)))){
 		    Mirf.PTX = 0;
 		    break;
 	    }
@@ -253,10 +253,10 @@ uint8_t sendNordic(uint8_t *address, uint8_t *payload, uint8_t payloadSize) {
     Mirf.ceHi();
 
     // Wait until the transmission is complete or fails
-    Mirf.readRegister(STATUS,&_wirelessByte,1);
+    Mirf.readRegister(STATUS,&_u8val,1);
     // does this loop need a timeout? (no problems so far)
-    while((_wirelessByte & (uint8_t)((1 << MAX_RT)|(1 << TX_DS))) == 0) {
-        Mirf.readRegister(STATUS,&_wirelessByte,1);
+    while((_u8val & (uint8_t)((1 << MAX_RT)|(1 << TX_DS))) == 0) {
+        Mirf.readRegister(STATUS,&_u8val,1);
     }
     
     // Disable the receiver and transmitter while we cleanup
@@ -264,10 +264,10 @@ uint8_t sendNordic(uint8_t *address, uint8_t *payload, uint8_t payloadSize) {
 
     // Fetch the contents of the transmit observe register, which gives
     // statistics on retransmissions. We will return this at the end.
-    Mirf.readRegister(OBSERVE_TX,(uint8_t*)&_wirelessByte,1);
+    Mirf.readRegister(OBSERVE_TX,(uint8_t*)&_u8val,1);
     
     // In case we dropped any packets, reset the counter now.
-    if(_wirelessByte & 0xf0) {
+    if(_u8val & 0xf0) {
         Mirf.configRegister(RF_CH,RADIO_CHANNEL);
     }
     
@@ -277,5 +277,5 @@ uint8_t sendNordic(uint8_t *address, uint8_t *payload, uint8_t payloadSize) {
     // return to Rx mode
     Mirf.powerUpRx();
     
-    return _wirelessByte;
+    return _u8val;
 }

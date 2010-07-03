@@ -17,34 +17,6 @@
 #include "WProgram.h" // arduino header
 
 // ---------------------------------------------------------------------
-// Connection state machine
-// ---------------------------------------------------------------------
-#define STATE_CONNECTING      0x80
-#define STATE_CONNECTED       0x40
-#define DROPPED_PACKETS_MASK  0x3F
-#define MAX_DROPPED_PACKETS   0x14 // corresponds to about one minute
-byte connectionState;
-
-// ---------------------------------------------------------------------
-// Declare and initialize our 'look-at-me' packet
-// ---------------------------------------------------------------------
-LookAtMe LAM = {
-    0, // serial number will be copied from EEPROM
-#ifdef COMMIT_INFO
-    COMMIT_INFO
-#elif
-    0, { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }, 0
-#endif
-};
-
-// ---------------------------------------------------------------------
-// Declare our other packet buffers
-// ---------------------------------------------------------------------
-Config config;
-DataPacket packet;
-BufferDump dump;
-
-// ---------------------------------------------------------------------
 // Temperature monitoring parameters
 // ---------------------------------------------------------------------
 #define NTEMPSUM        2048
@@ -109,12 +81,52 @@ BufferDump dump;
 // of SRAM, including any variables allocated on the stack at runtime.
 // =====================================================================
 
-unsigned short cycleCount = 0; // counts the number of completed 256-packet sequences
+// ---------------------------------------------------------------------
+// Locally shared globals
+// ---------------------------------------------------------------------
+static uint8_t _u8val;
+static uint16_t _u16val;
+
+// ---------------------------------------------------------------------
+// Connection state machine
+// ---------------------------------------------------------------------
+#define STATE_CONNECTING      0x80
+#define STATE_CONNECTED       0x40
+#define DROPPED_PACKETS_MASK  0x3F
+#define MAX_DROPPED_PACKETS   0x14 // corresponds to about one minute
+uint8_t connectionState;
+
+// ---------------------------------------------------------------------
+// Declare and initialize our 'look-at-me' packet
+// ---------------------------------------------------------------------
+LookAtMe LAM = {
+    0, // serial number will be copied from EEPROM
+#ifdef COMMIT_INFO
+    COMMIT_INFO
+#elif
+    0, { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }, 0
+#endif
+};
+
+// ---------------------------------------------------------------------
+// Declare our other packet buffers
+// ---------------------------------------------------------------------
+Config config;
+DataPacket packet;
+BufferDump dump;
+
+// ---------------------------------------------------------------------
+// Sequence numbering is maintained via the 8-bit packet.sequenceNumber
+// and cycleCount which counts the number of completed 256-sequence
+// cycles. At 4s per sequence, each cycle lasts about 17min and the
+// cycle counter rolls over after about 2 years.
+// ---------------------------------------------------------------------
+unsigned short cycleCount = 0;
 
 // ---------------------------------------------------------------------
 // Temperature monitoring globals
 // ---------------------------------------------------------------------
-byte whichLED;
+uint8_t whichLED;
 unsigned int temperatureIndex;
 unsigned long temperatureSum;
 
@@ -179,7 +191,6 @@ void handleConfigUpdate() {
 // There are two screens of hex values that are each displayed
 // for 30 seconds.
 // ---------------------------------------------------------------------
-
 void printConfig() {
     // page 1, line 1
     LCDclear();
@@ -216,93 +227,32 @@ void printConfig() {
     delay(30000);
 }
 
-// =====================================================================
-// The setup() function is called once on startup.
-// =====================================================================
-
-void setup() {
-    
-    // setup our digital outputs
-    pinMode(AMBER_LED_PIN,OUTPUT);
-    pinMode(GREEN_LED_PIN,OUTPUT);
-    pinMode(RED_LED_PIN,OUTPUT);
-    pinMode(BLUE_LED_PIN,OUTPUT);
-    pinMode(PIEZO_PIN,OUTPUT);
-    pinMode(STROBE_PIN,OUTPUT);
-    
-    // run-through the outputs once to show we are alive (and also provide
-    // an audio-visual self-test of each output)
-    digitalWrite(BLUE_LED_PIN,HIGH);
-    delay(500);
-    digitalWrite(BLUE_LED_PIN,LOW);
-    digitalWrite(RED_LED_PIN,HIGH);
-    delay(500);
-    digitalWrite(RED_LED_PIN,LOW);
-    digitalWrite(AMBER_LED_PIN,HIGH);
-    delay(500);
-    digitalWrite(AMBER_LED_PIN,LOW);
-    digitalWrite(GREEN_LED_PIN,HIGH);
-    delay(500);
-    digitalWrite(GREEN_LED_PIN,LOW);
-
-    // startup the serial port for talking to an optional debugging LCD
-    LCDinit();
-
-    // nordic wireless initialization
-    initNordic(serialNumber());
-    
-    // Send an initial Look-at-Me packet to test if there is a hub out there.
-    // At this point, the LAM serial number is zero, which indicates that we
-    // don't expect the hub to respond with a Config packet. The reason for
-    // this is that the first packet sent after a reset does not seem to be
-    // reliably received by the hub (even though it is reliably acknowledged
-    // by the leaf's nordic chip... would be good to understand this better)
-    if(sendNordic(lamAddress, (byte*)&LAM, sizeof(LAM)) < 0x10) {
-        LCDprint("uci@home","connecting...");
-        tone(1500,50);
-        tone(1000,75);
-    }
-    else {
-        if(!nordicOK) {
-            LCDprint("uci@home","nordic error");
-            // play alternating tones to indicate a wireless hardware problem
-            tone(1000,75);
-            tone(1500,50);
-            tone(1000,75);
-            tone(1500,50);
-        }
-        else {
-            LCDprint("uci@home","no hub found");
-            // play a falling sequence of tones to indicate that no hub was found
-            tone(750,100);
-            tone(1000,75);
-            tone(1500,50);
-        }        
-    }
-
-    // copy our serial number from EEPROM to our LAM packet
-    LAM.serialNumber = serialNumber();
-    
-    // copy our config data from EEPROM
-    loadConfig(&config);
-
-    // Dispaly our startup config to the optional LCD display.
-    // Since this displays for 30s it should only be used for debug.
-    // printConfig();
-
-    // Send another LAM with our real serial number after a short delay.
-    delay(2000);
-    sendNordic(lamAddress, (byte*)&LAM, sizeof(LAM));
-    
-    // Initialize our data packet. The device ID will be filled in later.
-    // Even if there is no hub listening, we still use the packet's sequence
-    // number counter for the passive feedback algorithms.
-    packet.sequenceNumber = 0;
-    packet.status = 0;
-    
-    // We start out in the connecting state, waiting for a config packet
-    // in response to our LAM packet.
-    connectionState = STATE_CONNECTING;
+// ---------------------------------------------------------------------
+// Prints the current sample to the optional LCD screen. There is
+// no built-in display delay so this routine assumes that the LCD will
+// not be updated again immediately.
+// ---------------------------------------------------------------------
+void printSample() {
+    LCDclear();
+    Serial.print(packet.lightLevelHiGain,HEX);
+    LCDpos(0,4);
+    Serial.print(packet.light120HzHiGain,HEX);
+    LCDpos(0,8);
+    Serial.print(packet.lightLevelLoGain,HEX);
+    LCDpos(0,12);
+    Serial.print(packet.light120HzLoGain,HEX);
+    LCDpos(1,0);
+    Serial.print(packet.powerHiGain,HEX);
+    LCDpos(1,4);
+    Serial.print(packet.powerLoGain,HEX);
+    LCDpos(1,8);
+    Serial.print(packet.acPhase,HEX);
+    LCDpos(1,10);
+    Serial.print((packet.temperature/100)%100,DEC);
+    LCDpos(1,12);
+    Serial.print(packet.sequenceNumber,HEX);
+    LCDpos(1,14);
+    Serial.print(packet.status,HEX);    
 }
 
 // =====================================================================
@@ -447,6 +397,95 @@ void powerSequence(BufferDump *dump) {
 }
 
 // =====================================================================
+// The setup() function is called once on startup.
+// =====================================================================
+
+void setup() {
+    
+    // setup our digital outputs
+    pinMode(AMBER_LED_PIN,OUTPUT);
+    pinMode(GREEN_LED_PIN,OUTPUT);
+    pinMode(RED_LED_PIN,OUTPUT);
+    pinMode(BLUE_LED_PIN,OUTPUT);
+    pinMode(PIEZO_PIN,OUTPUT);
+    pinMode(STROBE_PIN,OUTPUT);
+    
+    // run-through the outputs once to show we are alive (and also provide
+    // an audio-visual self-test of each output)
+    digitalWrite(BLUE_LED_PIN,HIGH);
+    delay(500);
+    digitalWrite(BLUE_LED_PIN,LOW);
+    digitalWrite(RED_LED_PIN,HIGH);
+    delay(500);
+    digitalWrite(RED_LED_PIN,LOW);
+    digitalWrite(AMBER_LED_PIN,HIGH);
+    delay(500);
+    digitalWrite(AMBER_LED_PIN,LOW);
+    digitalWrite(GREEN_LED_PIN,HIGH);
+    delay(500);
+    digitalWrite(GREEN_LED_PIN,LOW);
+
+    // startup the serial port for talking to an optional debugging LCD
+    LCDinit();
+
+    // nordic wireless initialization
+    initNordic(serialNumber());
+    
+    // Send an initial Look-at-Me packet to test if there is a hub out there.
+    // At this point, the LAM serial number is zero, which indicates that we
+    // don't expect the hub to respond with a Config packet. The reason for
+    // this is that the first packet sent after a reset does not seem to be
+    // reliably received by the hub (even though it is reliably acknowledged
+    // by the leaf's nordic chip... would be good to understand this better)
+    if(sendNordic(lamAddress, (uint8_t*)&LAM, sizeof(LAM)) < 0x10) {
+        LCDprint("uci@home","connecting...");
+        tone(1500,50);
+        tone(1000,75);
+    }
+    else {
+        if(!nordicOK) {
+            LCDprint("uci@home","nordic error");
+            // play alternating tones to indicate a wireless hardware problem
+            tone(1000,75);
+            tone(1500,50);
+            tone(1000,75);
+            tone(1500,50);
+        }
+        else {
+            LCDprint("uci@home","no hub found");
+            // play a falling sequence of tones to indicate that no hub was found
+            tone(750,100);
+            tone(1000,75);
+            tone(1500,50);
+        }        
+    }
+
+    // copy our serial number from EEPROM to our LAM packet
+    LAM.serialNumber = serialNumber();
+    
+    // copy our config data from EEPROM
+    loadConfig(&config);
+
+    // Dispaly our startup config to the optional LCD display.
+    // Since this displays for 30s it should only be used for debug.
+    // printConfig();
+
+    // Send another LAM with our real serial number after a short delay.
+    delay(2000);
+    sendNordic(lamAddress, (uint8_t*)&LAM, sizeof(LAM));
+    
+    // Initialize our data packet. The device ID will be filled in later.
+    // Even if there is no hub listening, we still use the packet's sequence
+    // number counter for the passive feedback algorithms.
+    packet.sequenceNumber = 0;
+    packet.status = 0;
+    
+    // We start out in the connecting state, waiting for a config packet
+    // in response to our LAM packet.
+    connectionState = STATE_CONNECTING;
+}
+
+// =====================================================================
 // The loop() function is called repeatedly forever after setup().
 // =====================================================================
 
@@ -481,14 +520,14 @@ void loop() {
         temperatureSum += analogRead(TEMPERATURE_PIN);
         // gradually ramp the LED during the first set of temperature samples
         if(whichLED == AMBER_LED_PIN) {
-            byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW_FAST))+0.5);
+            _u8val = (uint8_t)(127.*(1.-cos(temperatureIndex*DPHIGLOW_FAST))+0.5);
         }
         else {
-            byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW_SLOW))+0.5);
+            _u8val = (uint8_t)(127.*(1.-cos(temperatureIndex*DPHIGLOW_SLOW))+0.5);
         }
         // Supress visual lighting feedback if this capability has been disabled
         if((config.capabilities & CAPABILITY_LIGHT_FEEDBACK) && whichLED) {
-            analogWrite(whichLED,byteValue);
+            analogWrite(whichLED,_u8val);
         }
         tick();
     }
@@ -496,7 +535,7 @@ void loop() {
     //----------------------------------------------------------------------
     // Check for any incoming wireless data
     //----------------------------------------------------------------------
-    if(getNordic((byte*)&config,sizeof(config)) == PIPELINE_CONFIG) {
+    if(getNordic((uint8_t*)&config,sizeof(config)) == PIPELINE_CONFIG) {
         handleConfigUpdate();
     }
     else {
@@ -521,14 +560,14 @@ void loop() {
         temperatureSum += analogRead(TEMPERATURE_PIN);
         // gradually ramp the LED during the second set of temperature samples
         if(whichLED == AMBER_LED_PIN) {
-            byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW_FAST))+0.5);
+            _u8val = (uint8_t)(127.*(1.-cos(temperatureIndex*DPHIGLOW_FAST))+0.5);
         }
         else {
-            byteValue = (byte)(127.*(1.-cos(temperatureIndex*DPHIGLOW_SLOW))+0.5);
+            _u8val = (uint8_t)(127.*(1.-cos(temperatureIndex*DPHIGLOW_SLOW))+0.5);
         }
         // Supress visual lighting feedback if this capability has been disabled
         if((config.capabilities & CAPABILITY_LIGHT_FEEDBACK) && whichLED) {
-            analogWrite(whichLED,byteValue);
+            analogWrite(whichLED,_u8val);
         }
         tick();
     }
@@ -541,47 +580,47 @@ void loop() {
     // comfort level. Don't flash every reading to minimize distraction.
     // Disable the temperature feedback when the room is dark (whichLED = 0)
     //----------------------------------------------------------------------
-    uintValue = packet.temperature - SELF_HEATING_CORRECTION;
+    _u16val = packet.temperature - SELF_HEATING_CORRECTION;
     if(whichLED) {
         whichLED = 0;
         if((cycleCount >= SELF_HEATING_DELAY) &&
             (packet.sequenceNumber % TEMP_FLASH_INTERVAL == 0)) {
-            if(uintValue > 100U*config.comfortTempMax) {
+            if(_u16val > 100U*config.comfortTempMax) {
                 // how many degrees over are we? (round up so the answer is at least one)
-                uintValue = 1 + uintValue/100 - config.comfortTempMax;
+                _u16val = 1 + _u16val/100 - config.comfortTempMax;
                 whichLED = RED_LED_PIN;
             }
-            else if(uintValue < 100U*config.comfortTempMin) {
+            else if(_u16val < 100U*config.comfortTempMin) {
                 // how many degrees under are we? (round up so the answer is at least one)
-                uintValue = 1 + config.comfortTempMin - uintValue/100;
+                _u16val = 1 + config.comfortTempMin - _u16val/100;
                 whichLED = BLUE_LED_PIN;
             }
             // The degree excess determines how many times we will flash. Max this out
             // at a small value.
-            if(whichLED && uintValue > TEMP_MAX_FLASHES) uintValue = TEMP_MAX_FLASHES;
+            if(whichLED && _u16val > TEMP_MAX_FLASHES) _u16val = TEMP_MAX_FLASHES;
             // Supress visual temperature feedback if this capability has been disabled
             if(!(config.capabilities & CAPABILITY_TEMP_FEEDBACK)) whichLED = 0;
         }
     }
     // We always cycle through the max flash sequence so that the overall timing
     // is independent of how the LEDs are actually driven.
-    for(byteValue = 0; byteValue < TEMP_MAX_FLASHES; byteValue++) {
-        if(byteValue) delay(TEMP_FLASH_SPACING);
-        if(whichLED && byteValue < uintValue) digitalWrite(whichLED,HIGH);
+    for(_u8val = 0; _u8val < TEMP_MAX_FLASHES; _u8val++) {
+        if(_u8val) delay(TEMP_FLASH_SPACING);
+        if(whichLED && _u8val < _u16val) digitalWrite(whichLED,HIGH);
         delay(TEMP_FLASH_DURATION);        
-        if(whichLED && byteValue < uintValue) digitalWrite(whichLED,LOW);
+        if(whichLED && _u8val < _u16val) digitalWrite(whichLED,LOW);
     }
     
     if(connectionState & STATE_CONNECTING) {
         // We are still waiting for a response from the hub. Send out another
         // request here...
-        sendNordic(lamAddress, (byte*)&LAM, sizeof(LAM));
+        sendNordic(lamAddress, (uint8_t*)&LAM, sizeof(LAM));
     }
     else {
         // Transmit our data via the nordic interface. Save the return value
         // to send with the next packet.
         packet.status =
-            sendNordic(dataAddress, (byte*)&packet, sizeof(packet)) &
+            sendNordic(dataAddress, (uint8_t*)&packet, sizeof(packet)) &
             STATUS_NUM_RETRANSMIT_MASK;
         // Keep track of the number of consecutive dropped data packets
         if(packet.status) {
@@ -607,26 +646,7 @@ void loop() {
     //----------------------------------------------------------------------
     // Display readings on the optional LCD
     //----------------------------------------------------------------------
-    LCDclear();
-    Serial.print(packet.lightLevelHiGain,HEX);
-    LCDpos(0,4);
-    Serial.print(packet.light120HzHiGain,HEX);
-    LCDpos(0,8);
-    Serial.print(packet.lightLevelLoGain,HEX);
-    LCDpos(0,12);
-    Serial.print(packet.light120HzLoGain,HEX);
-    LCDpos(1,0);
-    Serial.print(packet.powerHiGain,HEX);
-    LCDpos(1,4);
-    Serial.print(packet.powerLoGain,HEX);
-    LCDpos(1,8);
-    Serial.print(packet.acPhase,HEX);
-    LCDpos(1,10);
-    Serial.print((packet.temperature/100)%100,DEC);
-    LCDpos(1,12);
-    Serial.print(packet.sequenceNumber,HEX);
-    LCDpos(1,14);
-    Serial.print(packet.status,HEX);
+    printSample();
 }
 
 int main(void) {

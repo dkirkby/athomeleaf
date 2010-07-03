@@ -8,11 +8,11 @@
 #include "WProgram.h" // arduino header
 
 // ---------------------------------------------------------------------
-// Shared globals
+// Locally shared globals
 // ---------------------------------------------------------------------
-uint8_t byteValue;
-uint16_t uintValue;
-float floatValue;
+static uint8_t _u8val;
+static uint16_t _u16val;
+static float _fval;
 
 // =====================================================================
 // Loads previously saved config data from EEPROM into the specified
@@ -185,25 +185,25 @@ void dumpBuffer(uint8_t dumpType, BufferDump *dump) {
         return;
     }
     // the remaining 10 packets use the same structure
-    uintValue = 10;
+    _u16val = 10;
     for(dump->sequenceNumber = 1; dump->sequenceNumber < 11; dump->sequenceNumber++) {
-        src[0] = WAVEDATA(uintValue++); src[1] = WAVEDATA(uintValue++);
-        src[2] = WAVEDATA(uintValue++); src[3] = WAVEDATA(uintValue++);
+        src[0] = WAVEDATA(_u16val++); src[1] = WAVEDATA(_u16val++);
+        src[2] = WAVEDATA(_u16val++); src[3] = WAVEDATA(_u16val++);
         packSamples(src,&dump->packed[0]);
-        src[0] = WAVEDATA(uintValue++); src[1] = WAVEDATA(uintValue++);
-        src[2] = WAVEDATA(uintValue++); src[3] = WAVEDATA(uintValue++);
+        src[0] = WAVEDATA(_u16val++); src[1] = WAVEDATA(_u16val++);
+        src[2] = WAVEDATA(_u16val++); src[3] = WAVEDATA(_u16val++);
         packSamples(src,&dump->packed[5]);
-        src[0] = WAVEDATA(uintValue++); src[1] = WAVEDATA(uintValue++);
-        src[2] = WAVEDATA(uintValue++); src[3] = WAVEDATA(uintValue++);
+        src[0] = WAVEDATA(_u16val++); src[1] = WAVEDATA(_u16val++);
+        src[2] = WAVEDATA(_u16val++); src[3] = WAVEDATA(_u16val++);
         packSamples(src,&dump->packed[10]);
-        src[0] = WAVEDATA(uintValue++); src[1] = WAVEDATA(uintValue++);
-        src[2] = WAVEDATA(uintValue++); src[3] = WAVEDATA(uintValue++);
+        src[0] = WAVEDATA(_u16val++); src[1] = WAVEDATA(_u16val++);
+        src[2] = WAVEDATA(_u16val++); src[3] = WAVEDATA(_u16val++);
         packSamples(src,&dump->packed[15]);
-        src[0] = WAVEDATA(uintValue++); src[1] = WAVEDATA(uintValue++);
-        src[2] = WAVEDATA(uintValue++); src[3] = WAVEDATA(uintValue++);
+        src[0] = WAVEDATA(_u16val++); src[1] = WAVEDATA(_u16val++);
+        src[2] = WAVEDATA(_u16val++); src[3] = WAVEDATA(_u16val++);
         packSamples(src,&dump->packed[20]);
-        src[0] = WAVEDATA(uintValue++); src[1] = WAVEDATA(uintValue++);
-        src[2] = WAVEDATA(uintValue++); src[3] = WAVEDATA(uintValue++);
+        src[0] = WAVEDATA(_u16val++); src[1] = WAVEDATA(_u16val++);
+        src[2] = WAVEDATA(_u16val++); src[3] = WAVEDATA(_u16val++);
         packSamples(src,&dump->packed[25]);
         // try to send this packet now
         if(0x0f < sendNordic(dumpAddress, (uint8_t*)dump, sizeof(BufferDump))) return;
@@ -266,40 +266,40 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
     alpha11 = alpha22 = NLIGHTSAMPBY2;
     alpha01 = alpha02 = alpha12 = 0;
     beta0 = beta1 = beta2 = 0;
-    for(byteValue = 0; byteValue < NLIGHTSAMPBY4; byteValue++) {
-        if(byteValue == 0) {
+    for(_u8val = 0; _u8val < NLIGHTSAMPBY4; _u8val++) {
+        if(_u8val == 0) {
             sink = 0;
             cosk = 1;
         }
         else {
-            floatValue = DPHI120*byteValue;
-            sink = sin(floatValue);
-            cosk = cos(floatValue);
+            _fval = DPHI120*_u8val;
+            sink = sin(_fval);
+            cosk = cos(_fval);
         }
         for(cycle = 0; cycle < 4; cycle++) {
-            if((cycle%2) && (byteValue==0)) continue;
+            if((cycle%2) && (_u8val==0)) continue;
             switch(cycle) {
                 case 0:
-                uintValue = WAVEDATA(byteValue);
+                _u16val = WAVEDATA(_u8val);
                 break;
                 case 1:
-                uintValue = WAVEDATA(NLIGHTSAMPBY2-byteValue);
+                _u16val = WAVEDATA(NLIGHTSAMPBY2-_u8val);
                 break;
                 case 2:
-                uintValue = WAVEDATA(NLIGHTSAMPBY2+byteValue);
+                _u16val = WAVEDATA(NLIGHTSAMPBY2+_u8val);
                 break;
                 case 3:
-                uintValue = WAVEDATA(NLIGHTSAMP-byteValue);
+                _u16val = WAVEDATA(NLIGHTSAMP-_u8val);
                 break;
             }
-            if(uintValue > ADCMIN && uintValue < ADCMAX) {
-                floatValue = uintValue;
-                beta0 += floatValue;
-                beta1 += floatValue*cosk;
-                beta2 += floatValue*sink;
+            if(_u16val > ADCMIN && _u16val < ADCMAX) {
+                _fval = _u16val;
+                beta0 += _fval;
+                beta1 += _fval*cosk;
+                beta2 += _fval*sink;
             }
             else {
-                if(uintValue <= ADCMIN) nzero++;
+                if(_u16val <= ADCMIN) nzero++;
                 alpha00 -= 1;
                 alpha01 -= cosk;
                 alpha02 -= sink;
@@ -313,7 +313,7 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
     
     if(0 != dump) {
         /* zero out the dump header */
-        for(byteValue = 0; byteValue < 15; byteValue++) dump->packed[byteValue] = 0;
+        for(_u8val = 0; _u8val < 15; _u8val++) dump->packed[_u8val] = 0;
     }
 
     // Check for an almost singular matrix which signals an over/under-flow condition
@@ -405,64 +405,64 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
     nClipped = 0;
     cosSum = sinSum = 0;
     moment0 = moment1 = 0;
-    for(byteValue = 0; byteValue < NPOWERSAMPBY4; byteValue++) {
-        if(byteValue == 0) {
+    for(_u8val = 0; _u8val < NPOWERSAMPBY4; _u8val++) {
+        if(_u8val == 0) {
             sink = 0;
             cosk = 1;
         }
         else {
-            floatValue = DPHI60*byteValue;
-            sink = sin(floatValue);
-            cosk = cos(floatValue);
+            _fval = DPHI60*_u8val;
+            sink = sin(_fval);
+            cosk = cos(_fval);
         }
         for(cycle = 0; cycle < 4; cycle++) {
-            if((cycle%2) && (byteValue==0)) {
+            if((cycle%2) && (_u8val==0)) {
                 cosk = -1;
                 continue;
             }
             switch(cycle) {
                 case 0:
-                uintValue = WAVEDATA(byteValue);
+                _u16val = WAVEDATA(_u8val);
                 break;
                 case 1:
-                uintValue = WAVEDATA(NPOWERSAMPBY2-byteValue);
+                _u16val = WAVEDATA(NPOWERSAMPBY2-_u8val);
                 cosk = -cosk;
                 break;
                 case 2:
-                uintValue = WAVEDATA(NPOWERSAMPBY2+byteValue);
+                _u16val = WAVEDATA(NPOWERSAMPBY2+_u8val);
                 sink = -sink;
                 break;
                 case 3:
-                uintValue = WAVEDATA(NPOWERSAMP-byteValue);
+                _u16val = WAVEDATA(NPOWERSAMP-_u8val);
                 cosk = -cosk;
                 break;
             }
-            if(uintValue < 3 || uintValue > 1020) nClipped++;
-            moment0 += uintValue;
-            moment1 += (uint32_t)uintValue*uintValue;
-            floatValue = uintValue;
-            cosSum += floatValue*cosk;
-            sinSum += floatValue*sink;
+            if(_u16val < 3 || _u16val > 1020) nClipped++;
+            moment0 += _u16val;
+            moment1 += (uint32_t)_u16val*_u16val;
+            _fval = _u16val;
+            cosSum += _fval*cosk;
+            sinSum += _fval*sink;
         }
     }
     // store the floating point 60 Hz RMS in ADC units
-    floatValue = sqrt(cosSum*cosSum+sinSum*sinSum)*RMS_NORM;
+    _fval = sqrt(cosSum*cosSum+sinSum*sinSum)*RMS_NORM;
 
     // convert to a 16-bit integer using the provided scale factor
-    currentRMS = (unsigned short)(scaleFactor*floatValue+0.5);
+    currentRMS = (unsigned short)(scaleFactor*_fval+0.5);
     
     totalVariance = ONE_OVER_NPOWERSAMP*moment1 -
         ONE_OVER_NPOWERSAMP_SQ*moment0*moment0;
     currentComplexity =
-        (uint8_t)(255*(totalVariance - floatValue*floatValue)/totalVariance + 0.5);
+        (uint8_t)(255*(totalVariance - _fval*_fval)/totalVariance + 0.5);
 
     if(0 != dump) {
         /* zero out the dump header */
-        for(byteValue = 0; byteValue < 15; byteValue++) dump->packed[byteValue] = 0;
+        for(_u8val = 0; _u8val < 15; _u8val++) dump->packed[_u8val] = 0;
         /* start filling our dump header */
         DUMP_ANALYSIS_SAVE(0,uint8_t,nClipped);
         DUMP_ANALYSIS_SAVE(1,uint8_t,currentComplexity);
-        DUMP_ANALYSIS_SAVE(2,float,floatValue);
+        DUMP_ANALYSIS_SAVE(2,float,_fval);
     }
 
     // Calculate the delay (in us) of the current sampling compared
@@ -478,19 +478,19 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
     
     // Calculate the phase offset in microseconds of an equivalent 60 Hz
     // sine wave. Offset is relative to WAVEDATA(0)=sample[6].
-    floatValue = atan2(sinSum,cosSum)*RAD_TO_MICROS - POWER_CYCLE_MICROS_BY_4;
-    if(floatValue < 0) floatValue += POWER_CYCLE_MICROS;    
+    _fval = atan2(sinSum,cosSum)*RAD_TO_MICROS - POWER_CYCLE_MICROS_BY_4;
+    if(_fval < 0) _fval += POWER_CYCLE_MICROS;    
     if(0 != dump) {
-        DUMP_ANALYSIS_SAVE(6,uint16_t,(uint16_t)(floatValue+0.5));
+        DUMP_ANALYSIS_SAVE(6,uint16_t,(uint16_t)(_fval+0.5));
     }
 
     // Calculate the relative phase (in us) of the voltage and current
     // fiducials modulus a 120 Hz cycle.
     elapsed -= voltagePhase; // cannot underflow for a sensible voltagePhase
-    floatValue = fmod(floatValue + elapsed,POWER_CYCLE_MICROS_BY_2);
+    _fval = fmod(_fval + elapsed,POWER_CYCLE_MICROS_BY_2);
 
     // round to the nearest microsecond and store as a 16-bit integer
-    currentPhase = (unsigned short)(floatValue + 0.5);
+    currentPhase = (unsigned short)(_fval + 0.5);
     if(0 != dump) {
         DUMP_ANALYSIS_SAVE(8,uint16_t,currentPhase);
     }
@@ -520,11 +520,11 @@ void phaseAnalysis(BufferDump *dump) {
         wrapOffset = 0;
     }
     // Calculate the center-of-gravity moments of the fiducial pulse.
-    for(byteValue = 0; byteValue < NPOWERSAMP; byteValue++) {
-        uintValue = WAVEDATA(byteValue);
-        moment0 += uintValue;
+    for(_u8val = 0; _u8val < NPOWERSAMP; _u8val++) {
+        _u16val = WAVEDATA(_u8val);
+        moment0 += _u16val;
         // the UL below is to force the RHS to be evaluated as uint32_t
-        moment1 += (wrapOffset+(6UL*byteValue+wrapOffset)%NPOWERSAMP)*uintValue;
+        moment1 += (wrapOffset+(6UL*_u8val+wrapOffset)%NPOWERSAMP)*_u16val;
     }
     // The denominator measures the integral of the fiducial signal and
     // provides a phase-independent check that we have a valid signal.
@@ -543,7 +543,7 @@ void phaseAnalysis(BufferDump *dump) {
     
     if(0 != dump) {
         /* zero out the dump header */
-        for(byteValue = 0; byteValue < 15; byteValue++) dump->packed[byteValue] = 0;
+        for(_u8val = 0; _u8val < 15; _u8val++) dump->packed[_u8val] = 0;
         // Save the COG moments and wrap offset
         DUMP_ANALYSIS_SAVE(0,uint32_t,moment1);
         DUMP_ANALYSIS_SAVE(4,uint32_t,moment0);
