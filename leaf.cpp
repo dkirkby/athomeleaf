@@ -306,24 +306,30 @@ void setup() {
 }
 
 // =====================================================================
-// The loop() function is called repeatedly forever after setup().
+// Perform an acquisition and analysis sequence for lighting conditions.
+// If dump is non-zero, a buffer dump might be performed based on the
+// current configuration.
+//
+// Results are saved in:
+//  -packet: lightLevelHiGain, lightLevelLoGain, light120HzHiGain, light120HzLoGain
+//  -whichLED
 // =====================================================================
-
-void loop() {
-    // update our packet counter (which cycles from $00-$ff)
-    if(++packet.sequenceNumber == 0) cycleCount++;
-
-    // LEDs off during light measurements
+void lightingSequence(BufferDump *dump) {
+    
+    // Ensure that all LEDs are off during light measurements
+    // although this is normally already taken care of.
     digitalWrite(AMBER_LED_PIN,LOW);
     digitalWrite(GREEN_LED_PIN,LOW);
+    digitalWrite(RED_LED_PIN,LOW);
+    digitalWrite(BLUE_LED_PIN,LOW);
 
-    // =====================================================================
-    // First time round is the high-gain photoamp output.
-    // =====================================================================
+    // ---------------------------------------------------------------------
+    // First, sample the high-gain photodiode amplifier signal.
+    // ---------------------------------------------------------------------
     acquireADCSamples(LIGHTING_PIN_HI);
 
     // Analyze the captured waveform
-    lightingAnalysis(16.0,&dump);
+    lightingAnalysis(16.0,dump);
     
     if(lightingMean < DARK_THRESHOLD) {
         whichLED = 0; // signals that the room is dark and the LED should be off
@@ -347,16 +353,16 @@ void loop() {
     if((config.capabilities & CAPABILITY_LIGHT_DUMP) &&
         connectionState == STATE_CONNECTED &&
         (packet.sequenceNumber % config.dumpInterval) == (config.dumpInterval>>1)) {
-        dumpBuffer(DUMP_BUFFER_LIGHT_HI,&dump);
+        dumpBuffer(DUMP_BUFFER_LIGHT_HI,dump);
     }
     
-    // =====================================================================
-    // Second time round is the low-gain photoamp output.
-    // =====================================================================
+    // ---------------------------------------------------------------------
+    // Second, sample the low-gain photodiode amplifier signal.
+    // ---------------------------------------------------------------------
     acquireADCSamples(LIGHTING_PIN);
 
     // Analyze the captured waveform
-    lightingAnalysis(16.0,&dump);
+    lightingAnalysis(16.0,dump);
     
     if(whichLED == 0xff) {
         if(lighting120Hz > lightingMean/ARTIFICIAL_THRESHOLD) {
@@ -374,8 +380,17 @@ void loop() {
     if((config.capabilities & CAPABILITY_LIGHT_DUMP) &&
         connectionState == STATE_CONNECTED &&
         (packet.sequenceNumber % config.dumpInterval) == (config.dumpInterval>>1)) {
-        dumpBuffer(DUMP_BUFFER_LIGHT_LO,&dump);
-    }
+        dumpBuffer(DUMP_BUFFER_LIGHT_LO,dump);
+    }    
+}
+
+// =====================================================================
+// The loop() function is called repeatedly forever after setup().
+// =====================================================================
+
+void loop() {
+    // update our packet counter (which cycles from $00-$ff)
+    if(++packet.sequenceNumber == 0) cycleCount++;
 
     // =====================================================================
     // Calculate average of NTEMPSUM temperature ADC samples.
