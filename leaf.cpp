@@ -385,12 +385,79 @@ void lightingSequence(BufferDump *dump) {
 }
 
 // =====================================================================
+// Perform an acquisition and analysis sequence for power consumption.
+// If dump is non-zero, a buffer dump might be performed based on the
+// current configuration.
+//
+// Results are saved in:
+//  -packet: powerLoGain, powerHiGain, (acPhase)
+//  -(clickThreshold)
+// =====================================================================
+void powerSequence(BufferDump *dump) {
+    //----------------------------------------------------------------------
+    // Start the power analysis by measuring the AC voltage phase
+    //----------------------------------------------------------------------
+    acquireADCSamples(ACPHASE_PIN);
+    
+    // Analyze the captured waveform
+    phaseAnalysis(dump);
+    
+    // Periodically dump sample buffer if requested
+    if((config.capabilities & CAPABILITY_POWER_DUMP) &&
+        connectionState == STATE_CONNECTED &&
+        (packet.sequenceNumber % config.dumpInterval) == 0) {
+        dumpBuffer(DUMP_BUFFER_AC_PHASE,dump);
+    }
+
+    //----------------------------------------------------------------------
+    // First time round uses the high-gain power channel.
+    //----------------------------------------------------------------------    
+    acquireADCSamples(ACPOWER_PIN_HI);
+    
+    // Analyze the captured waveform
+    powerAnalysis(POWERSCALE_HI,dump);
+    packet.powerHiGain = currentRMS;
+    packet.acPhase = nClipped;
+    
+    // Periodically dump sample buffer if requested
+    if((config.capabilities & CAPABILITY_POWER_DUMP) &&
+        connectionState == STATE_CONNECTED &&
+        (packet.sequenceNumber % config.dumpInterval) == 0) {
+        dumpBuffer(DUMP_BUFFER_POWER_HI,dump);
+    }
+    
+    //----------------------------------------------------------------------
+    // Second time round uses the low-gain power channel.
+    //----------------------------------------------------------------------
+    acquireADCSamples(ACPOWER_PIN);
+    
+    // Analyze the captured waveform
+    powerAnalysis(POWERSCALE_LO,dump);    
+    packet.powerLoGain = currentRMS;
+
+    // Periodically dump sample buffer if requested
+    if((config.capabilities & CAPABILITY_POWER_DUMP) &&
+        connectionState == STATE_CONNECTED &&
+        (packet.sequenceNumber % config.dumpInterval) == 0) {
+        dumpBuffer(DUMP_BUFFER_POWER_LO,dump);
+    }
+
+    // update the click threshold based on the new power estimate
+    // clickThreshold = (unsigned long)(THRESHOLDSCALE*rmsPower*rmsPower);
+}
+
+// =====================================================================
 // The loop() function is called repeatedly forever after setup().
 // =====================================================================
 
 void loop() {
     // update our packet counter (which cycles from $00-$ff)
     if(++packet.sequenceNumber == 0) cycleCount++;
+    
+    //----------------------------------------------------------------------
+    // Measure the lighting conditions
+    //----------------------------------------------------------------------
+    lightingSequence(&dump);
 
     // =====================================================================
     // Calculate average of NTEMPSUM temperature ADC samples.
@@ -440,62 +507,9 @@ void loop() {
     }
     
     //----------------------------------------------------------------------
-    // Start the power analysis by measuring the AC voltage phase
+    // Measure the power consumption
     //----------------------------------------------------------------------
-    acquireADCSamples(ACPHASE_PIN);
-    
-    // Analyze the captured waveform
-    phaseAnalysis(&dump);
-    //packet.light120HzHiGain = (uint16_t)(phaseDenominator >> 3);
-    //packet.light120HzLoGain = voltagePhase;
-    // packet.acPhase = 0x80;
-    
-    // Periodically dump sample buffer if requested
-    if((config.capabilities & CAPABILITY_POWER_DUMP) &&
-        connectionState == STATE_CONNECTED &&
-        (packet.sequenceNumber % config.dumpInterval) == 0) {
-        dumpBuffer(DUMP_BUFFER_AC_PHASE,&dump);
-    }
-
-    //----------------------------------------------------------------------
-    // First time round uses the high-gain power channel.
-    //----------------------------------------------------------------------    
-    acquireADCSamples(ACPOWER_PIN_HI);
-    
-    // Analyze the captured waveform
-    powerAnalysis(POWERSCALE_HI,&dump);
-    packet.powerHiGain = currentRMS;
-    packet.lightLevelHiGain = currentPhase;
-    packet.light120HzHiGain = uintValue;
-    packet.acPhase = nClipped;
-    
-    // Periodically dump sample buffer if requested
-    if((config.capabilities & CAPABILITY_POWER_DUMP) &&
-        connectionState == STATE_CONNECTED &&
-        (packet.sequenceNumber % config.dumpInterval) == 0) {
-        dumpBuffer(DUMP_BUFFER_POWER_HI,&dump);
-    }
-    
-    //----------------------------------------------------------------------
-    // Second time round uses the low-gain power channel.
-    //----------------------------------------------------------------------
-    acquireADCSamples(ACPOWER_PIN);
-    
-    // Analyze the captured waveform
-    powerAnalysis(POWERSCALE_LO,&dump);    
-    packet.powerLoGain = currentRMS;
-    packet.lightLevelLoGain = currentPhase;
-    packet.light120HzLoGain = uintValue;
-
-    // Periodically dump sample buffer if requested
-    if((config.capabilities & CAPABILITY_POWER_DUMP) &&
-        connectionState == STATE_CONNECTED &&
-        (packet.sequenceNumber % config.dumpInterval) == 0) {
-        dumpBuffer(DUMP_BUFFER_POWER_LO,&dump);
-    }
-
-    // update the click threshold based on the new power estimate
-    // clickThreshold = (unsigned long)(THRESHOLDSCALE*rmsPower*rmsPower);
+    powerSequence(&dump);
     
     //----------------------------------------------------------------------
     // Temperature sampling set 2
