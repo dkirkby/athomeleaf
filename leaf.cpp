@@ -390,8 +390,8 @@ void powerSequence(BufferDump *dump) {
     //----------------------------------------------------------------------    
     acquireADCSamples(ACPOWER_PIN_HI);
     
-    // Analyze the captured waveform
-    powerAnalysis(POWERSCALE_HI,dump);
+    // Analyze the captured high-gain waveform
+    powerAnalysis(config.powerGainHi,config.fiducialShiftHi,dump);
     packet.powerHiGain = currentRMS;
     packet.acPhase = nClipped;
     
@@ -407,8 +407,8 @@ void powerSequence(BufferDump *dump) {
     //----------------------------------------------------------------------
     acquireADCSamples(ACPOWER_PIN);
     
-    // Analyze the captured waveform
-    powerAnalysis(POWERSCALE_LO,dump);    
+    // Analyze the captured low-gain waveform
+    powerAnalysis(config.powerGainLo,config.fiducialShiftHi-config.fiducialHiLoDelta,dump);
     packet.powerLoGain = currentRMS;
 
     // Periodically dump sample buffer if requested

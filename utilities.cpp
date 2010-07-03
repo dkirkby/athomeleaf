@@ -389,19 +389,24 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
 }
 
 // =====================================================================
-// Analyzes an AC current waveform to determine its true RMS power
-// relative to a 120V RMS 60Hz voltage. The algorithm assumes that
-// there is no clipping and that the load is purely resistive.
+// Analyzes an AC current waveform to determine its RMS power at 60 Hz.
+// Uses the gain (mW/ADC) and phase delay (us) provided.
 // This function makes the following math calls: 62*sin, 62*cos, 1*sqrt.
-// The scale factor is used to scale the results from ADC counts.
+//
+// Returns the following values via globals:
+//  nClipped: number of samples/250 clipped at the ADC hi/lo limits
+//  currentComplexity: 0-255 measure of signal variance not at 60 Hz
+//  currentRMS: calculated apparent power consumption in mW
+//  currentPhase: delay in us of current zero xing wrt voltage zero xing
 // =====================================================================
 
 uint8_t nClipped,currentComplexity;
 uint16_t currentRMS,currentPhase;
-uint32_t elapsed;
-float totalVariance;
 
-void powerAnalysis(float scaleFactor, BufferDump *dump) {
+static uint32_t elapsed;
+static float totalVariance;
+
+void powerAnalysis(uint16_t gain, uint16_t delay, BufferDump *dump) {
     nClipped = 0;
     cosSum = sinSum = 0;
     moment0 = moment1 = 0;
@@ -448,14 +453,16 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
     // store the floating point 60 Hz RMS in ADC units
     _fval = sqrt(cosSum*cosSum+sinSum*sinSum)*RMS_NORM;
 
-    // convert to a 16-bit integer using the provided scale factor
-    currentRMS = (unsigned short)(scaleFactor*_fval+0.5);
+    // convert to a 16-bit mW value using the gain provided
+    currentRMS = (uint16_t)(gain*_fval+0.5);
     
+    // calculate the fraction of the total variance that is not at 60 Hz
     totalVariance = ONE_OVER_NPOWERSAMP*moment1 -
         ONE_OVER_NPOWERSAMP_SQ*moment0*moment0;
     currentComplexity =
         (uint8_t)(255*(totalVariance - _fval*_fval)/totalVariance + 0.5);
 
+    // initialize our optional dump header
     if(0 != dump) {
         /* zero out the dump header */
         for(_u8val = 0; _u8val < 15; _u8val++) dump->packed[_u8val] = 0;
@@ -485,9 +492,8 @@ void powerAnalysis(float scaleFactor, BufferDump *dump) {
     }
 
     // Calculate the relative phase (in us) of the voltage and current
-    // fiducials modulus a 120 Hz cycle.
-    elapsed -= voltagePhase; // cannot underflow for a sensible voltagePhase
-    _fval = fmod(_fval + elapsed,POWER_CYCLE_MICROS_BY_2);
+    // zero crossings modulus a 120 Hz cycle.
+    _fval = fmod(_fval + elapsed - voltagePhase - delay,POWER_CYCLE_MICROS_BY_2);
 
     // round to the nearest microsecond and store as a 16-bit integer
     currentPhase = (unsigned short)(_fval + 0.5);
