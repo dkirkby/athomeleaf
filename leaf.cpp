@@ -23,23 +23,16 @@
 #define NTEMPSUMBY2     1024
 // (0.1F/mV)(5000mV/1024ADC)/NTEMPSUM
 #define ADC2DEGF 0.0002384185791015625
-// 2pi/NTEMPSUM
-#define DPHIGLOW_SLOW 0.0030679615757712823
-// 4pi/NTEMPSUM
-#define DPHIGLOW_FAST 0.0061359231515425647
 
-// number of cyles (256 readings each) to wait until self-heating has stabilized
-#define SELF_HEATING_DELAY 2
-// the size of the self heating correction to apply after the delay (degF x 100)
-#define SELF_HEATING_CORRECTION 0 // 763
-// the blue/red LED will flash every Nth readings for below/above comfort range
-#define TEMP_FLASH_INTERVAL 2
-// blue/red flash duration (ms) to indicate below/above comfort range
-#define TEMP_FLASH_DURATION 20
-// the maximum number of degrees above/below to indicate with individual flashes
-#define TEMP_MAX_FLASHES 3
-// spacing between individual flashes (ms)
-#define TEMP_FLASH_SPACING 200
+// ---------------------------------------------------------------------
+// LED feedback parameters
+// ---------------------------------------------------------------------
+// slow-glow radians per temperature sample = 2pi/NTEMPSUM
+#define DPHIGLOW_SLOW 0.0030679615757712823
+// fast-glow radians per temperature sample = 4pi/NTEMPSUM
+#define DPHIGLOW_FAST 0.0061359231515425647
+// LED flash duration (ms)
+#define FLASH_DURATION 20
 
 // ---------------------------------------------------------------------
 // Lighting analysis parameters
@@ -148,9 +141,10 @@ uint8_t ledControl;
 #define LED_RAMP_TOGGLE { ledControl ^= (1<<RAMP_UP); }
 #define LED_IS_RAMPING_UP (ledControl & (1<<RAMP_UP))
 
-// ---------------------------------------------------------------------
-// Temperature monitoring globals
-// ---------------------------------------------------------------------
+// Lighting globals
+uint8_t roomIsDark;
+
+// Temperature globals
 uint8_t whichLED;
 uint32_t temperatureSum;
 
@@ -285,6 +279,7 @@ void printSample() {
 // current configuration.
 //
 // Results are saved in:
+//  -roomIsDark: 0/1
 //  -packet: lightLevelHiGain, lightLevelLoGain, light120HzHiGain, light120HzLoGain
 //  -ledControl: enables GREEN/AMBER_GLOW if lightingFeedback capability is set
 // =====================================================================
@@ -306,9 +301,10 @@ void lightingSequence(BufferDump *dump) {
     lightingAnalysis(16.0,dump);
     
     _u8val = 0;
+    roomIsDark = 0;
     if(lightingMean < DARK_THRESHOLD) {
-        // the room is dark and the LED should be off
-        LED_ALL_OFF;
+        // the room is dark 
+        roomIsDark = 1;
     }
     else if(lightingMean < LIGHTING_CROSSOVER) {
         if(lighting120Hz > lightingMean/ARTIFICIAL_THRESHOLD) {
@@ -451,6 +447,9 @@ void glowSequence() {
 
     // toggle the glow on/off phase
     LED_RAMP_TOGGLE;
+    
+    // disable all LEDs if the room is dark
+    if(roomIsDark) LED_ALL_OFF;
 
     // Perform half of the temperature cycles
     for(_u16val = 0; _u16val < NTEMPSUMBY2; _u16val++) {
@@ -475,6 +474,51 @@ void glowSequence() {
         // perform audio level feedback
         if(config.capabilities & CAPABILITY_POWER_LEVEL_AUDIO) tick();
     }
+}
+
+// =====================================================================
+// Analyzes the temperature samples collected during previous
+// glowSequences and performs LED flashing.
+//
+// Results are saved in:
+//  - packet.temperature
+//  - ledControl: flash bits are updated based on temperature
+// =====================================================================
+void flashSequence() {
+
+    // calculate the average temperature in degF x 100
+    packet.temperature = (unsigned int)(100*temperatureSum*ADC2DEGF);
+
+    // adjust for self heating
+    if(packet.temperature > config.selfHeatOffset) {
+        _u16val = packet.temperature - config.selfHeatOffset;
+        // has the self-heating delay expired? (the cycleCount check protects
+        // against millis() wrap-around after 50 days)
+        if((millis() > 10000UL*config.selfHeatDelay) || (cycleCount > 500)) {
+            if(_u16val > 100U*config.comfortTempMax) {
+                // we are above the comfort zone
+                if(config.capabilities & CAPABILITY_TEMP_FEEDBACK) LED_ENABLE(RED_FLASH);
+            }
+            else if(_u16val < 100U*config.comfortTempMin) {
+                // we are below the comfort zone
+                if(config.capabilities & CAPABILITY_TEMP_FEEDBACK) LED_ENABLE(BLUE_FLASH);
+            }
+        }
+    }
+
+    // disable all LEDs if the room is dark
+    if(roomIsDark) LED_ALL_OFF;
+    
+    // do the flashing now
+    if(LED_IS_ENABLED(GREEN_FLASH)) digitalWrite(GREEN_LED_PIN,HIGH);
+    if(LED_IS_ENABLED(AMBER_FLASH)) digitalWrite(AMBER_LED_PIN,HIGH);
+    if(LED_IS_ENABLED(RED_FLASH)) digitalWrite(RED_LED_PIN,HIGH);
+    if(LED_IS_ENABLED(BLUE_FLASH)) digitalWrite(BLUE_LED_PIN,HIGH);
+    delay(FLASH_DURATION);
+    digitalWrite(GREEN_LED_PIN,LOW);
+    digitalWrite(AMBER_LED_PIN,LOW);
+    digitalWrite(RED_LED_PIN,LOW);
+    digitalWrite(BLUE_LED_PIN,LOW);
 }
 
 // =====================================================================
@@ -615,45 +659,11 @@ void loop() {
     //----------------------------------------------------------------------
     glowSequence();
 
-    // calculate the average temperature in degF x 100
-    packet.temperature = (unsigned int)(100*temperatureSum*ADC2DEGF);
-            
     //----------------------------------------------------------------------
-    // Use the red/blue LEDs to indicate if the temperature is beyond the
-    // comfort level. Don't flash every reading to minimize distraction.
-    // Disable the temperature feedback when the room is dark (whichLED = 0)
+    // Analyze the temperature samples and flash the LEDs
     //----------------------------------------------------------------------
-    _u16val = packet.temperature - SELF_HEATING_CORRECTION;
-    if(whichLED) {
-        whichLED = 0;
-        if((cycleCount >= SELF_HEATING_DELAY) &&
-            (packet.sequenceNumber % TEMP_FLASH_INTERVAL == 0)) {
-            if(_u16val > 100U*config.comfortTempMax) {
-                // how many degrees over are we? (round up so the answer is at least one)
-                _u16val = 1 + _u16val/100 - config.comfortTempMax;
-                whichLED = RED_LED_PIN;
-            }
-            else if(_u16val < 100U*config.comfortTempMin) {
-                // how many degrees under are we? (round up so the answer is at least one)
-                _u16val = 1 + config.comfortTempMin - _u16val/100;
-                whichLED = BLUE_LED_PIN;
-            }
-            // The degree excess determines how many times we will flash. Max this out
-            // at a small value.
-            if(whichLED && _u16val > TEMP_MAX_FLASHES) _u16val = TEMP_MAX_FLASHES;
-            // Supress visual temperature feedback if this capability has been disabled
-            if(!(config.capabilities & CAPABILITY_TEMP_FEEDBACK)) whichLED = 0;
-        }
-    }
-    // We always cycle through the max flash sequence so that the overall timing
-    // is independent of how the LEDs are actually driven.
-    for(_u8val = 0; _u8val < TEMP_MAX_FLASHES; _u8val++) {
-        if(_u8val) delay(TEMP_FLASH_SPACING);
-        if(whichLED && _u8val < _u16val) digitalWrite(whichLED,HIGH);
-        delay(TEMP_FLASH_DURATION);        
-        if(whichLED && _u8val < _u16val) digitalWrite(whichLED,LOW);
-    }
-    
+    flashSequence();
+        
     if(connectionState & STATE_CONNECTING) {
         // We are still waiting for a response from the hub. Send out another
         // request here...
