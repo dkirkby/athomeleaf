@@ -124,6 +124,24 @@ BufferDump dump;
 unsigned short cycleCount = 0;
 
 // ---------------------------------------------------------------------
+// Control register for LED feedback
+// ---------------------------------------------------------------------
+uint8_t ledControl;
+
+#define GREEN_GLOW  0
+#define AMBER_GLOW  1
+#define RED_GLOW    2
+#define GREEN_FLASH 3
+#define AMBER_FLASH 4
+#define RED_FLASH   5
+#define BLUE_FLASH  6
+
+#define LED_INIT { ledControl = 0x7f & (uint8_t)(config.capabilities >> 7); }
+#define LED_ENABLE(FEATURE) { ledControl |= (1<<(FEATURE)); }
+#define LED_DISABLE(FEATURE) { ledControl &= ~(1<<(FEATURE)); }
+#define LED_IS_ENABLED(FEATURE) (ledControl & (1<<(FEATURE)))
+
+// ---------------------------------------------------------------------
 // Temperature monitoring globals
 // ---------------------------------------------------------------------
 uint8_t whichLED;
