@@ -238,6 +238,7 @@ void dumpBuffer(uint8_t dumpType, BufferDump *dump) {
 #define MICROS_PER_SAMPLE 200
 #define ONE_OVER_NPOWERSAMP 4e-3 // 1/250
 #define ONE_OVER_NPOWERSAMP_SQ 16e-6 // 1/(250*250)
+#define POWER_FACTOR_OMEGA 376.99111843077515 // 2pi*60
 
 // ---------------------------------------------------------------------
 // Lighting and power analysis shared globals
@@ -396,12 +397,12 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
 // Returns the following values via globals:
 //  nClipped: number of samples/250 clipped at the ADC hi/lo limits
 //  currentComplexity: 0-255 measure of signal variance not at 60 Hz
-//  currentRMS: calculated apparent power consumption in mW
-//  currentPhase: delay in us of current zero xing wrt voltage zero xing
+//  apparentPower: calculated apparent power consumption in mW
+//  powerFactor: cos(phase) [signed!]
 // =====================================================================
 
 uint8_t nClipped,currentComplexity;
-uint16_t currentRMS,currentPhase;
+float apparentPower,powerFactor;
 
 static uint32_t elapsed;
 static float totalVariance;
@@ -453,8 +454,8 @@ void powerAnalysis(uint16_t gain, uint16_t delay, BufferDump *dump) {
     // store the floating point 60 Hz RMS in ADC units
     _fval = sqrt(cosSum*cosSum+sinSum*sinSum)*RMS_NORM;
 
-    // convert to a 16-bit mW value using the gain provided
-    currentRMS = (uint16_t)(gain*_fval+0.5);
+    // convert to milliWatts using the gain provided
+    apparentPower = gain*_fval;
     
     // calculate the fraction of the total variance that is not at 60 Hz
     totalVariance = ONE_OVER_NPOWERSAMP*moment1 -
@@ -483,7 +484,7 @@ void powerAnalysis(uint16_t gain, uint16_t delay, BufferDump *dump) {
         elapsed += timestamp;
     }
     
-    // Calculate the phase offset in microseconds of an equivalent 60 Hz
+    // Calculate the raw phase (in us) of an equivalent 60 Hz
     // sine wave. Offset is relative to WAVEDATA(0)=sample[6].
     _fval = atan2(sinSum,cosSum)*RAD_TO_MICROS - POWER_CYCLE_MICROS_BY_4;
     if(_fval < 0) _fval += POWER_CYCLE_MICROS;    
@@ -494,12 +495,13 @@ void powerAnalysis(uint16_t gain, uint16_t delay, BufferDump *dump) {
     // Calculate the relative phase (in us) of the voltage and current
     // zero crossings modulus a 120 Hz cycle.
     _fval = fmod(_fval + elapsed - voltagePhase - delay,POWER_CYCLE_MICROS_BY_2);
-
-    // round to the nearest microsecond and store as a 16-bit integer
-    currentPhase = (unsigned short)(_fval + 0.5);
     if(0 != dump) {
-        DUMP_ANALYSIS_SAVE(8,uint16_t,currentPhase);
+        DUMP_ANALYSIS_SAVE(8,uint16_t,(uint16_t)(_fval + 0.5));
     }
+    
+    // Calculate the signed power factor. We don't take the absolute value
+    // here so that analysis results can be averaged.
+    powerFactor = cos(_fval*POWER_FACTOR_OMEGA);
 }
 
 // =====================================================================

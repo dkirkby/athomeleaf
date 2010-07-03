@@ -370,6 +370,12 @@ void lightingSequence(BufferDump *dump) {
 //  -(clickThreshold)
 // =====================================================================
 void powerSequence(BufferDump *dump) {
+    
+    // prepare to combine the high- and low-gain analysis results
+    uint32_t rmsSum = 0;
+    float powerFactorSum = 0;
+    uint8_t nSum = 0;
+
     //----------------------------------------------------------------------
     // Start the power analysis by measuring the AC voltage phase
     //----------------------------------------------------------------------
@@ -392,8 +398,6 @@ void powerSequence(BufferDump *dump) {
     
     // Analyze the captured high-gain waveform
     powerAnalysis(config.powerGainHi,config.fiducialShiftHi,dump);
-    packet.powerHiGain = currentRMS;
-    packet.acPhase = nClipped;
     
     // Periodically dump sample buffer if requested
     if(dump && (config.capabilities & CAPABILITY_POWER_DUMP) &&
@@ -409,7 +413,6 @@ void powerSequence(BufferDump *dump) {
     
     // Analyze the captured low-gain waveform
     powerAnalysis(config.powerGainLo,config.fiducialShiftHi-config.fiducialHiLoDelta,dump);
-    packet.powerLoGain = currentRMS;
 
     // Periodically dump sample buffer if requested
     if(dump && (config.capabilities & CAPABILITY_POWER_DUMP) &&
