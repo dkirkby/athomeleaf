@@ -285,7 +285,7 @@ void printSample() {
 //
 // Results are saved in:
 //  -packet: lightLevelHiGain, lightLevelLoGain, light120HzHiGain, light120HzLoGain
-//  -whichLED
+//  -ledControl: enables GREEN/AMBER_GLOW if lightingFeedback capability is set
 // =====================================================================
 void lightingSequence(BufferDump *dump) {
     
@@ -323,7 +323,7 @@ void lightingSequence(BufferDump *dump) {
     packet.light120HzHiGain = lighting120Hz;
     
     // Periodically dump sample buffer if requested
-    if((config.capabilities & CAPABILITY_LIGHT_DUMP) &&
+    if(dump && (config.capabilities & CAPABILITY_LIGHT_DUMP) &&
         connectionState == STATE_CONNECTED &&
         (packet.sequenceNumber % config.dumpInterval) == (config.dumpInterval>>1)) {
         dumpBuffer(DUMP_BUFFER_LIGHT_HI,dump);
@@ -350,7 +350,7 @@ void lightingSequence(BufferDump *dump) {
     packet.light120HzLoGain = lighting120Hz;
     
     // Periodically dump sample buffer if requested
-    if((config.capabilities & CAPABILITY_LIGHT_DUMP) &&
+    if(dump && (config.capabilities & CAPABILITY_LIGHT_DUMP) &&
         connectionState == STATE_CONNECTED &&
         (packet.sequenceNumber % config.dumpInterval) == (config.dumpInterval>>1)) {
         dumpBuffer(DUMP_BUFFER_LIGHT_LO,dump);
@@ -376,7 +376,7 @@ void powerSequence(BufferDump *dump) {
     phaseAnalysis(dump);
     
     // Periodically dump sample buffer if requested
-    if((config.capabilities & CAPABILITY_POWER_DUMP) &&
+    if(dump && (config.capabilities & CAPABILITY_POWER_DUMP) &&
         connectionState == STATE_CONNECTED &&
         (packet.sequenceNumber % config.dumpInterval) == 0) {
         dumpBuffer(DUMP_BUFFER_AC_PHASE,dump);
@@ -393,7 +393,7 @@ void powerSequence(BufferDump *dump) {
     packet.acPhase = nClipped;
     
     // Periodically dump sample buffer if requested
-    if((config.capabilities & CAPABILITY_POWER_DUMP) &&
+    if(dump && (config.capabilities & CAPABILITY_POWER_DUMP) &&
         connectionState == STATE_CONNECTED &&
         (packet.sequenceNumber % config.dumpInterval) == 0) {
         dumpBuffer(DUMP_BUFFER_POWER_HI,dump);
@@ -409,7 +409,7 @@ void powerSequence(BufferDump *dump) {
     packet.powerLoGain = currentRMS;
 
     // Periodically dump sample buffer if requested
-    if((config.capabilities & CAPABILITY_POWER_DUMP) &&
+    if(dump && (config.capabilities & CAPABILITY_POWER_DUMP) &&
         connectionState == STATE_CONNECTED &&
         (packet.sequenceNumber % config.dumpInterval) == 0) {
         dumpBuffer(DUMP_BUFFER_POWER_LO,dump);
