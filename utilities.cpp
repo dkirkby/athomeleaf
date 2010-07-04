@@ -1,6 +1,5 @@
 #include "utilities.h"
 #include "wireless.h"
-#include "random.h"
 
 #include <math.h>
 #include <avr/eeprom.h>
@@ -118,28 +117,6 @@ void _printFloat() {
         Serial.write('0');
     }
     Serial.print(printULong,DEC);
-}
-
-// =====================================================================
-// Delays for about 1ms and generates an audible and visible "Geiger"
-// click at pseudo-random intervals with an average rate controlled
-// by the value of the clickThreshold global.
-// =====================================================================
-
-uint32_t clickThreshold = 0;
-
-void tick() {
-
-    static uint8_t doClick;
-
-    // generate a pseudo-random unsigned long
-    nextRandom();
-    doClick = (randomValue < clickThreshold) ? 1 : 0;
-    delayMicroseconds(250);
-    digitalWrite(PIEZO_PIN,doClick);
-    delayMicroseconds(500);
-    digitalWrite(PIEZO_PIN,LOW);
-    delayMicroseconds(250);
 }
 
 // ---------------------------------------------------------------------

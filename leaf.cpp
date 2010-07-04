@@ -13,6 +13,7 @@
 #include "utilities.h"
 #include "audio.h"
 #include "lcd.h"
+#include "random.h"
 
 #include "WProgram.h" // arduino header
 
@@ -59,6 +60,10 @@
 
 #define DELAY_WRAP_AROUND 4166.666666666667 // microseconds, 10^6/(4*60)
 #define POWER_FACTOR_OMEGA 376.99111843077515e-6 // 2pi*60/10^6
+
+#define MAX_REAL_POWER 1.8e6 // 120 V(rms) x 15 A(rms) x 1000 mW/W
+#define CLICK_PROB_BASE 0.01 // power level feedback click probability per tick
+#define MAX_UINT32_AS_FLOAT 4.294967296e9 // (float)(1<<32)
 
 // =====================================================================
 // Global variable declarations. All variables must fit within 2K
@@ -137,8 +142,10 @@ uint8_t ledControl;
 uint8_t roomIsDark;
 
 // Temperature globals
-uint8_t whichLED;
 uint32_t temperatureSum;
+
+// Power globals
+uint32_t clickThreshold = 0;
 
 // ---------------------------------------------------------------------
 // Handles a newly received packet on PIPELINE_CONFIG
@@ -461,10 +468,15 @@ void powerSequence(BufferDump *dump) {
     LCDpos(1,0);
     Serial.print(_fval);
     LCDpos(1,12);
-    Serial.print(complexitySave,DEC);
+    //Serial.print(complexitySave,DEC);
     
-    // update the click threshold based on the new power estimate
-    // clickThreshold = (unsigned long)(THRESHOLDSCALE*rmsPower*rmsPower);
+    // Update the click threshold based on the new power estimate.
+    // The ratio clickThreshold/(2^32) determines the probability of an
+    // audible click in a ~1ms interval, which should be << 1.
+    _fval = 16*CLICK_PROB_BASE*pow(_fval/100e3 /*MAX_REAL_POWER*/,1);
+    clickThreshold = (uint32_t)(_fval*MAX_UINT32_AS_FLOAT);
+    
+    Serial.print(1e3*_fval);
 }
 
 // =====================================================================
@@ -516,8 +528,18 @@ void glowSequence() {
         _u8val = (uint8_t)(127.*(1.-cos(_u16val*DPHIGLOW_FAST))+0.5);
         // set the amber LED to this level if requested
         if(LED_IS_ENABLED(AMBER_GLOW)) analogWrite(AMBER_LED_PIN,_u8val);
-        // perform audio level feedback
-        if(config.capabilities & CAPABILITY_POWER_LEVEL_AUDIO) tick();
+        // Delay for about 1ms and optionally generate an audible "Geiger"
+        // click at pseudo-random intervals with an average rate controlled
+        // by the value of the clickThreshold global.
+        nextRandom();
+        _u8val = LOW;
+        if((config.capabilities & CAPABILITY_POWER_LEVEL_AUDIO) &&
+            (randomValue < clickThreshold)) _u8val = HIGH;
+        delayMicroseconds(250);
+        digitalWrite(PIEZO_PIN,_u8val);
+        delayMicroseconds(500);
+        digitalWrite(PIEZO_PIN,LOW);
+        delayMicroseconds(250);
     }
 }
 

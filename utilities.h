@@ -26,11 +26,6 @@ extern float floatToPrint;
 extern uint32_t multiplier;
 extern void _printFloat(void);
 
-// Geiger-clicking support 
-
-extern uint32_t clickThreshold;
-extern void tick(void);
-
 // Synchronous sampling
 
 extern uint16_t buffer[],*bufptr,delayCycles;
