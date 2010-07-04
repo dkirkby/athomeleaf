@@ -403,30 +403,36 @@ void powerSequence(BufferDump *dump) {
     // Start the power analysis by measuring the AC voltage phase
     //----------------------------------------------------------------------
     acquireADCSamples(ACPHASE_PIN);
+    tick();
     
     // Analyze the captured waveform
     phaseAnalysis(dump);
+    tick();
     
     // Periodically dump sample buffer if requested
     if(dump && (config.capabilities & CAPABILITY_POWER_DUMP) &&
         connectionState == STATE_CONNECTED &&
         (packet.sequenceNumber % config.dumpInterval) == 0) {
         dumpBuffer(DUMP_BUFFER_AC_PHASE,dump);
+        tick();
     }
 
     //----------------------------------------------------------------------
     // First time round uses the high-gain power channel.
     //----------------------------------------------------------------------    
     acquireADCSamples(ACPOWER_PIN_HI);
+    tick();
     
     // Analyze the captured high-gain waveform
     powerAnalysis(config.powerGainHi,config.fiducialShiftHi,dump);
+    tick();
     
     // Periodically dump sample buffer if requested
     if(dump && (config.capabilities & CAPABILITY_POWER_DUMP) &&
         connectionState == STATE_CONNECTED &&
         (packet.sequenceNumber % config.dumpInterval) == 0) {
         dumpBuffer(DUMP_BUFFER_POWER_HI,dump);
+        tick();
     }
     
     // Is there a detectable load?
@@ -442,15 +448,18 @@ void powerSequence(BufferDump *dump) {
     // Second time round uses the low-gain power channel.
     //----------------------------------------------------------------------
     acquireADCSamples(ACPOWER_PIN);
+    tick();
     
     // Analyze the captured low-gain waveform
     powerAnalysis(config.powerGainLo,config.fiducialShiftHi-config.fiducialHiLoDelta,dump);
+    tick();
 
     // Periodically dump sample buffer if requested
     if(dump && (config.capabilities & CAPABILITY_POWER_DUMP) &&
         connectionState == STATE_CONNECTED &&
         (packet.sequenceNumber % config.dumpInterval) == 0) {
         dumpBuffer(DUMP_BUFFER_POWER_LO,dump);
+        tick();
     }
 
     // Is the low-gain signal large enough to use, based on the high gain RMS?
@@ -480,6 +489,7 @@ void powerSequence(BufferDump *dump) {
 
     // Calculate the power factor (will be one if no load detected)
     _fval = fabs(cos(zeroXingDelaySave*POWER_FACTOR_OMEGA));
+    tick();
     
     LCDclear();
     Serial.print(apparentPowerSave);
@@ -497,7 +507,7 @@ void powerSequence(BufferDump *dump) {
     // Update the click threshold based on the new power estimate.
     // The ratio clickThreshold/(2^32) determines the probability of an
     // audible click in a ~1ms interval, which should be << 1.
-    _fval = 16*CLICK_PROB_BASE*pow(_fval/100e3 /*MAX_REAL_POWER*/,1);
+    _fval = 1*CLICK_PROB_BASE*pow(_fval/MAX_REAL_POWER,1);
     clickThreshold = (uint32_t)(_fval*MAX_UINT32_AS_FLOAT);
 }
 
