@@ -202,6 +202,10 @@ uint8_t cricketSample[CRICKET_SAMPLES] PROGMEM = {
     170,170,82,85,85,85,85,181,170,170,170,86,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85
 };
 
+// Plays a sampled cricket chirp via PIEZO_PIN. The chirp is constructed of three
+// repetitions of a sampled burst spaced by 20ms. The burst sample is about 2.54ms
+// long so the total chirp duration is about 47.6ms.
+
 void cricket(void) {
     shiftOut(CRICKET_SAMPLES,cricketSample);
     delay(20);
