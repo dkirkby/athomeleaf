@@ -6,6 +6,10 @@
 
 #include "WProgram.h" // arduino header
 
+// The tick() function should be called regularly during any long-running
+// function to ensure continuous audio level feedback.
+extern void tick();
+
 // ---------------------------------------------------------------------
 // Locally shared globals
 // ---------------------------------------------------------------------
@@ -39,6 +43,7 @@ void saveConfig(const Config *config) {
         newValue = *((uint8_t*)config + sizeof(config->header) + offset);
         if(eeprom_read_byte((const uint8_t*)(CONFIG_ADDR+offset)) != newValue) {
             eeprom_write_byte((uint8_t*)(CONFIG_ADDR+offset),newValue);
+            tick();
         }        
         offset++;
     }
@@ -161,6 +166,7 @@ void dumpBuffer(uint8_t dumpType, BufferDump *dump) {
         // don't keep going if our first packet didn't get through
         return;
     }
+    tick();
     // the remaining 10 packets use the same structure
     _u16val = 10;
     for(dump->sequenceNumber = 1; dump->sequenceNumber < 11; dump->sequenceNumber++) {
@@ -184,6 +190,7 @@ void dumpBuffer(uint8_t dumpType, BufferDump *dump) {
         packSamples(src,&dump->packed[25]);
         // try to send this packet now
         if(0x0f < sendNordic(dumpAddress, (uint8_t*)dump, sizeof(BufferDump))) return;
+        tick();
     }
 }
 
@@ -252,6 +259,7 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
             _fval = DPHI120*_u8val;
             sink = sin(_fval);
             cosk = cos(_fval);
+            tick();
         }
         for(cycle = 0; cycle < 4; cycle++) {
             if((cycle%2) && (_u8val==0)) continue;
@@ -286,6 +294,7 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
             }
             sink = -sink;
         }
+        tick();
     }
     
     if(0 != dump) {
@@ -319,6 +328,7 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
         alpha11 = sqrt(alpha11-alpha01*alpha01);
         alpha12 = (alpha12-alpha01*alpha02)/alpha11;
         alpha22 -= alpha02*alpha02+alpha12*alpha12; // this is actually L(2,2)^2
+        tick();
     
         // Solve the linear equations alpha . x = beta for the vector of coeficients x.
         // Replace each beta(i) with x(i)
@@ -327,6 +337,7 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
         beta2 = (beta2 - alpha02*beta0 - alpha12*beta1)/alpha22;
         beta1 = (beta1 - alpha12*beta2)/alpha11;
         beta0 = (beta0 - alpha01*beta1 - alpha02*beta2)/alpha00;
+        tick();
         
         // Store the 120 Hz peak amplitude in beta1
         beta1 = sqrt(beta1*beta1 + beta2*beta2);
@@ -349,6 +360,7 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
         else {
             lightingMean = (unsigned short)beta0;
         }
+        tick();
         
         // scale beta1 to lighting120Hz
         beta1 = scaleFactor*beta1 + 0.5;
@@ -397,6 +409,7 @@ void powerAnalysis(uint16_t gain, uint16_t delay, BufferDump *dump) {
             _fval = DPHI60*_u8val;
             sink = sin(_fval);
             cosk = cos(_fval);
+            tick();
         }
         for(cycle = 0; cycle < 4; cycle++) {
             if((cycle%2) && (_u8val==0)) {
@@ -427,12 +440,14 @@ void powerAnalysis(uint16_t gain, uint16_t delay, BufferDump *dump) {
             cosSum += _fval*cosk;
             sinSum += _fval*sink;
         }
+        tick();
     }
     // store the floating point 60 Hz RMS in ADC units
     _fval = sqrt(cosSum*cosSum+sinSum*sinSum)*RMS_NORM;
 
     // convert to milliWatts using the gain provided
     apparentPower = gain*_fval;
+    tick();
     
     // calculate the fraction of the total variance that is not at 60 Hz
     totalVariance = ONE_OVER_NPOWERSAMP*moment1 -
@@ -449,6 +464,7 @@ void powerAnalysis(uint16_t gain, uint16_t delay, BufferDump *dump) {
         DUMP_ANALYSIS_SAVE(1,uint8_t,currentComplexity);
         DUMP_ANALYSIS_SAVE(2,float,_fval);
     }
+    tick();
 
     // Calculate the delay (in us) of the current sampling compared
     // with the earlier voltage-fiducial sampling.
@@ -468,6 +484,7 @@ void powerAnalysis(uint16_t gain, uint16_t delay, BufferDump *dump) {
     if(0 != dump) {
         DUMP_ANALYSIS_SAVE(6,uint16_t,(uint16_t)(_fval+0.5));
     }
+    tick();
 
     // Calculate the delay (in us) of the current zero crossing relative
     // to the voltage zero crossing, modulus a 120 Hz cycle. The power
@@ -515,6 +532,8 @@ void phaseAnalysis(BufferDump *dump) {
         // the UL below is to force the RHS to be evaluated as uint32_t
         moment1 += (wrapOffset+(6UL*_u8val+wrapOffset)%NPOWERSAMP)*_u16val;
     }
+    tick();
+    
     // The denominator measures the integral of the fiducial signal and
     // provides a phase-independent check that we have a valid signal.
     // If this check fails then there is either something wrong with the
@@ -529,6 +548,7 @@ void phaseAnalysis(BufferDump *dump) {
             (MICROS_PER_SAMPLE*moment1+3*moment0)
             /(6*moment0));
     }
+    tick();
     
     if(0 != dump) {
         /* zero out the dump header */

@@ -273,6 +273,24 @@ void printSample() {
 }
 
 // =====================================================================
+// Delay for about 1ms and optionally generate an audible "Geiger"
+// click at pseudo-random intervals with an average rate controlled
+// by the value of the clickThreshold global. Calls to this routine
+// are liberally sprinkled through the sequences defined below to
+// ensure continuous audio feedback on power level.
+// =====================================================================
+void tick() {
+    nextRandom();
+    delayMicroseconds(250);
+    digitalWrite(PIEZO_PIN,
+        ((config.capabilities & CAPABILITY_POWER_LEVEL_AUDIO) &&
+        (randomValue < clickThreshold)) ? HIGH : LOW);
+    delayMicroseconds(500);
+    digitalWrite(PIEZO_PIN,LOW);
+    delayMicroseconds(250);    
+}
+
+// =====================================================================
 // Perform an acquisition and analysis sequence for lighting conditions.
 // If dump is non-zero, a buffer dump might be performed based on the
 // current configuration.
@@ -295,9 +313,11 @@ void lightingSequence(BufferDump *dump) {
     // First, sample the high-gain photodiode amplifier signal.
     // ---------------------------------------------------------------------
     acquireADCSamples(LIGHTING_PIN_HI);
+    tick();
 
     // Analyze the captured waveform
     lightingAnalysis(16.0,dump);
+    tick();
     
     _u8val = 0;
     roomIsDark = 0;
@@ -327,15 +347,18 @@ void lightingSequence(BufferDump *dump) {
         connectionState == STATE_CONNECTED &&
         (packet.sequenceNumber % config.dumpInterval) == (config.dumpInterval>>1)) {
         dumpBuffer(DUMP_BUFFER_LIGHT_HI,dump);
+        tick();
     }
     
     // ---------------------------------------------------------------------
     // Second, sample the low-gain photodiode amplifier signal.
     // ---------------------------------------------------------------------
     acquireADCSamples(LIGHTING_PIN);
+    tick();
 
     // Analyze the captured waveform
     lightingAnalysis(16.0,dump);
+    tick();
     
     if(_u8val) {
         if(lighting120Hz > lightingMean/ARTIFICIAL_THRESHOLD) {
@@ -356,6 +379,7 @@ void lightingSequence(BufferDump *dump) {
         connectionState == STATE_CONNECTED &&
         (packet.sequenceNumber % config.dumpInterval) == (config.dumpInterval>>1)) {
         dumpBuffer(DUMP_BUFFER_LIGHT_LO,dump);
+        tick();
     }    
 }
 
@@ -478,22 +502,6 @@ void powerSequence(BufferDump *dump) {
 }
 
 // =====================================================================
-// Delay for about 1ms and optionally generate an audible "Geiger"
-// click at pseudo-random intervals with an average rate controlled
-// by the value of the clickThreshold global.
-// =====================================================================
-void tick() {
-    nextRandom();
-    delayMicroseconds(250);
-    digitalWrite(PIEZO_PIN,
-        ((config.capabilities & CAPABILITY_POWER_LEVEL_AUDIO) &&
-        (randomValue < clickThreshold)) ? HIGH : LOW);
-    delayMicroseconds(500);
-    digitalWrite(PIEZO_PIN,LOW);
-    delayMicroseconds(250);    
-}
-
-// =====================================================================
 // Performs a "glow" sequence in which LEDs slowly glow on/off, the
 // temperature is repeatedly sampled, and audio feedback on the
 // power level is provided.
@@ -586,7 +594,9 @@ void flashSequence() {
     if(LED_IS_ENABLED(AMBER_FLASH)) digitalWrite(AMBER_LED_PIN,HIGH);
     if(LED_IS_ENABLED(RED_FLASH)) digitalWrite(RED_LED_PIN,HIGH);
     if(LED_IS_ENABLED(BLUE_FLASH)) digitalWrite(BLUE_LED_PIN,HIGH);
-    delay(FLASH_DURATION);
+    // keep the LEDs on for a short while (without interrupting audio level feedback)
+    _u8val = FLASH_DURATION;
+    while(_u8val--) tick();
     digitalWrite(GREEN_LED_PIN,LOW);
     digitalWrite(AMBER_LED_PIN,LOW);
     digitalWrite(RED_LED_PIN,LOW);
