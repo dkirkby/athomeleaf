@@ -65,6 +65,10 @@
 #define CLICK_PROB_BASE 0.01 // base power level feedback click probability per sample
 #define MAX_UINT32_AS_FLOAT 4.294967296e9 // (float)(1<<32)
 
+#define MAX_HALF_PERIOD 7500 // us
+#define MIN_HALF_PERIOD  150 // us
+#define LOG_SEMITONE_RATIO 0.057762265046662153 // log(2^(1/12))
+
 // =====================================================================
 // Global variable declarations. All variables must fit within 2K
 // of SRAM, including any variables allocated on the stack at runtime.
@@ -145,6 +149,8 @@ uint8_t roomIsDark;
 uint32_t temperatureSum;
 
 // Power globals
+float realPower;
+uint16_t powerToneSave = 0;
 uint32_t clickThreshold = 0;
 
 // ---------------------------------------------------------------------
@@ -390,7 +396,8 @@ void lightingSequence(BufferDump *dump) {
 //
 // Results are saved in:
 //  -packet: powerLoGain, powerHiGain, (acPhase)
-//  -(clickThreshold)
+//  -clickThreshold
+//  -realPower
 // =====================================================================
 void powerSequence(BufferDump *dump) {
     
@@ -497,18 +504,39 @@ void powerSequence(BufferDump *dump) {
     Serial.print(_fval);
     
     // Calculate the real power
-    _fval *= apparentPowerSave;
+    realPower = _fval*apparentPowerSave;
     
     LCDpos(1,0);
-    Serial.print(_fval);
-    LCDpos(1,12);
-    Serial.print(complexitySave,DEC);
+    Serial.print(realPower);
+    LCDpos(1,11);
+    //Serial.print(complexitySave,DEC);
     
     // Update the click threshold based on the new power estimate.
     // The ratio clickThreshold/(2^32) determines the probability of an
     // audible click in a ~1ms interval, which should be << 1.
-    _fval = 16*CLICK_PROB_BASE*pow(_fval/MAX_REAL_POWER,3);
+    _fval = 16*CLICK_PROB_BASE*pow(realPower/MAX_REAL_POWER,3);
     clickThreshold = (uint32_t)(_fval*MAX_UINT32_AS_FLOAT);
+    tick();
+    
+    // Calculate the tone frequency corresponding to the current
+    // real power usage level and provide audio edge feedback.
+    _fval = realPower/MAX_REAL_POWER;
+    _fval = pow(MIN_HALF_PERIOD,_fval)*pow(MAX_HALF_PERIOD,1-_fval);
+    _u16val = (uint16_t)(_fval + 0.5);
+    // Do we already have a power baseline?
+    if(powerToneSave > 0) {
+        // How many semitones up or down does this new real power
+        // measurement represent?
+        _fval = fabs(log(_fval/powerToneSave)/LOG_SEMITONE_RATIO);
+        Serial.print(_fval);
+        // Generate audio edge feedback now?
+        if((config.capabilities & CAPABILITY_POWER_EDGE_AUDIO) && (_fval > 1.0)) {
+            tone(powerToneSave,10);
+            tone(_u16val,20);
+        }
+    }
+    // save this tone level for next time
+    powerToneSave = _u16val;
 }
 
 // =====================================================================
@@ -626,7 +654,7 @@ void setup() {
     pinMode(BLUE_LED_PIN,OUTPUT);
     pinMode(PIEZO_PIN,OUTPUT);
     pinMode(STROBE_PIN,OUTPUT);
-    
+
     // run-through the outputs once to show we are alive (and also provide
     // an audio-visual self-test of each output)
     digitalWrite(BLUE_LED_PIN,HIGH);
