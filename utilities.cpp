@@ -238,7 +238,6 @@ void dumpBuffer(uint8_t dumpType, BufferDump *dump) {
 #define MICROS_PER_SAMPLE 200
 #define ONE_OVER_NPOWERSAMP 4e-3 // 1/250
 #define ONE_OVER_NPOWERSAMP_SQ 16e-6 // 1/(250*250)
-#define POWER_FACTOR_OMEGA 376.99111843077515e-6 // 2pi*60/10^6
 
 // ---------------------------------------------------------------------
 // Lighting and power analysis shared globals
@@ -398,11 +397,12 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
 //  nClipped: number of samples/250 clipped at the ADC hi/lo limits
 //  currentComplexity: 0-255 measure of signal variance not at 60 Hz
 //  apparentPower: calculated apparent power consumption in mW
-//  powerFactor: cos(phase) [signed!]
+//  zeroXingDelay: delay of the current zero crossing relative to
+//    the voltage zero crossing in microseconds, modulo a 120 Hz cycle.
 // =====================================================================
 
 uint8_t nClipped,currentComplexity;
-float apparentPower,powerFactor;
+float apparentPower,zeroXingDelay;
 
 static uint32_t elapsed;
 static float totalVariance;
@@ -492,16 +492,20 @@ void powerAnalysis(uint16_t gain, uint16_t delay, BufferDump *dump) {
         DUMP_ANALYSIS_SAVE(6,uint16_t,(uint16_t)(_fval+0.5));
     }
 
-    // Calculate the relative phase (in us) of the voltage and current
-    // zero crossings modulus a 120 Hz cycle.
-    _fval = fmod(_fval + elapsed - voltagePhase - delay,POWER_CYCLE_MICROS_BY_2);
+    // Calculate the delay (in us) of the current zero crossing relative
+    // to the voltage zero crossing, modulus a 120 Hz cycle. The power
+    // factor is related to this delay via:
+    //
+    //  PF = fabs(cos(zeroXingDelay*TWOPI*60*1e-6))
+    //
+    // The reason we do not return the power factor here is that the
+    // delay is what we actually measure more directly so it is more
+    // suitable for averaging (taking care of modulus issues).
+    zeroXingDelay = fmod(_fval + elapsed - voltagePhase - delay,
+        POWER_CYCLE_MICROS_BY_2);
     if(0 != dump) {
-        DUMP_ANALYSIS_SAVE(8,uint16_t,(uint16_t)(_fval + 0.5));
+        DUMP_ANALYSIS_SAVE(8,uint16_t,(uint16_t)(zeroXingDelay + 0.5));
     }
-    
-    // Calculate the signed power factor. We don't take the absolute value
-    // here so that analysis results can be averaged.
-    powerFactor = cos(_fval*POWER_FACTOR_OMEGA);
 }
 
 // =====================================================================

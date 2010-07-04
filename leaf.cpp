@@ -57,6 +57,9 @@
 #define HI_GAIN_NO_LOAD_THRESHOLD  100.0 // mW, corresponds to ~0.45 ADC
 #define LO_GAIN_NO_LOAD_THRESHOLD 2000.0 // mW, corresponds to ~0.45 ADC
 
+#define DELAY_WRAP_AROUND 4166.666666666667 // microseconds, 10^6/(4*60)
+#define POWER_FACTOR_OMEGA 376.99111843077515e-6 // 2pi*60/10^6
+
 // =====================================================================
 // Global variable declarations. All variables must fit within 2K
 // of SRAM, including any variables allocated on the stack at runtime.
@@ -67,6 +70,7 @@
 // ---------------------------------------------------------------------
 static uint8_t _u8val;
 static uint16_t _u16val;
+static float _fval;
 
 // ---------------------------------------------------------------------
 // Connection state machine
@@ -361,8 +365,8 @@ void powerSequence(BufferDump *dump) {
     
     // prepare to combine the high- and low-gain analysis results
     float apparentPowerSave = 0;
-    float powerFactorSave = 1;
-    uint8_t nClipHi;
+    float zeroXingDelaySave = 0;
+    uint8_t nClipHi,complexitySave = 0;
 
     //----------------------------------------------------------------------
     // Start the power analysis by measuring the AC voltage phase
@@ -398,14 +402,10 @@ void powerSequence(BufferDump *dump) {
     if(apparentPower > HI_GAIN_NO_LOAD_THRESHOLD) {
         // remember the high-gain analysis values
         apparentPowerSave = apparentPower;
-        powerFactorSave = powerFactor;
+        zeroXingDelaySave = zeroXingDelay;
+        complexitySave = currentComplexity;
         nClipHi = nClipped;
     }
-    
-    LCDclear();
-    Serial.print(apparentPower);
-    LCDpos(0,10);
-    Serial.print(powerFactor);
     
     //----------------------------------------------------------------------
     // Second time round uses the low-gain power channel.
@@ -414,11 +414,6 @@ void powerSequence(BufferDump *dump) {
     
     // Analyze the captured low-gain waveform
     powerAnalysis(config.powerGainLo,config.fiducialShiftHi-config.fiducialHiLoDelta,dump);
-
-    LCDpos(1,0);
-    Serial.print(apparentPower);
-    LCDpos(1,10);
-    Serial.print(powerFactor);
 
     // Periodically dump sample buffer if requested
     if(dump && (config.capabilities & CAPABILITY_POWER_DUMP) &&
@@ -434,17 +429,39 @@ void powerSequence(BufferDump *dump) {
             // The weight here is based an eyeballing of the relative spreads
             // observed with a reference 71 Watt incandescent bulb.
             apparentPowerSave = (20*apparentPowerSave + apparentPower)/21.0;
-            // Perform an unweighted average of the (signed) power factors
-            powerFactorSave = 0.5*(powerFactorSave + powerFactor);
         }
         else {
-            // Defer to the less clipped low-gain RMS measurement
+            // Defer to the less clipped low-gain RMS and complexity measurements
             apparentPowerSave = apparentPower;
-            // The clipped high-gain power factor is stil ok so
-            // perform an unweighted average of the power factors
-            powerFactorSave = 0.5*(powerFactorSave + powerFactor);
+            complexitySave = currentComplexity;
+        }
+        // A clipped high-gain zero crossing delay is still ok so always
+        // combine the high- and low-gain results, taking care of
+        // wrap-around issues.
+        if(abs(zeroXingDelaySave - zeroXingDelay) < DELAY_WRAP_AROUND) {
+            zeroXingDelaySave = 0.5*(zeroXingDelaySave + zeroXingDelay);
+        }
+        else {
+            zeroXingDelaySave =
+                0.5*(zeroXingDelaySave + zeroXingDelay) + DELAY_WRAP_AROUND;
         }
     }
+
+    // Calculate the power factor (will be one if no load detected)
+    _fval = fabs(cos(zeroXingDelaySave*POWER_FACTOR_OMEGA));
+    
+    LCDclear();
+    Serial.print(apparentPowerSave);
+    LCDpos(0,12);
+    Serial.print(_fval);
+    
+    // Calculate the real power
+    _fval *= apparentPowerSave;
+    
+    LCDpos(1,0);
+    Serial.print(_fval);
+    LCDpos(1,12);
+    Serial.print(complexitySave,DEC);
     
     // update the click threshold based on the new power estimate
     // clickThreshold = (unsigned long)(THRESHOLDSCALE*rmsPower*rmsPower);

@@ -72,7 +72,7 @@ extern void lightingAnalysis(float scaleFactor, BufferDump *dump);
 
 extern uint8_t nClipped,wrapOffset,currentComplexity;
 extern uint16_t voltagePhase;
-extern float apparentPower,powerFactor;
+extern float apparentPower,zeroXingDelay;
 extern uint32_t moment0,moment1,tzero;
 
 extern void powerAnalysis(uint16_t gain, uint16_t delay, BufferDump *dump);
