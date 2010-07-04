@@ -402,9 +402,9 @@ void powerSequence(BufferDump *dump) {
         nClipHi = nClipped;
     }
     
-    LCDinit();
+    LCDclear();
     Serial.print(apparentPower);
-    LCDpos(1,0);
+    LCDpos(0,10);
     Serial.print(powerFactor);
     
     //----------------------------------------------------------------------
@@ -414,6 +414,11 @@ void powerSequence(BufferDump *dump) {
     
     // Analyze the captured low-gain waveform
     powerAnalysis(config.powerGainLo,config.fiducialShiftHi-config.fiducialHiLoDelta,dump);
+
+    LCDpos(1,0);
+    Serial.print(apparentPower);
+    LCDpos(1,10);
+    Serial.print(powerFactor);
 
     // Periodically dump sample buffer if requested
     if(dump && (config.capabilities & CAPABILITY_POWER_DUMP) &&

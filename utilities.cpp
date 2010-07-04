@@ -238,7 +238,7 @@ void dumpBuffer(uint8_t dumpType, BufferDump *dump) {
 #define MICROS_PER_SAMPLE 200
 #define ONE_OVER_NPOWERSAMP 4e-3 // 1/250
 #define ONE_OVER_NPOWERSAMP_SQ 16e-6 // 1/(250*250)
-#define POWER_FACTOR_OMEGA 376.99111843077515 // 2pi*60
+#define POWER_FACTOR_OMEGA 376.99111843077515e-6 // 2pi*60/10^6
 
 // ---------------------------------------------------------------------
 // Lighting and power analysis shared globals
