@@ -372,14 +372,6 @@ void powerSequence(BufferDump *dump) {
     // Analyze the captured waveform
     phaseAnalysis(dump);
     
-    // Is there a detectable load?
-    if(apparentPower > HI_GAIN_NO_LOAD_THRESHOLD) {
-        // remember the analysis values
-        apparentPowerSave = apparentPower;
-        powerFactorSave = powerFactor;
-        nClipHi = nClipped;
-    }
-    
     // Periodically dump sample buffer if requested
     if(dump && (config.capabilities & CAPABILITY_POWER_DUMP) &&
         connectionState == STATE_CONNECTED &&
@@ -395,33 +387,25 @@ void powerSequence(BufferDump *dump) {
     // Analyze the captured high-gain waveform
     powerAnalysis(config.powerGainHi,config.fiducialShiftHi,dump);
     
-    // Was there a detectable load?
-    if(apparentPowerSave > HI_GAIN_NO_LOAD_THRESHOLD) {
-        // Is the low-gain signal large enough to use, based on the high gain RMS?
-        if(apparentPowerSave > LO_GAIN_NO_LOAD_THRESHOLD) {
-            if(nClipHi < config.nClipCut) {
-                // Perform a weighted average of the hi- and low-gain RMS values.
-                // The weight here is based an eyeballing of the relative spreads
-                // observed with a reference 71 Watt incandescent bulb.
-                apparentPowerSave = (20*apparentPowerSave + apparentPower)/21.0;
-                // Perform an unweighted average of the power factors
-                powerFactorSave = 0.5*(powerFactorSave + powerFactor);
-            }
-            else {
-                // Defer to the less clipped low-gain RMS measurement
-                apparentPowerSave = apparentPower;
-                // Perform an unweighted average of the power factors
-                powerFactorSave = 0.5*(powerFactorSave + powerFactor);
-            }
-        }
-    }
-    
     // Periodically dump sample buffer if requested
     if(dump && (config.capabilities & CAPABILITY_POWER_DUMP) &&
         connectionState == STATE_CONNECTED &&
         (packet.sequenceNumber % config.dumpInterval) == 0) {
         dumpBuffer(DUMP_BUFFER_POWER_HI,dump);
     }
+    
+    // Is there a detectable load?
+    if(apparentPower > HI_GAIN_NO_LOAD_THRESHOLD) {
+        // remember the high-gain analysis values
+        apparentPowerSave = apparentPower;
+        powerFactorSave = powerFactor;
+        nClipHi = nClipped;
+    }
+    
+    LCDinit();
+    Serial.print(apparentPower);
+    LCDpos(1,0);
+    Serial.print(powerFactor);
     
     //----------------------------------------------------------------------
     // Second time round uses the low-gain power channel.
@@ -438,6 +422,25 @@ void powerSequence(BufferDump *dump) {
         dumpBuffer(DUMP_BUFFER_POWER_LO,dump);
     }
 
+    // Is the low-gain signal large enough to use, based on the high gain RMS?
+    if(apparentPowerSave > LO_GAIN_NO_LOAD_THRESHOLD) {
+        if(nClipHi < config.nClipCut) {
+            // Perform a weighted average of the hi- and low-gain RMS values.
+            // The weight here is based an eyeballing of the relative spreads
+            // observed with a reference 71 Watt incandescent bulb.
+            apparentPowerSave = (20*apparentPowerSave + apparentPower)/21.0;
+            // Perform an unweighted average of the (signed) power factors
+            powerFactorSave = 0.5*(powerFactorSave + powerFactor);
+        }
+        else {
+            // Defer to the less clipped low-gain RMS measurement
+            apparentPowerSave = apparentPower;
+            // The clipped high-gain power factor is stil ok so
+            // perform an unweighted average of the power factors
+            powerFactorSave = 0.5*(powerFactorSave + powerFactor);
+        }
+    }
+    
     // update the click threshold based on the new power estimate
     // clickThreshold = (unsigned long)(THRESHOLDSCALE*rmsPower*rmsPower);
 }
@@ -719,7 +722,7 @@ void loop() {
     //----------------------------------------------------------------------
     // Display readings on the optional LCD
     //----------------------------------------------------------------------
-    printSample();
+    // printSample();
 }
 
 int main(void) {
