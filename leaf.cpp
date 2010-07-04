@@ -478,6 +478,22 @@ void powerSequence(BufferDump *dump) {
 }
 
 // =====================================================================
+// Delay for about 1ms and optionally generate an audible "Geiger"
+// click at pseudo-random intervals with an average rate controlled
+// by the value of the clickThreshold global.
+// =====================================================================
+void tick() {
+    nextRandom();
+    delayMicroseconds(250);
+    digitalWrite(PIEZO_PIN,
+        ((config.capabilities & CAPABILITY_POWER_LEVEL_AUDIO) &&
+        (randomValue < clickThreshold)) ? HIGH : LOW);
+    delayMicroseconds(500);
+    digitalWrite(PIEZO_PIN,LOW);
+    delayMicroseconds(250);    
+}
+
+// =====================================================================
 // Performs a "glow" sequence in which LEDs slowly glow on/off, the
 // temperature is repeatedly sampled, and audio feedback on the
 // power level is provided.
@@ -499,6 +515,7 @@ void glowSequence() {
 
     // The first temperature sample sometimes reads low so don't use it
     analogRead(TEMPERATURE_PIN);
+    tick();
 
     // toggle the glow on/off phase
     LED_RAMP_TOGGLE;
@@ -526,18 +543,8 @@ void glowSequence() {
         _u8val = (uint8_t)(127.*(1.-cos(_u16val*DPHIGLOW_FAST))+0.5);
         // set the amber LED to this level if requested
         if(LED_IS_ENABLED(AMBER_GLOW)) analogWrite(AMBER_LED_PIN,_u8val);
-        // Delay for about 1ms and optionally generate an audible "Geiger"
-        // click at pseudo-random intervals with an average rate controlled
-        // by the value of the clickThreshold global.
-        _u8val = LOW;
-        nextRandom();
-        if((config.capabilities & CAPABILITY_POWER_LEVEL_AUDIO) &&
-            (randomValue < clickThreshold)) _u8val = HIGH;
-        delayMicroseconds(250);
-        digitalWrite(PIEZO_PIN,_u8val);
-        delayMicroseconds(500);
-        digitalWrite(PIEZO_PIN,LOW);
-        delayMicroseconds(250);
+        // the following tick sets the overall timing of the glow sequence
+        tick();
     }
 }
 
