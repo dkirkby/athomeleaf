@@ -210,6 +210,7 @@ void cricket(void) {
     shiftOut(CRICKET_SAMPLES,cricketSample);
 }
 
+/**
 #define BIRD1_SAMPLES 1612
 
 uint8_t birdSample1[BIRD1_SAMPLES] PROGMEM = {
@@ -473,6 +474,7 @@ void bird(uint8_t repetitions) {
         }
     }
 }
+**/
 
 /***
 #define TEST_PATTERN_SAMPLES 4156

@@ -468,15 +468,13 @@ void powerSequence(BufferDump *dump) {
     LCDpos(1,0);
     Serial.print(_fval);
     LCDpos(1,12);
-    //Serial.print(complexitySave,DEC);
+    Serial.print(complexitySave,DEC);
     
     // Update the click threshold based on the new power estimate.
     // The ratio clickThreshold/(2^32) determines the probability of an
     // audible click in a ~1ms interval, which should be << 1.
     _fval = 16*CLICK_PROB_BASE*pow(_fval/100e3 /*MAX_REAL_POWER*/,1);
     clickThreshold = (uint32_t)(_fval*MAX_UINT32_AS_FLOAT);
-    
-    Serial.print(1e3*_fval);
 }
 
 // =====================================================================
