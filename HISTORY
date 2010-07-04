@@ -1,3 +1,4 @@
+Sun Jul  4 14:13:34 PDT 2010 david@dk.local Implement audio level feedback
 Sat Jul  3 16:48:58 PDT 2010 david@dk.local Leaf uses config to calculate power
 Sat Jul  3 12:34:45 PDT 2010 david@dk.local Leaf implements new config capabilities
 Fri Jul  2 16:57:58 PDT 2010 david@dk.local Increase number of device config capabilities
