@@ -507,7 +507,7 @@ void powerSequence(BufferDump *dump) {
     // Update the click threshold based on the new power estimate.
     // The ratio clickThreshold/(2^32) determines the probability of an
     // audible click in a ~1ms interval, which should be << 1.
-    _fval = 1*CLICK_PROB_BASE*pow(_fval/MAX_REAL_POWER,1);
+    _fval = 16*CLICK_PROB_BASE*pow(_fval/MAX_REAL_POWER,3);
     clickThreshold = (uint32_t)(_fval*MAX_UINT32_AS_FLOAT);
 }
 
