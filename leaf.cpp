@@ -62,7 +62,7 @@
 #define POWER_FACTOR_OMEGA 376.99111843077515e-6 // 2pi*60/10^6
 
 #define MAX_REAL_POWER 1.8e6 // 120 V(rms) x 15 A(rms) x 1000 mW/W
-#define CLICK_PROB_BASE 0.01 // power level feedback click probability per tick
+#define CLICK_PROB_BASE 0.01 // base power level feedback click probability per sample
 #define MAX_UINT32_AS_FLOAT 4.294967296e9 // (float)(1<<32)
 
 // =====================================================================
@@ -529,8 +529,8 @@ void glowSequence() {
         // Delay for about 1ms and optionally generate an audible "Geiger"
         // click at pseudo-random intervals with an average rate controlled
         // by the value of the clickThreshold global.
-        nextRandom();
         _u8val = LOW;
+        nextRandom();
         if((config.capabilities & CAPABILITY_POWER_LEVEL_AUDIO) &&
             (randomValue < clickThreshold)) _u8val = HIGH;
         delayMicroseconds(250);
