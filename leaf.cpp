@@ -162,12 +162,12 @@ void handleConfigUpdate() {
         packet.status |= STATUS_GOT_INVALID_CONFIG;
         if(config.capabilities & CAPABILITY_AUDIO_DIAGNOSTICS) {
             // a repeated (3X) falling tone sequence
-            tone(750,100);
-            tone(1000,75);
-            tone(750,100);
-            tone(1000,75);
-            tone(750,100);
-            tone(1000,75);
+            tone(750,15);
+            tone(1000,15);
+            tone(750,15);
+            tone(1000,15);
+            tone(750,15);
+            tone(1000,15);
         }
         return;
     }
@@ -185,8 +185,8 @@ void handleConfigUpdate() {
         packet.status |= STATUS_GOT_INITIAL_CONFIG;
         if(config.capabilities & CAPABILITY_AUDIO_DIAGNOSTICS) {
             // a single rising tone sequence
-            tone(1000,75);
-            tone(750,100);
+            tone(1000,15);
+            tone(750,15);
         }
         // we are now officially connected
         connectionState = STATE_CONNECTED;
@@ -195,10 +195,10 @@ void handleConfigUpdate() {
         packet.status |= STATUS_GOT_UPDATED_CONFIG;
         if(config.capabilities & CAPABILITY_AUDIO_DIAGNOSTICS) {
             // a repeated (2X) rising tone sequence
-            tone(1000,75);
-            tone(750,100);
-            tone(1000,75);
-            tone(750,100);
+            tone(1000,15);
+            tone(750,15);
+            tone(1000,15);
+            tone(750,15);
         }
     }
 }
@@ -656,25 +656,25 @@ void setup() {
     // by the leaf's nordic chip... would be good to understand this better)
     if(sendNordic(lamAddress, (uint8_t*)&LAM, sizeof(LAM)) < 0x10) {
         LCDprint("uci@home","connecting...");
-        tone(1500,50);
-        tone(1000,75);
+        tone(1500,15);
+        tone(1000,15);
     }
     else {
         if(!nordicOK) {
             LCDprint("uci@home","nordic error");
             // play alternating tones to indicate a wireless hardware problem
-            tone(1000,75);
-            tone(1500,50);
-            tone(1000,75);
-            tone(1500,50);
+            tone(1000,15);
+            tone(1500,15);
+            tone(1000,15);
+            tone(1500,15);
         }
         else {
             LCDprint("uci@home","no hub found");
             // play a falling sequence of tones to indicate that no hub was found
-            tone(750,100);
-            tone(1000,75);
-            tone(1500,50);
-        }        
+            tone(750,15);
+            tone(1000,15);
+            tone(1500,15);
+        }
     }
 
     // copy our serial number from EEPROM to our LAM packet
@@ -776,9 +776,9 @@ void loop() {
                 // play the same falling sequence that, on startup, indicates
                 // that no hub was found
                 if(config.capabilities & CAPABILITY_AUDIO_DIAGNOSTICS) {
-                    tone(750,100);
-                    tone(1000,75);
-                    tone(1500,50);
+                    tone(750,15);
+                    tone(1000,15);
+                    tone(1500,15);
                 }
             }
         }

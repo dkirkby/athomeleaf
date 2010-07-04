@@ -4,6 +4,28 @@
 
 #include "WProgram.h" // arduino header
 
+// ---------------------------------------------------------------------
+// Locally shared globals
+// ---------------------------------------------------------------------
+static uint32_t _u32val;
+
+// =====================================================================
+// Generates a square-wave tone. Half period determines the fundamental
+// frequency and duration is specified in 10ms units (2.55s max). The
+// maximum halfPeriod of 0xffff corresonds to about 7.6 Hz.
+// =====================================================================
+
+void tone(uint16_t halfPeriod, uint8_t duration) {
+    // round the duration to the nearest whole number of cycles
+    _u32val = (duration*10000UL + halfPeriod)/(halfPeriod<<1);
+    while(_u32val--) {
+        digitalWrite(PIEZO_PIN,HIGH);
+        delayMicroseconds(halfPeriod);
+        digitalWrite(PIEZO_PIN,LOW);
+        delayMicroseconds(halfPeriod);
+    }
+}
+
 // =====================================================================
 // Generates a frequency chirp
 // =====================================================================
@@ -31,20 +53,6 @@ void chirp(uint8_t cycles, uint8_t timebase) {
         digitalWrite(PIEZO_PIN,LOW);
         delayMicroseconds(delay);        
     } while(--counter);
-}
-
-// =====================================================================
-// Generates a square-wave tone
-// =====================================================================
-
-void tone(uint16_t halfPeriod,uint16_t cycles) {
-    uint16_t counter = cycles;
-    while(counter--) {
-        digitalWrite(PIEZO_PIN,HIGH);
-        delayMicroseconds(halfPeriod);
-        digitalWrite(PIEZO_PIN,LOW);
-        delayMicroseconds(halfPeriod);
-    }
 }
 
 // =====================================================================
