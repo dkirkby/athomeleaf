@@ -779,8 +779,9 @@ void loop() {
     temperatureSum = 0;
 
     //----------------------------------------------------------------------
-    // Measure the lighting conditions
+    // Measure the power and lighting conditions (but don't dump power)
     //----------------------------------------------------------------------
+    powerSequence(0);
     lightingSequence(&dump);
 
     //----------------------------------------------------------------------
