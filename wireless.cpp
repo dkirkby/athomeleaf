@@ -47,6 +47,8 @@ uint8_t dumpAddress[NORDIC_ADDR_LEN]=    { 0xA7, 0xF2, 0xF2 };
 
 // Locally shared globals
 static uint8_t _u8val;
+static uint8_t _rxFifoEmpty = (1 << RX_EMPTY);
+static uint8_t _enabledPipelines;
 
 // =====================================================================
 // Initializes the Nordic nRF24L01+ transciever. Sets the value of
@@ -121,8 +123,8 @@ void initNordic(uint32_t serialNumber) {
     	// sigficant byte [0] (MS bytes [1:2] shared with P1 and P2)
         Mirf.configRegister(RX_ADDR_P3,dumpAddress[0]);
     	Mirf.configRegister(RX_PW_P3,sizeof(BufferDump));
-        // Using P3,P2,P1,P0
-        Mirf.configRegister(EN_RXADDR,0x0f);
+        // Using P3,P2,P1 (P0 will be enabled during Tx only)
+        Mirf.configRegister(EN_RXADDR,_enabledPipelines = 0x0e);
     }
     else {
         // Use a per-device config address based on our serial number
@@ -131,8 +133,8 @@ void initNordic(uint32_t serialNumber) {
         // P1 listens for Config packets
         Mirf.writeRegister(RX_ADDR_P1,configAddress,NORDIC_ADDR_LEN);
     	Mirf.configRegister(RX_PW_P1,sizeof(Config));
-        // Using P1,P0
-        Mirf.configRegister(EN_RXADDR,0x03);
+        // Using P1 (P0 will be enabled during Tx only)
+        Mirf.configRegister(EN_RXADDR,_enabledPipelines = 0x02);
     }
 
     // Read back the least-significant byte [0] of the auto-ack pipeline (P0)
@@ -162,13 +164,9 @@ void initNordic(uint32_t serialNumber) {
 // garbage bytes.
 // =====================================================================
 
-static uint8_t _rxFifoEmpty = (1 << RX_EMPTY);
-
 uint8_t getNordic(uint8_t *payload, uint8_t payloadSize) {
 
     if(!nordicOK) return NORDIC_NOT_READY;
-
-    delay(500);
 
     // Read the nordic status register
     Mirf.readRegister(STATUS,&_u8val,1);
@@ -253,6 +251,7 @@ uint8_t sendNordic(uint8_t *address, uint8_t *payload, uint8_t payloadSize) {
 
     // Configure pipeline-0 to receive an auto-ack from the receiver
     Mirf.writeRegister(RX_ADDR_P0,address,NORDIC_ADDR_LEN);
+    Mirf.configRegister(EN_RXADDR,_enabledPipelines | 0x01);
     
     // Set our transmit address
     Mirf.writeRegister(TX_ADDR,address,NORDIC_ADDR_LEN);
@@ -295,6 +294,7 @@ uint8_t sendNordic(uint8_t *address, uint8_t *payload, uint8_t payloadSize) {
     }
     
     // Reset the P0 (auto-ack) address
+    Mirf.configRegister(EN_RXADDR,_enabledPipelines);
     Mirf.writeRegister(RX_ADDR_P0,idleAddress,NORDIC_ADDR_LEN);
     
     // return to Rx mode
