@@ -215,10 +215,12 @@ void dumpBuffer(uint8_t dumpType, BufferDump *dump) {
 // The index period corresponding to 60 Hz = 2pi/(NPOWERSAMP/3)
 #define DPHI60 0.075398223686155036
 #define RMS_NORM 5.52427172802e-3 // sqrt(2)/NPOWERSAMP
-#define RAD_TO_MICROS 2652.58238486 // 10^6/(2pi*60)
+#define RAD_TO_MICROS_60 2652.5823848649225 // 10^6/(2pi*60)
+#define RAD_TO_MICROS_120 1326.2911924324612 // 10^6/(2pi*120)
 #define POWER_CYCLE_MICROS 16666.6666667 // 10^6/60
-#define POWER_CYCLE_MICROS_BY_2 8333.33333333
-#define POWER_CYCLE_MICROS_BY_4 4166.66666667
+#define POWER_CYCLE_MICROS_BY_2 8333.33333333333
+#define POWER_CYCLE_MICROS_BY_4 4166.66666666667
+#define POWER_CYCLE_MICROS_BY_8 2083.33333333333
 #define MICROS_PER_SAMPLE 200
 #define ONE_OVER_NPOWERSAMP 4e-3 // 1/250
 #define ONE_OVER_NPOWERSAMP_SQ 16e-6 // 1/(250*250)
@@ -340,16 +342,24 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
         beta0 = (beta0 - alpha01*beta1 - alpha02*beta2)/alpha00;
         tick();
         
+        // Calculate the raw phase (in us) of an equivalent 120 Hz
+        // sine wave. Offset is relative to WAVEDATA(0)=sample[6].
+        _fval = atan2(beta2,beta1)*RAD_TO_MICROS_120 - POWER_CYCLE_MICROS_BY_8;
+        if(_fval < 0) _fval += POWER_CYCLE_MICROS_BY_2;
+        if(0 != dump) {
+            DUMP_ANALYSIS_SAVE(2,uint16_t,(uint16_t)(_fval+0.5));
+        }
+        tick();
+
+        // Store the 120 Hz peak amplitude in beta1
+        beta1 = sqrt(beta1*beta1 + beta2*beta2);
+        
         // save our analysis results (in rounded 16-bit ADC/10 counts)
         // in case this buffer gets dumped
         if(0 != buffer) {
-            DUMP_ANALYSIS_SAVE(2,uint16_t,(uint16_t)(10*beta0));
-            DUMP_ANALYSIS_SAVE(4,uint16_t,(uint16_t)(10*beta1));
-            DUMP_ANALYSIS_SAVE(6,uint16_t,(uint16_t)(10*beta2));
+            DUMP_ANALYSIS_SAVE(4,uint16_t,(uint16_t)(10*beta0));
+            DUMP_ANALYSIS_SAVE(6,uint16_t,(uint16_t)(10*beta1));
         }
-        
-        // Store the 120 Hz peak amplitude in beta1
-        beta1 = sqrt(beta1*beta1 + beta2*beta2);
         
         // scale beta0 to lightingMean
         beta0 = scaleFactor*beta0 + 0.5;
@@ -481,7 +491,7 @@ void powerAnalysis(uint16_t gain, uint16_t delay, BufferDump *dump) {
     
     // Calculate the raw phase (in us) of an equivalent 60 Hz
     // sine wave. Offset is relative to WAVEDATA(0)=sample[6].
-    _fval = atan2(sinSum,cosSum)*RAD_TO_MICROS - POWER_CYCLE_MICROS_BY_4;
+    _fval = atan2(sinSum,cosSum)*RAD_TO_MICROS_60 - POWER_CYCLE_MICROS_BY_4;
     if(_fval < 0) _fval += POWER_CYCLE_MICROS;    
     if(0 != dump) {
         DUMP_ANALYSIS_SAVE(6,uint16_t,(uint16_t)(_fval+0.5));
