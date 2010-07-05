@@ -24,10 +24,10 @@
 #define CAPABILITY_AMBER_FLASH       (1<<11)
 #define CAPABILITY_RED_FLASH         (1<<12)
 #define CAPABILITY_BLUE_FLASH        (1<<13)
-//#define CAPABILITY_15 (1<<14)
+#define CAPABILITY_LIGHT_AUDIO       (1<<14)
 //#define CAPABILITY_16 (1<<15)
 
-typedef struct { // 20 bytes total
+typedef struct { // 32 bytes total
     /*** General Configuration ***/
     uint32_t header; // a fixed header to help filter spurious config packets
     uint8_t networkID; // a short identifier that uniquely identifies us on our local network
@@ -44,6 +44,15 @@ typedef struct { // 20 bytes total
     uint16_t powerGainHi; // hi-gain calibration (mW/ADC)
     uint16_t powerGainLo; // lo-gain calibration (mW/ADC)
     uint8_t nClipCut; // do not use hi-gain when clipping exceeds this threshold
+    /*** Power Audio Feedback Configuration ***/
+    uint16_t powerAudioControl;
+    /*** Lighting Analysis Configuration ***/
+    uint8_t lightFidHiLoDelta; // hi-lo fiducial phase shift delta (us)
+    uint16_t lightFidShiftHi; // hi-gain fiducial phase shift (us)
+    uint8_t lightGainHi; // hi gain calibration (arb./ADC)
+    uint16_t lightGainHiLoGain; // hi/lo gain = (value << 4)/(1<<15), range is 0-32
+    uint16_t darkThreshold; // is the room dark?
+    uint8_t artificialThreshold; // test is 120Hz/mean > 1/value
 } Config;
 
 #define STATUS_NUM_RETRANSMIT_MASK 0x0f
