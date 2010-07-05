@@ -338,6 +338,8 @@ void loop() {
                 Serial.println(configData.networkID,DEC);
             }
             else {
+                Serial.print("CFG ERR ");
+                Serial.println((char*)serialBuffer);
                 Serial.print("LOG 5 "); /* config handler reported an error */
                 Serial.println(_byteValue,DEC);
             }
