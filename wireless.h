@@ -20,7 +20,7 @@
 #define NORDIC_NO_DATA   0xF0
 
 extern uint8_t nordicOK;
-extern uint8_t idleAddress[],dataAddress[],configAddress[],lamAddress[],dumpAddress[];
+extern uint8_t dataAddress[],configAddress[],lamAddress[],dumpAddress[];
 
 extern void initNordic(uint32_t serialNumber);
 extern uint8_t getNordic(uint8_t *payload, uint8_t payloadSize);

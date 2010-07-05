@@ -34,9 +34,12 @@
 // does not require that anyone is listening)
 uint8_t nordicOK;
 
+// -------------------------------------------------------------------------
 // Nordic Tx/Rx addresses: should not alternate 101010... or have only one
 // level transition. First array element is least-significant byte.
-uint8_t idleAddress[NORDIC_ADDR_LEN] =   { 0xEE, 0xEE, 0xEE };
+// The P0 address is set "on the fly" during sendNordic but this pipeline
+// is otherwise disabled for Tx.
+// -------------------------------------------------------------------------
 // The least-significant 2 bytes [0:1] of the config address will be set based
 // on a leaf node's serial number in initNoridc()
 uint8_t configAddress[NORDIC_ADDR_LEN] = { 0xFF, 0xFF, 0x9A };
@@ -105,12 +108,9 @@ void initNordic(uint32_t serialNumber) {
 #error "NORDIC_ADDR_LEN must be 3, 4 or 5"
 #endif
 
-    // P0 listens for auto-acks. Address must match the Tx address
-    // and is updated in sendNordic(). Unless we are expecting an
-    // auto-ack, listen on an unsued address.
-    Mirf.writeRegister(RX_ADDR_P0,idleAddress,NORDIC_ADDR_LEN);
-    
-    // Setup the other (non-ack) receiver pipelines
+    // P0 listens for auto-acks during Tx, when its address must match
+    // the Tx address (this is handled in sendNordic). We don't use
+    // P0 for normal Rx (although this should be fine?)
     if(IS_HUB(serialNumber)) {
         // P1 listens for DataPackets
         Mirf.writeRegister(RX_ADDR_P1,dataAddress,NORDIC_ADDR_LEN);
@@ -292,9 +292,8 @@ uint8_t sendNordic(uint8_t *address, uint8_t *payload, uint8_t payloadSize) {
         Mirf.configRegister(RF_CH,RADIO_CHANNEL);
     }
     
-    // Reset the P0 (auto-ack) address
+    // Disable pipeline-0 for normal Rx operations.
     Mirf.configRegister(EN_RXADDR,_enabledPipelines);
-    Mirf.writeRegister(RX_ADDR_P0,idleAddress,NORDIC_ADDR_LEN);
     
     // return to Rx mode
     Mirf.powerUpRx();
