@@ -50,7 +50,7 @@ typedef struct { // 32 bytes total
     uint8_t lightFidHiLoDelta; // hi-lo fiducial phase shift delta (us)
     uint16_t lightFidShiftHi; // hi-gain fiducial phase shift (us)
     uint8_t lightGainHi; // hi gain calibration (arb./ADC)
-    uint16_t lightGainHiLoGain; // hi/lo gain = (value << 4)/(1<<15), range is 0-32
+    uint16_t lightGainHiLoRatio; // hi/lo gain = (value << 4)/(1<<15), range is 0-32
     uint16_t darkThreshold; // is the room dark?
     uint8_t artificialThreshold; // test is 120Hz/mean > 1/value
 } Config;
