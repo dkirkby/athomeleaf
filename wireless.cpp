@@ -156,11 +156,18 @@ void initNordic(uint32_t serialNumber) {
 // Reads the next available payload from the Rx FIFO into the buffer
 // provided and returns the pipeline number (0-5) that it came from.
 // Returns 0xff if the transceiver was never successfully initialized
-// by initNordic() or 0xf0 if there is no data available. Does not
-// check that the input payloadSize matches what the pipeline is
-// configured for so, in case data is received from an unexpected
+// by initNordic() or 0xf0 if there is no data available.
+// 
+// Does not check that the input payloadSize matches what the pipeline
+// is configured for so, in case data is received from an unexpected
 // pipeline, the returned payload may be truncated or have trailing
 // garbage bytes.
+// 
+// The logic here follows note (c) on p.63 of the nRF24L01+ datasheet.
+// Note that the pipeline number returned might be 7, indicating an
+// internal inconsistency: the TX fifo has data and is empty. Instead
+// of silently ignoring this here, we return a pipeline value of 7 so
+// the error can be logged by the caller.
 // =====================================================================
 
 uint8_t getNordic(uint8_t *payload, uint8_t payloadSize) {
@@ -169,11 +176,6 @@ uint8_t getNordic(uint8_t *payload, uint8_t payloadSize) {
 
     // Read the nordic status register
     Mirf.readRegister(STATUS,&_u8val,1);
-
-    Serial.write('=');
-    Serial.print(_rxFifoEmpty,BIN);
-    Serial.write(' ');
-    Serial.println(_u8val,BIN);
 
     // Do we have any pending data or new data?
     if(_rxFifoEmpty && (0==(_u8val & (1 << RX_DR)))) return NORDIC_NO_DATA;
@@ -187,29 +189,9 @@ uint8_t getNordic(uint8_t *payload, uint8_t payloadSize) {
     Mirf.transferSync(payload,payload,payloadSize);
     Mirf.csnHi();
     
-    Serial.write('$');
-    Mirf.readRegister(RX_PW_P0,&_rxFifoEmpty,1);
-    Serial.print(_rxFifoEmpty,DEC);
-    Serial.write(':');
-    Serial.print(payload[0],HEX);
-    Serial.write(' ');
-    Serial.print(payload[1],HEX);
-    Serial.write(' ');
-    Serial.print(payload[2],HEX);
-    Serial.write(' ');
-    Serial.println(payload[3],HEX);
-
     // Reset the RX_DR interrupt bit in the status register.
-    // This action updates the pipeline number in the status register (see p.56)
     Mirf.configRegister(STATUS,(1<<RX_DR));
     
-    Serial.write('>');
-    Mirf.readRegister(STATUS,&_rxFifoEmpty,1);
-    Serial.print(_rxFifoEmpty,BIN);
-    Serial.write(' ');
-    Mirf.readRegister(FIFO_STATUS,&_rxFifoEmpty,1);
-    Serial.println(_rxFifoEmpty,BIN);
-
     // Is there more data in the RX_FIFO that we should read next time?
     Mirf.readRegister(FIFO_STATUS,&_rxFifoEmpty,1);
     _rxFifoEmpty &= (1 << RX_EMPTY);
