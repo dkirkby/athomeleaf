@@ -65,9 +65,11 @@
 #define CLICK_PROB_BASE 0.01 // base power level feedback click probability per sample
 #define MAX_UINT32_AS_FLOAT 4.294967296e9 // (float)(1<<32)
 
-#define MAX_HALF_PERIOD 7500 // us
-#define MIN_HALF_PERIOD  150 // us
+#define MAX_HALF_PERIOD 1200 // us
+#define MIN_HALF_PERIOD  600 // us
+#define FREQUENCY_RANGE_RATIO 2.0 // (float) (MAX_HALF_PERIOD / MIN_HALF_PERIOD)
 #define LOG_SEMITONE_RATIO 0.057762265046662153 // log(2^(1/12))
+#define MIN_SEMITONES 1
 
 // =====================================================================
 // Global variable declarations. All variables must fit within 2K
@@ -149,8 +151,7 @@ uint8_t roomIsDark;
 uint32_t temperatureSum;
 
 // Power globals
-float realPower;
-uint16_t powerToneSave = 0;
+float realPower,lastRealPower = -1;
 uint32_t clickThreshold = 0;
 
 // ---------------------------------------------------------------------
@@ -518,6 +519,36 @@ void powerSequence(BufferDump *dump) {
     clickThreshold = (uint32_t)(_fval*MAX_UINT32_AS_FLOAT);
     tick();
     
+    // Do we already have a power baseline for edge feedback?
+    if(lastRealPower >= 0) {
+        // Calculate a logarithmic frequency ratio corresponding to
+        // the change in power since the last power sequence
+        _fval = pow(fabs(realPower-lastRealPower)/MAX_REAL_POWER,0.5);
+        _fval = pow(FREQUENCY_RANGE_RATIO,_fval);
+        // how many semitones is this interval?
+        _u8val = (uint8_t)fabs(log(_fval)/LOG_SEMITONE_RATIO);
+        pprint(_u8val);
+        if((config.capabilities & CAPABILITY_POWER_EDGE_AUDIO) &&
+            (_u8val > MIN_SEMITONES)) {
+            if(realPower > lastRealPower) {
+                // rising interval
+                tone(MAX_HALF_PERIOD,10);
+                _u16val = (uint16_t)(MAX_HALF_PERIOD/_fval + 0.5);
+                tone(_u16val,20);
+            }
+            else {
+                // falling interval
+                tone(MIN_HALF_PERIOD,10);
+                _u16val = (uint16_t)(MIN_HALF_PERIOD*_fval + 0.5);
+                tone(_u16val,20);
+            }
+        }
+    }
+
+    // Remember the real power calculated during the sequence
+    lastRealPower = realPower;
+
+/*
     // Calculate the tone frequency corresponding to the current
     // real power usage level and provide audio edge feedback.
     _fval = realPower/MAX_REAL_POWER;
@@ -537,6 +568,7 @@ void powerSequence(BufferDump *dump) {
     }
     // save this tone level for next time
     powerToneSave = _u16val;
+*/
 }
 
 // =====================================================================
