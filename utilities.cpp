@@ -230,6 +230,7 @@ void dumpBuffer(uint8_t dumpType, BufferDump *dump) {
 // ---------------------------------------------------------------------
 static uint8_t cycle,nzero;
 static float sink,cosk,cosSum,sinSum;
+static uint32_t elapsed;
 
 // =====================================================================
 // Analyzes a lighting waveform to determine its mean and 120Hz
@@ -243,7 +244,7 @@ static float sink,cosk,cosSum,sinSum;
 
 uint16_t lightingMean,lighting120Hz;
 
-void lightingAnalysis(float scaleFactor, BufferDump *dump) {
+void lightingAnalysis(uint16_t gain, uint16_t delay, BufferDump *dump) {
     
     static float beta0,beta1,beta2,alpha00,alpha01,alpha02,alpha11,alpha12,alpha22;
     
@@ -342,6 +343,17 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
         beta0 = (beta0 - alpha01*beta1 - alpha02*beta2)/alpha00;
         tick();
         
+        // Calculate the delay (in us) of the current sampling compared
+        // with the earlier voltage-fiducial sampling.
+        if(timestamp > tzero) {
+            elapsed = timestamp - tzero;
+        }
+        else {
+            // handle the (unlikely) case where the micros counter rolled over
+            elapsed = 0xffffffff - tzero;
+            elapsed += timestamp;
+        }
+
         // Calculate the raw phase (in us) of an equivalent 120 Hz
         // sine wave. Offset is relative to WAVEDATA(0)=sample[6].
         _fval = atan2(beta2,beta1)*RAD_TO_MICROS_120 - POWER_CYCLE_MICROS_BY_8;
@@ -350,6 +362,21 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
             DUMP_ANALYSIS_SAVE(2,uint16_t,(uint16_t)(_fval+0.5));
         }
         tick();
+        
+        // Calculate the delay (in us) of the current zero crossing relative
+        // to the voltage zero crossing, modulus a 120 Hz cycle. The power
+        // factor is related to this delay via:
+        //
+        //  PF = fabs(cos(zeroXingDelay*TWOPI*60*1e-6))
+        //
+        // The reason we do not return the power factor here is that the
+        // delay is what we actually measure more directly so it is more
+        // suitable for averaging (taking care of modulus issues).
+        _fval = fmod(_fval + elapsed - voltagePhase - delay,
+            POWER_CYCLE_MICROS_BY_2);
+        if(0 != dump) {
+            DUMP_ANALYSIS_SAVE(4,uint16_t,(uint16_t)(_fval + 0.5));
+        }
 
         // Store the 120 Hz peak amplitude in beta1
         beta1 = sqrt(beta1*beta1 + beta2*beta2);
@@ -357,12 +384,12 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
         // save our analysis results (in rounded 16-bit ADC/10 counts)
         // in case this buffer gets dumped
         if(0 != buffer) {
-            DUMP_ANALYSIS_SAVE(4,uint16_t,(uint16_t)(10*beta0));
-            DUMP_ANALYSIS_SAVE(6,uint16_t,(uint16_t)(10*beta1));
+            DUMP_ANALYSIS_SAVE(6,uint16_t,(uint16_t)(10*beta0));
+            DUMP_ANALYSIS_SAVE(8,uint16_t,(uint16_t)(10*beta1));
         }
         
         // scale beta0 to lightingMean
-        beta0 = scaleFactor*beta0 + 0.5;
+        beta0 = gain*beta0 + 0.5;
         if(beta0 <= 0) {
             lightingMean = 0;
         }
@@ -375,7 +402,7 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
         tick();
         
         // scale beta1 to lighting120Hz
-        beta1 = scaleFactor*beta1 + 0.5;
+        beta1 = gain*beta1 + 0.5;
         if(beta1 <= 0) {
             lighting120Hz = 0;
         }
@@ -405,7 +432,6 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
 uint8_t nClipped,currentComplexity;
 float apparentPower,zeroXingDelay;
 
-static uint32_t elapsed;
 static float totalVariance;
 
 void powerAnalysis(uint16_t gain, uint16_t delay, BufferDump *dump) {

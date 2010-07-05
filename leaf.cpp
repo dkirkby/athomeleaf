@@ -323,7 +323,7 @@ void lightingSequence(BufferDump *dump) {
     tick();
 
     // Analyze the captured waveform
-    lightingAnalysis(16.0,dump);
+    lightingAnalysis(16,0,dump);
     tick();
     
     _u8val = 0;
@@ -364,7 +364,7 @@ void lightingSequence(BufferDump *dump) {
     tick();
 
     // Analyze the captured waveform
-    lightingAnalysis(16.0,dump);
+    lightingAnalysis(16,0,dump);
     tick();
     
     if(_u8val) {
