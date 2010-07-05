@@ -300,6 +300,7 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
     if(0 != dump) {
         /* zero out the dump header */
         for(_u8val = 0; _u8val < 15; _u8val++) dump->packed[_u8val] = 0;
+        DUMP_ANALYSIS_SAVE(0,uint16_t,(uint16_t)(10*alpha00));
     }
 
     // Check for an almost singular matrix which signals an over/under-flow condition
@@ -339,16 +340,17 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
         beta0 = (beta0 - alpha01*beta1 - alpha02*beta2)/alpha00;
         tick();
         
+        // save our analysis results (in rounded 16-bit ADC/10 counts)
+        // in case this buffer gets dumped
+        if(0 != buffer) {
+            DUMP_ANALYSIS_SAVE(2,uint16_t,(uint16_t)(10*beta0));
+            DUMP_ANALYSIS_SAVE(4,uint16_t,(uint16_t)(10*beta1));
+            DUMP_ANALYSIS_SAVE(6,uint16_t,(uint16_t)(10*beta2));
+        }
+        
         // Store the 120 Hz peak amplitude in beta1
         beta1 = sqrt(beta1*beta1 + beta2*beta2);
         
-        // save our analysis results (in floating point ADC counts)
-        // in case this buffer gets dumped
-        if(0 != buffer) {
-            *(float*)(&dump->packed[0]) = beta0;
-            *(float*)(&dump->packed[4]) = beta1;
-        }
-
         // scale beta0 to lightingMean
         beta0 = scaleFactor*beta0 + 0.5;
         if(beta0 <= 0) {
@@ -358,7 +360,7 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
             lightingMean = 0xfffe;
         }
         else {
-            lightingMean = (unsigned short)beta0;
+            lightingMean = (uint16_t)beta0;
         }
         tick();
         
@@ -371,7 +373,7 @@ void lightingAnalysis(float scaleFactor, BufferDump *dump) {
             lighting120Hz = 0xfffe;
         }
         else {
-            lighting120Hz = (unsigned short)beta1;
+            lighting120Hz = (uint16_t)beta1;
         }
         
     }
