@@ -162,39 +162,62 @@ void initNordic(uint32_t serialNumber) {
 // garbage bytes.
 // =====================================================================
 
+static uint8_t _rxFifoEmpty = (1 << RX_EMPTY);
+
 uint8_t getNordic(uint8_t *payload, uint8_t payloadSize) {
 
-    if(!nordicOK) return 0xff;
+    if(!nordicOK) return NORDIC_NOT_READY;
 
-    // Read our status register to check for a new packet and, if there
-    // is one, find out which pipeline it came through.
-//    Mirf.readRegister(STATUS,&_u8val,1);
-//    Serial.print(_u8val,BIN);
-//    Serial.write(' ');
-    Mirf.readRegister(FIFO_STATUS,&_u8val,1);
-//    Serial.println(_u8val,BIN);
-//    delay(500);
-    
-    // Is there any data ready in our Rx FIFO?
-    //Mirf.readRegister(FIFO_STATUS,&_u8val,1);
-    if(_u8val & (1 << RX_EMPTY)) {
-        return 0xf0;
-    }
-    
-    // Which pipeline is the next payload from? This will be our
-    // return value.
+    delay(500);
+
+    // Read the nordic status register
     Mirf.readRegister(STATUS,&_u8val,1);
-    _u8val = (_u8val >> RX_P_NO) & 0x07;
+
+    Serial.write('=');
+    Serial.print(_rxFifoEmpty,BIN);
+    Serial.write(' ');
+    Serial.println(_u8val,BIN);
+
+    // Do we have any pending data or new data?
+    if(_rxFifoEmpty && (0==(_u8val & (1 << RX_DR)))) return NORDIC_NO_DATA;
     
-    // Read the payload from the pipeline
+    // There is something ready in the RX_FIFO: which pipeline did it come through?
+    _u8val = (_u8val >> RX_P_NO) & 0x07;
+
+    // Read the next payload from the RX_FIFO
     Mirf.csnLow();
     Spi.transfer(R_RX_PAYLOAD);
     Mirf.transferSync(payload,payload,payloadSize);
     Mirf.csnHi();
+    
+    Serial.write('$');
+    Mirf.readRegister(RX_PW_P0,&_rxFifoEmpty,1);
+    Serial.print(_rxFifoEmpty,DEC);
+    Serial.write(':');
+    Serial.print(payload[0],HEX);
+    Serial.write(' ');
+    Serial.print(payload[1],HEX);
+    Serial.write(' ');
+    Serial.print(payload[2],HEX);
+    Serial.write(' ');
+    Serial.println(payload[3],HEX);
 
-    // Reset the RX_DR interrupt bit in the status register
+    // Reset the RX_DR interrupt bit in the status register.
+    // This action updates the pipeline number in the status register (see p.56)
     Mirf.configRegister(STATUS,(1<<RX_DR));
     
+    Serial.write('>');
+    Mirf.readRegister(STATUS,&_rxFifoEmpty,1);
+    Serial.print(_rxFifoEmpty,BIN);
+    Serial.write(' ');
+    Mirf.readRegister(FIFO_STATUS,&_rxFifoEmpty,1);
+    Serial.println(_rxFifoEmpty,BIN);
+
+    // Is there more data in the RX_FIFO that we should read next time?
+    Mirf.readRegister(FIFO_STATUS,&_rxFifoEmpty,1);
+    _rxFifoEmpty &= (1 << RX_EMPTY);
+    
+    // Return the pipeline number we saved earlier
     return _u8val;
 }
 

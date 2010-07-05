@@ -15,6 +15,10 @@
 // Leaf pipelines
 #define PIPELINE_CONFIG      1
 
+// Special return values
+#define NORDIC_NOT_READY 0xFF
+#define NORDIC_NO_DATA   0xF0
+
 extern uint8_t nordicOK;
 extern uint8_t idleAddress[],dataAddress[],configAddress[],lamAddress[],dumpAddress[];
 
