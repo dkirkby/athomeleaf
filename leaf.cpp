@@ -510,7 +510,7 @@ void powerSequence(BufferDump *dump) {
     LCDpos(1,0);
     Serial.print(realPower);
     LCDpos(1,11);
-    //Serial.print(complexitySave,DEC);
+    Serial.print(complexitySave,DEC);
     
     // Update the click threshold based on the new power estimate.
     // The ratio clickThreshold/(2^32) determines the probability of an
@@ -525,22 +525,24 @@ void powerSequence(BufferDump *dump) {
         // the change in power since the last power sequence
         _fval = pow(fabs(realPower-lastRealPower)/MAX_REAL_POWER,0.5);
         _fval = pow(FREQUENCY_RANGE_RATIO,_fval);
+        _u16val = (uint16_t)(MAX_HALF_PERIOD/_fval + 0.5);
         // how many semitones is this interval?
         _u8val = (uint8_t)fabs(log(_fval)/LOG_SEMITONE_RATIO);
-        pprint(_u8val);
         if((config.capabilities & CAPABILITY_POWER_EDGE_AUDIO) &&
             (_u8val > MIN_SEMITONES)) {
             if(realPower > lastRealPower) {
                 // rising interval
+                tone(MAX_HALF_PERIOD,5);
+                delay(150);
                 tone(MAX_HALF_PERIOD,10);
-                _u16val = (uint16_t)(MAX_HALF_PERIOD/_fval + 0.5);
                 tone(_u16val,20);
             }
             else {
                 // falling interval
-                tone(MIN_HALF_PERIOD,10);
-                _u16val = (uint16_t)(MIN_HALF_PERIOD*_fval + 0.5);
-                tone(_u16val,20);
+                tone(_u16val,5);
+                delay(150);
+                tone(_u16val,10);
+                tone(MAX_HALF_PERIOD,20);
             }
         }
     }
