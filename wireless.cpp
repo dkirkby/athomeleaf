@@ -137,11 +137,10 @@ void initNordic(uint32_t serialNumber) {
         Mirf.configRegister(EN_RXADDR,_enabledPipelines = 0x02);
     }
 
-    // Read back the least-significant byte [0] of the auto-ack pipeline (P0)
-    // address to check that we are really talking to a nordic transceiver.
-    // Use this register since it is configured the same in a hub and leaf.
-	Mirf.readRegister(RX_ADDR_P0,&_u8val,1);
-	if(_u8val == idleAddress[0]) {
+    // Read back the enabled pipelines register to verify that we are really
+    // talking to a nordic transceiver.
+	Mirf.readRegister(EN_RXADDR,&_u8val,1);
+	if(_u8val == _enabledPipelines) {
         nordicOK = 1;
         // Start receiver
         Mirf.powerUpRx();
