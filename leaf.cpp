@@ -521,18 +521,19 @@ void powerSequence(BufferDump *dump) {
     _fval = fabs(cos(zeroXingDelaySave*POWER_FACTOR_OMEGA));
     tick();
     
+    // Calculate the real power
+    realPower = _fval*apparentPowerSave;
+
+#ifdef DISPLAY_POWER
     LCDclear();
     Serial.print(apparentPowerSave);
     LCDpos(0,12);
     Serial.print(_fval);
-    
-    // Calculate the real power
-    realPower = _fval*apparentPowerSave;
-    
     LCDpos(1,0);
     Serial.print(realPower);
     LCDpos(1,11);
     Serial.print(complexitySave,DEC);
+#endif
     
     // Update the click threshold based on the new power estimate.
     // The ratio clickThreshold/(2^32) determines the probability of an
