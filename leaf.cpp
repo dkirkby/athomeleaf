@@ -67,7 +67,7 @@
 #define POWER_FACTOR_OMEGA 376.99111843077515e-6 // 2pi*60/10^6
 
 #define MAX_REAL_POWER 1.8e6 // 120 V(rms) x 15 A(rms) x 1000 mW/W
-#define CLICK_PROB_BASE 0.01 // base power level feedback click probability per sample
+#define CLICK_PROB_BASE 0.04 // max click probability per tick /16
 #define MAX_UINT32_AS_FLOAT 4.294967296e9 // (float)(1<<32)
 
 #define MAX_HALF_PERIOD 1200 // us
@@ -555,7 +555,8 @@ void powerSequence(BufferDump *dump) {
     // Update the click threshold based on the new power estimate.
     // The ratio clickThreshold/(2^32) determines the probability of an
     // audible click in a ~1ms interval, which should be << 1.
-    _fval = 16*CLICK_PROB_BASE*pow(realPower/MAX_REAL_POWER,3);
+    _fval = (1+AUDIO_CONTROL_LEVEL_SCALE(config))*CLICK_PROB_BASE*
+        pow(realPower/MAX_REAL_POWER,1+AUDIO_CONTROL_LEVEL_EXPONENT(config));
     clickThreshold = (uint32_t)(_fval*MAX_UINT32_AS_FLOAT);
     tick();
     
@@ -589,28 +590,6 @@ void powerSequence(BufferDump *dump) {
 
     // Remember the real power calculated during the sequence
     lastRealPower = realPower;
-
-/*
-    // Calculate the tone frequency corresponding to the current
-    // real power usage level and provide audio edge feedback.
-    _fval = realPower/MAX_REAL_POWER;
-    _fval = pow(MIN_HALF_PERIOD,_fval)*pow(MAX_HALF_PERIOD,1-_fval);
-    _u16val = (uint16_t)(_fval + 0.5);
-    // Do we already have a power baseline?
-    if(powerToneSave > 0) {
-        // How many semitones up or down does this new real power
-        // measurement represent?
-        _fval = fabs(log(_fval/powerToneSave)/LOG_SEMITONE_RATIO);
-        Serial.print(_fval);
-        // Generate audio edge feedback now?
-        if((config.capabilities & CAPABILITY_POWER_EDGE_AUDIO) && (_fval > 1.0)) {
-            tone(powerToneSave,10);
-            tone(_u16val,20);
-        }
-    }
-    // save this tone level for next time
-    powerToneSave = _u16val;
-*/
 }
 
 // =====================================================================
