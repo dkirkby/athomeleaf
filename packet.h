@@ -27,6 +27,12 @@
 #define CAPABILITY_LIGHT_AUDIO       (1<<14)
 //#define CAPABILITY_16 (1<<15)
 
+// Extract the fields packed into the power audio control register
+#define AUDIO_CONTROL_LEVEL_EXPONENT(C) ((C).powerAudioControl & 0x000f)
+#define AUDIO_CONTROL_LEVEL_SCALE(C) (((C).powerAudioControl & 0x00f0)>>4)
+#define AUDIO_CONTROL_EDGE_EXPONENT(C) (((C).powerAudioControl & 0x0f00)>>8)
+#define AUDIO_CONTROL_LEVEL_MIN_SEMIS(C) ((C).powerAudioControl >> 12)
+
 typedef struct { // 32 bytes total
     /*** General Configuration ***/
     uint32_t header; // a fixed header to help filter spurious config packets
