@@ -247,6 +247,21 @@ void printConfig() {
     pprint(config.nClipCut);
     LCDpos(0,8);
     pprint(config.selfHeatDelay);
+    LCDpos(0,10);
+    pprint(config.powerAudioControl);
+    LCDpos(0,14);
+    pprint(config.lightFidHiLoDelta);
+    // page 2, line 2
+    LCDpos(1,0);
+    pprint(config.lightFidShiftHi);
+    LCDpos(1,4);
+    pprint(config.lightGainHi);
+    LCDpos(1,6);
+    pprint(config.lightGainHiLoRatio);
+    LCDpos(1,10);
+    pprint(config.darkThreshold);
+    LCDpos(1,14);
+    pprint(config.artificialThreshold);
     // keep the last page displayed for 30s
     delay(30000);
 }
@@ -747,7 +762,7 @@ void setup() {
 
     // Dispaly our startup config to the optional LCD display.
     // Since this displays for 30s it should only be used for debug.
-    // printConfig();
+    //printConfig();
 
     // Send another LAM with our real serial number after a short delay.
     delay(2000);
