@@ -29,9 +29,9 @@
 
 // Extract the fields packed into the power audio control register
 #define AUDIO_CONTROL_LEVEL_EXPONENT(C) ((C).powerAudioControl & 0x000f)
-#define AUDIO_CONTROL_LEVEL_SCALE(C) (((C).powerAudioControl & 0x00f0)>>4)
-#define AUDIO_CONTROL_EDGE_EXPONENT(C) (((C).powerAudioControl & 0x0f00)>>8)
-#define AUDIO_CONTROL_LEVEL_MIN_SEMIS(C) ((C).powerAudioControl >> 12)
+#define AUDIO_CONTROL_LEVEL_SCALE(C)    (((C).powerAudioControl & 0x00f0)>>4)
+#define AUDIO_CONTROL_EDGE_EXPONENT(C)  (((C).powerAudioControl & 0x0f00)>>8)
+#define AUDIO_CONTROL_EDGE_MIN_SEMIS(C) ((C).powerAudioControl >> 12)
 
 typedef struct { // 32 bytes total
     /*** General Configuration ***/

@@ -563,14 +563,16 @@ void powerSequence(BufferDump *dump) {
     // Do we already have a power baseline for edge feedback?
     if(lastRealPower >= 0) {
         // Calculate a logarithmic frequency ratio corresponding to
-        // the change in power since the last power sequence
-        _fval = pow(fabs(realPower-lastRealPower)/MAX_REAL_POWER,0.5);
+        // the change in power since the last power sequence.
+        // Exponent is (1+(0-15))/15 with range 1/15 to 1.
+        _fval = pow(fabs(realPower-lastRealPower)/MAX_REAL_POWER,
+            (1+AUDIO_CONTROL_EDGE_EXPONENT(config))/15.);
         _fval = pow(FREQUENCY_RANGE_RATIO,_fval);
         _u16val = (uint16_t)(MAX_HALF_PERIOD/_fval + 0.5);
         // how many semitones is this interval?
-        _u8val = (uint8_t)fabs(log(_fval)/LOG_SEMITONE_RATIO);
+        _u8val = (uint8_t)(fabs(log(_fval)/LOG_SEMITONE_RATIO));
         if((config.capabilities & CAPABILITY_POWER_EDGE_AUDIO) &&
-            (_u8val > MIN_SEMITONES)) {
+            (_u8val > AUDIO_CONTROL_EDGE_MIN_SEMIS(config))) {
             if(realPower > lastRealPower) {
                 // rising interval
                 tone(MAX_HALF_PERIOD,5);
