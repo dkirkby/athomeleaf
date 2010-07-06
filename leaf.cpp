@@ -562,17 +562,28 @@ void powerSequence(BufferDump *dump) {
     
     // Do we already have a power baseline for edge feedback?
     if(lastRealPower >= 0) {
-        // Calculate a logarithmic frequency ratio corresponding to
-        // the change in power since the last power sequence.
-        // Exponent is (1+(0-15))/15 with range 1/15 to 1.
+        // Calculate a frequency ratio corresponding to
+        // the change in power since the last power sequence. Use
+        // a logarithmic scaling of delta(power) to frequency.
+        // Exponent below is (1+(0-15))/15 with range 1/15 to 1, and
+        // controls the sensitivity: small exponents give larger
+        // frequency ratios at small delta(power).
         _fval = pow(fabs(realPower-lastRealPower)/MAX_REAL_POWER,
             (1+AUDIO_CONTROL_EDGE_EXPONENT(config))/15.);
         _fval = pow(FREQUENCY_RANGE_RATIO,_fval);
-        _u16val = (uint16_t)(MAX_HALF_PERIOD/_fval + 0.5);
-        // how many semitones is this interval?
-        _u8val = (uint8_t)(fabs(log(_fval)/LOG_SEMITONE_RATIO));
+        tick();
+        // Calculate the rounded number of semitones corresponding to
+        // this frequency ratio.
+        _u16val = (uint16_t)round(fabs(log(_fval)/LOG_SEMITONE_RATIO));
+        // Is this above our threshold?
         if((config.capabilities & CAPABILITY_POWER_EDGE_AUDIO) &&
-            (_u8val > AUDIO_CONTROL_EDGE_MIN_SEMIS(config))) {
+            (_u16val > AUDIO_CONTROL_EDGE_MIN_SEMIS(config))) {
+            // Calculate the half-period corresponding to the
+            // upper note of the interval we will play. The
+            // lower note has a fixed half period.
+            _fval = pow(2,_u16val/12.);
+            _u16val = (uint16_t)(MAX_HALF_PERIOD/_fval + 0.5);
+            // Play the interval now.
             if(realPower > lastRealPower) {
                 // rising interval
                 tone(MAX_HALF_PERIOD,5);
