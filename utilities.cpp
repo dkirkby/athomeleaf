@@ -242,7 +242,7 @@ static uint32_t elapsed;
 // to the unsigned short globals lightingMean and lighting120Hz.
 // =====================================================================
 
-uint16_t lightingMean,lighting120Hz;
+uint16_t lightLevel,light120Hz;
 
 void lightingAnalysis(float scale, uint16_t delay, BufferDump *dump) {
     
@@ -311,16 +311,16 @@ void lightingAnalysis(float scale, uint16_t delay, BufferDump *dump) {
     // out of a possible NLIGHTSAMP maximum.
     if(alpha00 < MINUNCLIPPED) {
         //beta1 = 0;
-        lighting120Hz = 0xffff;
+        light120Hz = 0xffff;
         if(nzero > NLIGHTSAMPBY2) {
             // underflow
             //beta0 = 0;
-            lightingMean = 0;
+            lightLevel = 0;
         }
         else {
             // overflow
             //beta0 = -1;
-            lightingMean = 0xffff;
+            lightLevel = 0xffff;
         }
     }
     else {
@@ -381,31 +381,11 @@ void lightingAnalysis(float scale, uint16_t delay, BufferDump *dump) {
             DUMP_ANALYSIS_SAVE(8,uint16_t,(uint16_t)(10*beta1));
         }
         
-        // scale beta0 to lightingMean
-        beta0 = scale*beta0 + 0.5;
-        if(beta0 <= 0) {
-            lightingMean = 0;
-        }
-        else if(beta0 >= 0xfffe) {
-            lightingMean = 0xfffe;
-        }
-        else {
-            lightingMean = (uint16_t)beta0;
-        }
-        tick();
-        
-        // scale beta1 to lighting120Hz
-        beta1 = scale*beta1 + 0.5;
-        if(beta1 <= 0) {
-            lighting120Hz = 0;
-        }
-        else if(beta1 >= 0xfffe) {
-            lighting120Hz = 0xfffe;
-        }
-        else {
-            lighting120Hz = (uint16_t)beta1;
-        }
-        
+        // scale beta0 to lightLevel
+        lightLevel = (uint16_t)(scale*beta0+0.5);
+
+        // scale beta1 to light120Hz
+        light120Hz = (uint16_t)(scale*beta1+0.5);
     }
 }
 

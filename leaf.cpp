@@ -17,6 +17,9 @@
 
 #include "WProgram.h" // arduino header
 
+#define DISPLAY_LIGHTING
+//#define DISPLAY_POWER
+
 // ---------------------------------------------------------------------
 // Temperature monitoring parameters
 // ---------------------------------------------------------------------
@@ -324,6 +327,10 @@ void tick() {
 // =====================================================================
 void lightingSequence(BufferDump *dump) {
     
+    // prepare to combine the high- and low-gain analysis results
+    uint16_t lightLevelSave = 0;
+    uint16_t light120HzSave = 0;
+    
     // Ensure that all LEDs are off during light measurements
     // although this is normally already taken care of.
     digitalWrite(AMBER_LED_PIN,LOW);
@@ -344,14 +351,18 @@ void lightingSequence(BufferDump *dump) {
     lightingAnalysis(_fval,config.lightFidShiftHi,dump);
     tick();
     
+    // Save the results of the high-gain analysis
+    lightLevelSave = lightLevel;
+    light120HzSave = light120Hz;
+    
     _u8val = 0;
     roomIsDark = 0;
-    if(lightingMean < DARK_THRESHOLD) {
+    if(lightLevel < config.darkThreshold) {
         // the room is dark 
         roomIsDark = 1;
     }
-    else if(lightingMean < LIGHTING_CROSSOVER) {
-        if(lighting120Hz > lightingMean/ARTIFICIAL_THRESHOLD) {
+    else if(lightLevel < LIGHTING_CROSSOVER) {
+        if(light120Hz > lightLevel/config.artificialThreshold) {
             // artificial light is present
             if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(AMBER_GLOW);
         }
@@ -363,9 +374,6 @@ void lightingSequence(BufferDump *dump) {
     else {
         _u8val = 1; // signals that we defer to the low-gain analysis
     }    
-    
-    packet.lightLevelHiGain = lightingMean;
-    packet.light120HzHiGain = lighting120Hz;
     
     // Periodically dump sample buffer if requested
     if(dump && (config.capabilities & CAPABILITY_LIGHT_DUMP) &&
@@ -390,7 +398,7 @@ void lightingSequence(BufferDump *dump) {
     tick();
     
     if(_u8val) {
-        if(lighting120Hz > lightingMean/ARTIFICIAL_THRESHOLD) {
+        if(light120Hz > lightLevel/config.artificialThreshold) {
             // artificial light is present
             if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(AMBER_GLOW);
         }
@@ -400,16 +408,24 @@ void lightingSequence(BufferDump *dump) {
         }
     }
     
-    packet.lightLevelLoGain = lightingMean;
-    packet.light120HzLoGain = lighting120Hz;
-    
     // Periodically dump sample buffer if requested
     if(dump && (config.capabilities & CAPABILITY_LIGHT_DUMP) &&
         connectionState == STATE_CONNECTED &&
         (packet.sequenceNumber % config.dumpInterval) == (config.dumpInterval>>1)) {
         dumpBuffer(DUMP_BUFFER_LIGHT_LO,dump);
         tick();
-    }    
+    }
+    
+#ifdef DISPLAY_LIGHTING
+    LCDclear();
+    Serial.print(lightLevelSave,DEC);
+    LCDpos(0,8);
+    Serial.print(light120HzSave,DEC);
+    LCDpos(1,0);
+    Serial.print(lightLevel,DEC);
+    LCDpos(1,8);
+    Serial.print(light120Hz,DEC);
+#endif
 }
 
 // =====================================================================
