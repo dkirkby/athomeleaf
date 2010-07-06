@@ -244,7 +244,7 @@ static uint32_t elapsed;
 
 uint16_t lightingMean,lighting120Hz;
 
-void lightingAnalysis(uint16_t gain, uint16_t delay, BufferDump *dump) {
+void lightingAnalysis(float scale, uint16_t delay, BufferDump *dump) {
     
     static float beta0,beta1,beta2,alpha00,alpha01,alpha02,alpha11,alpha12,alpha22;
     
@@ -363,15 +363,8 @@ void lightingAnalysis(uint16_t gain, uint16_t delay, BufferDump *dump) {
         }
         tick();
         
-        // Calculate the delay (in us) of the current zero crossing relative
-        // to the voltage zero crossing, modulus a 120 Hz cycle. The power
-        // factor is related to this delay via:
-        //
-        //  PF = fabs(cos(zeroXingDelay*TWOPI*60*1e-6))
-        //
-        // The reason we do not return the power factor here is that the
-        // delay is what we actually measure more directly so it is more
-        // suitable for averaging (taking care of modulus issues).
+        // Calculate the delay (in us) of the 120 Hz zero crossing relative
+        // to the voltage zero crossing, modulus a 120 Hz cycle.
         _fval = fmod(_fval + elapsed - voltagePhase - delay,
             POWER_CYCLE_MICROS_BY_2);
         if(0 != dump) {
@@ -389,7 +382,7 @@ void lightingAnalysis(uint16_t gain, uint16_t delay, BufferDump *dump) {
         }
         
         // scale beta0 to lightingMean
-        beta0 = gain*beta0 + 0.5;
+        beta0 = scale*beta0 + 0.5;
         if(beta0 <= 0) {
             lightingMean = 0;
         }
@@ -402,7 +395,7 @@ void lightingAnalysis(uint16_t gain, uint16_t delay, BufferDump *dump) {
         tick();
         
         // scale beta1 to lighting120Hz
-        beta1 = gain*beta1 + 0.5;
+        beta1 = scale*beta1 + 0.5;
         if(beta1 <= 0) {
             lighting120Hz = 0;
         }

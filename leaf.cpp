@@ -337,8 +337,11 @@ void lightingSequence(BufferDump *dump) {
     acquireADCSamples(LIGHTING_PIN_HI);
     tick();
 
+    // Lookup the floating point high-gain scaling from ADC counts
+    _fval = (float)(config.lightGainHi);
+
     // Analyze the captured waveform
-    lightingAnalysis(16,0,dump);
+    lightingAnalysis(_fval,config.lightFidShiftHi,dump);
     tick();
     
     _u8val = 0;
@@ -378,8 +381,12 @@ void lightingSequence(BufferDump *dump) {
     acquireADCSamples(LIGHTING_PIN);
     tick();
 
+    // Lookup the floating point low-gain scaling from ADC counts
+    _fval = (float)(config.lightGainHi);
+    _fval *= (config.lightGainHiLoRatio<<4)/32768.;
+
     // Analyze the captured waveform
-    lightingAnalysis(16,0,dump);
+    lightingAnalysis(_fval,config.lightFidShiftHi-config.lightFidHiLoDelta,dump);
     tick();
     
     if(_u8val) {
