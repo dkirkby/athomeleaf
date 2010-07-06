@@ -38,14 +38,23 @@ fiducialShiftHi = 3000 # us
 powerGainHi = 253 # mW/ADC
 powerGainLo = 4500 # mW/ADC
 nClipCut = 8 # samples
+powerAudioControl = 0
+lightFidHiLoDelta = 0 # microsecs
+lightFidShiftHi = 0 # microsecs
+lightGainHi = 16 # arb./ADC
+lightGainHiLoRatio = 46562
+darkThreshold = 250
+artificialThreshold = 100
 
 # pack the config data into a mutable buffer, leaving space for the 3-byte line header
 buf = ctypes.create_string_buffer(64)
-struct.pack_into('<IBHBBBHBBHHHB',buf,3,
+struct.pack_into('<IBHBBBHBBHHHBHBHBHHB',buf,3,
     serialNumber,networkID,capabilities,dumpInterval,
     comfortTempMin,comfortTempMax,selfHeatOffset,selfHeatDelay,
-    fiducialHiLoDelta,fiducialShiftHi,powerGainHi,powerGainLo,nClipCut)
-dataSize = 21 # bytes
+    fiducialHiLoDelta,fiducialShiftHi,powerGainHi,powerGainLo,nClipCut,
+    powerAudioControl,lightFidHiLoDelta,lightFidShiftHi,lightGainHi,
+	lightGainHiLoRatio,darkThreshold,artificialThreshold)
+dataSize = 32 # bytes
 
 # store the header (byte count, start address)
 byteCount = 3 + dataSize
