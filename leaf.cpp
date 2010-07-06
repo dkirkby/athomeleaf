@@ -43,7 +43,7 @@
 // ---------------------------------------------------------------------
 // If mean lighting level on the high-gain channel is below this threshold
 // we consider the room to be dark
-#define DARK_THRESHOLD 250
+//#define DARK_THRESHOLD 250
 // If the high-gain mean lighting level is above this value, give preference
 // to the low-gain channel. With a crossover at 10,000, the low-gain mean
 // should be at least 500.
@@ -52,7 +52,9 @@
 // lighting is considered to be present if the ratio of the 120 Hz amplitude
 // to mean lighting level is at least 1/ARTIFICIAL_THRESHOLD. Whether to use
 // the high- or low-gain channel for this test depends on LIGHTING_CROSSOVER.
-#define ARTIFICIAL_THRESHOLD 100
+//#define ARTIFICIAL_THRESHOLD 100
+
+#define LIGHT_SCALE_FACTOR 0.00048828125 // 16/(1<<15)
 
 // ---------------------------------------------------------------------
 // Power analysis parameters
@@ -390,8 +392,7 @@ void lightingSequence(BufferDump *dump) {
     tick();
 
     // Lookup the floating point low-gain scaling from ADC counts
-    _fval = (float)(config.lightGainHi);
-    _fval *= (config.lightGainHiLoRatio<<4)/32768.;
+    _fval = LIGHT_SCALE_FACTOR*config.lightGainHiLoRatio*config.lightGainHi;
 
     // Analyze the captured waveform
     lightingAnalysis(_fval,config.lightFidShiftHi-config.lightFidHiLoDelta,dump);
