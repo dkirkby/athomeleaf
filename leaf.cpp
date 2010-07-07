@@ -278,25 +278,21 @@ void printConfig() {
 // ---------------------------------------------------------------------
 void printSample() {
     LCDclear();
-    Serial.print(packet.lightLevelHiGain,HEX);
-    LCDpos(0,4);
-    Serial.print(packet.light120HzHiGain,HEX);
+    Serial.print(from_float16(packet.power),1);
     LCDpos(0,8);
-    Serial.print(packet.lightLevelLoGain,HEX);
-    LCDpos(0,12);
-    Serial.print(packet.light120HzLoGain,HEX);
-    LCDpos(1,0);
-    Serial.print(packet.powerHiGain,HEX);
-    LCDpos(1,4);
-    Serial.print(packet.powerLoGain,HEX);
-    LCDpos(1,8);
-    Serial.print(packet.acPhase,HEX);
-    LCDpos(1,10);
+    pprint(packet.powerFactor);
+    LCDpos(0,11);
+    pprint(packet.complexity);
+    LCDpos(0,14);
     Serial.print((packet.temperature/100)%100,DEC);
-    LCDpos(1,12);
-    Serial.print(packet.sequenceNumber,HEX);
-    LCDpos(1,14);
-    Serial.print(packet.status,HEX);    
+    LCDpos(1,0);
+    Serial.print(from_float16(packet.lighting),1);
+    LCDpos(1,8);
+    pprint(packet.artificial);
+    LCDpos(0,11);
+    pprint(packet.status);
+    LCDpos(0,14);
+    pprint(packet.sequenceNumber);
 }
 
 // =====================================================================
