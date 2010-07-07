@@ -8,6 +8,8 @@
 // =====================================================================
 #include <stdint.h>
 
+#include "float16.h"
+
 #define CONFIG_HEADER 0xDeadBeef
 
 #define CAPABILITY_TEMP_FEEDBACK     (1<<0)
@@ -67,17 +69,15 @@ typedef struct { // 32 bytes total
 #define STATUS_GOT_UPDATED_CONFIG 0x20
 #define STATUS_GOT_INVALID_CONFIG 0x40
 
-typedef struct { // 18 bytes total
+typedef struct { // 12 bytes total
     uint8_t networkID;
     uint8_t sequenceNumber;
     uint8_t status;
-    uint8_t acPhase;
-    uint16_t powerLoGain;
-    uint16_t powerHiGain;
-    uint16_t lightLevelLoGain;
-    uint16_t lightLevelHiGain;
-    uint16_t light120HzLoGain;
-    uint16_t light120HzHiGain;
+    float16 lighting;
+    uint8_t artificial;
+    float16 power;
+    uint8_t powerFactor;
+    uint8_t complexity;
     uint16_t temperature;
 } DataPacket;
 
