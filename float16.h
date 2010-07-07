@@ -47,4 +47,15 @@ typedef uint16_t float16;
 extern float16 to_float16(float value);
 extern float from_float16(float16 value);
 
+// Macros to deconstruct an IEEE single-precision float
+#define BITS(VALUE) (*(uint32_t*)(&(VALUE)))
+#define SIGN(VALUE) (uint8_t)(BITS(VALUE)>>31)
+#define EXPONENT(VALUE) (uint8_t)(BITS(VALUE)>>23)
+#define SIGNIFICAND(VALUE) (uint32_t)(BITS(VALUE)&0x7FFFFF)
+#define IMPLICIT_MSBIT (uint32_t)(1<<23)
+
+// Macros to reconstruct a positive IEEE single-precision float
+#define FLOAT_BITS(EXP,SIG) ((EXP<<23)|(SIG))
+#define FROM_BITS(VALUE) (*(float*)(&(VALUE)))
+
 #endif

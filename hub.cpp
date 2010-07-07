@@ -10,6 +10,7 @@
 #include "serialno.h"
 #include "wireless.h"
 #include "packet.h"
+#include "float16.h"
 
 #include "WProgram.h" // arduino header
 
@@ -69,8 +70,9 @@ uint32_t temperatureSum,humiditySum;
 float temperature,humidity;
 
 // Private globals used as shared temporaries to avoid stack locals
-static uint8_t _byteValue;
-static uint16_t _uintValue;
+static uint8_t _u8val;
+static uint16_t _u16val;
+static float _fval;
 
 // =====================================================================
 // Dump the contents of a Look-at-Me packet to the serial port on
@@ -85,11 +87,11 @@ void printLookAtMe(const LookAtMe *lam) {
     Serial.print(lam->commitTimestamp,DEC);
     Serial.write(' ');
     for(index = 0; index < 20; index++) {
-        _byteValue = lam->commitID[index];
-        if(_byteValue < 0x10) {
+        _u8val = lam->commitID[index];
+        if(_u8val < 0x10) {
             Serial.write('0');
         }
-        Serial.print(_byteValue,HEX);
+        Serial.print(_u8val,HEX);
     }
     Serial.write(' ');
     Serial.println(lam->modified,DEC);    
@@ -109,9 +111,9 @@ void printBufferDump(const BufferDump *dump) {
     if(dump->sequenceNumber == 0) {
         Serial.write(' ');
         // dump the first 11 bytes as one long hex string
-        for(_byteValue = 0; _byteValue < 11; _byteValue++) {
-            if(dump->packed[_byteValue] < 0x10) Serial.write('0');
-            Serial.print(dump->packed[_byteValue],HEX);
+        for(_u8val = 0; _u8val < 11; _u8val++) {
+            if(dump->packed[_u8val] < 0x10) Serial.write('0');
+            Serial.print(dump->packed[_u8val],HEX);
         }
         Serial.write(' ');
         // print the dump type
@@ -129,27 +131,27 @@ void printBufferDump(const BufferDump *dump) {
         Serial.print(unpacked[1],HEX);
         // the next 8 samples are packed        
         unpackSamples(&dump->packed[20],unpacked);
-        for(_byteValue = 0; _byteValue < 4; _byteValue++) {
+        for(_u8val = 0; _u8val < 4; _u8val++) {
             Serial.write(' ');
-            Serial.print(unpacked[_byteValue],HEX);
+            Serial.print(unpacked[_u8val],HEX);
         }
         unpackSamples(&dump->packed[25],unpacked);
-        for(_byteValue = 0; _byteValue < 4; _byteValue++) {
+        for(_u8val = 0; _u8val < 4; _u8val++) {
             Serial.write(' ');
-            Serial.print(unpacked[_byteValue],HEX);
+            Serial.print(unpacked[_u8val],HEX);
         }
     }
     else {
         // The next 10 packets have identical formats and pack 24
         // 10-bit ADC samples into 30 bytes. We unpack each sample
         // and print its hex value here.
-        for(_byteValue = 0; _byteValue < 24; _byteValue++) {
-            if(_byteValue % 4 == 0) {
+        for(_u8val = 0; _u8val < 24; _u8val++) {
+            if(_u8val % 4 == 0) {
                 // refill our array of unpacked data
-                unpackSamples(&dump->packed[5*(_byteValue>>2)],unpacked);
+                unpackSamples(&dump->packed[5*(_u8val>>2)],unpacked);
             }
             Serial.write(' ');
-            Serial.print(unpacked[_byteValue % 4],HEX);
+            Serial.print(unpacked[_u8val % 4],HEX);
         }
     }
     Serial.println();
@@ -162,31 +164,31 @@ void printBufferDump(const BufferDump *dump) {
 // =====================================================================
 
 void parseHex(uint8_t *ptr) {
-    _uintValue = 0;
+    _u16val = 0;
     if(*ptr >= '0' && *ptr <= '9') {
-        _uintValue = (*ptr-'0') << 4;
+        _u16val = (*ptr-'0') << 4;
     }
     else if(*ptr >= 'A' && *ptr <= 'F') {
-        _uintValue = ((*ptr-'A') + 0xA) << 4;
+        _u16val = ((*ptr-'A') + 0xA) << 4;
     }
     else if(*ptr >= 'a' && *ptr <= 'f') {
-        _uintValue = ((*ptr-'a') + 0xA) << 4;
+        _u16val = ((*ptr-'a') + 0xA) << 4;
     }
     else {
-        _uintValue = 0x100;
+        _u16val = 0x100;
     }
     ptr++;
     if(*ptr >= '0' && *ptr <= '9') {
-        _uintValue |= (*ptr-'0');
+        _u16val |= (*ptr-'0');
     }
     else if(*ptr >= 'A' && *ptr <= 'F') {
-        _uintValue |= ((*ptr-'A') + 0xA);
+        _u16val |= ((*ptr-'A') + 0xA);
     }
     else if(*ptr >= 'a' && *ptr <= 'f') {
-        _uintValue |= ((*ptr-'a') + 0xA);
+        _u16val |= ((*ptr-'a') + 0xA);
     }
     else {
-        _uintValue |= 0x200;
+        _u16val |= 0x200;
     }
 }
 
@@ -215,11 +217,11 @@ uint8_t handleConfigCommand() {
     // Extract the least-significant 2 bytes of serial number and
     // copy them into the configAddress buffer
     parseHex(serialBuffer+6);
-    if(_uintValue > 0xff) return 3;
-    configAddress[1] = (uint8_t)_uintValue;
+    if(_u16val > 0xff) return 3;
+    configAddress[1] = (uint8_t)_u16val;
     parseHex(serialBuffer+8);
-    if(_uintValue > 0xff) return 4;
-    configAddress[0] = (uint8_t)_uintValue;
+    if(_u16val > 0xff) return 4;
+    configAddress[0] = (uint8_t)_u16val;
 
     // Config data always starts with a fixed header
     configData.header = CONFIG_HEADER;
@@ -227,18 +229,18 @@ uint8_t handleConfigCommand() {
     // Do a byte-wise copy of data from the command into the
     // remaining bytes of our config buffer
     ptr = (uint8_t*)&configData + sizeof(configData.header);
-    _byteValue = 11;
-    while(_byteValue < serialBytes-1) { // up to but not including the final \0
-        parseHex(serialBuffer + _byteValue);
-        if(_uintValue > 0xff) return 5;
-        *ptr++ = (uint8_t)_uintValue;
-        _byteValue += 2;
+    _u8val = 11;
+    while(_u8val < serialBytes-1) { // up to but not including the final \0
+        parseHex(serialBuffer + _u8val);
+        if(_u16val > 0xff) return 5;
+        *ptr++ = (uint8_t)_u16val;
+        _u8val += 2;
     }
 
     // If we get here, configAdddress and configData should be ready to go.
     // Send the config packet now.
-    _byteValue = sendNordic(configAddress,(uint8_t*)&configData,sizeof(configData));
-    if(_byteValue > 0x0f) {
+    _u8val = sendNordic(configAddress,(uint8_t*)&configData,sizeof(configData));
+    if(_u8val > 0x0f) {
         // Config packet was never acknowledged
         return 6;
     }
@@ -292,19 +294,18 @@ void loop() {
         Serial.write(' ');
         Serial.print(data->status,HEX);
         Serial.write(' ');
-        Serial.print(data->acPhase,HEX);
+        // Convert float16 values and forward as binary IEEE floats
+        _fval = from_float16(data->lighting);
+        Serial.print(BITS(_fval),HEX);
         Serial.write(' ');
-        Serial.print(data->powerLoGain,HEX);
+        Serial.print(data->artificial,HEX);
         Serial.write(' ');
-        Serial.print(data->powerHiGain,HEX);
+        _fval = from_float16(data->power);
+        Serial.print(BITS(_fval),HEX);
         Serial.write(' ');
-        Serial.print(data->lightLevelLoGain,HEX);
+        Serial.print(data->powerFactor,HEX);
         Serial.write(' ');
-        Serial.print(data->lightLevelHiGain,HEX);
-        Serial.write(' ');
-        Serial.print(data->light120HzLoGain,HEX);
-        Serial.write(' ');
-        Serial.print(data->light120HzHiGain,HEX);
+        Serial.print(data->complexity,HEX);
         Serial.write(' ');
         Serial.println(data->temperature,HEX);
     }
@@ -332,8 +333,8 @@ void loop() {
             // we now have a complete command in the buffer
             serialBuffer[serialBytes-1] = '\0';
             // we only accept a config command (for now) - handle it here
-            _byteValue = handleConfigCommand();
-            if(0 == _byteValue) {
+            _u8val = handleConfigCommand();
+            if(0 == _u8val) {
                 Serial.print("LOG 4 "); /* config command successfully handled */
                 Serial.println(configData.networkID,DEC);
             }
@@ -341,7 +342,7 @@ void loop() {
                 Serial.print("CFG ERR ");
                 Serial.println((char*)serialBuffer);
                 Serial.print("LOG 5 "); /* config handler reported an error */
-                Serial.println(_byteValue,DEC);
+                Serial.println(_u8val,DEC);
             }
             // Reset the serial buffer
             serialBytes = 0;
