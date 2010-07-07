@@ -278,7 +278,7 @@ void printConfig() {
 // ---------------------------------------------------------------------
 void printSample() {
     LCDclear();
-    Serial.print(from_float16(packet.power));
+    printFloat(from_float16(packet.power),10);
     LCDpos(0,8);
     pprint(packet.powerFactor);
     LCDpos(0,11);
@@ -286,7 +286,7 @@ void printSample() {
     LCDpos(0,14);
     Serial.print((packet.temperature/100)%100,DEC);
     LCDpos(1,0);
-    Serial.print(from_float16(packet.lighting));
+    printFloat(from_float16(packet.lighting),10);
     LCDpos(1,8);
     pprint(packet.artificial);
     LCDpos(0,11);
@@ -424,13 +424,13 @@ void lightingSequence(BufferDump *dump) {
     
 #ifdef DISPLAY_LIGHTING
     LCDclear();
-    Serial.print(lightLevelSave);
-    LCDpos(0,8);
-    Serial.print(light120HzSave);
+    printFloat(lightLevelSave,10);
+    LCDpos(0,9);
+    printFloat(light120HzSave,10);
     LCDpos(1,0);
-    Serial.print(lightLevel);
-    LCDpos(1,8);
-    Serial.print(light120Hz);
+    printFloat(lightLevel,10);
+    LCDpos(1,9);
+    printFloat(light120Hz,10);
 #endif
 }
 
