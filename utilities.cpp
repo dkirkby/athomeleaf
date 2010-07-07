@@ -367,7 +367,7 @@ void lightingAnalysis(float scale, uint16_t delay, BufferDump *dump) {
         zeroXingDelay = fmod(_fval + elapsed - voltagePhase - delay,
             POWER_CYCLE_MICROS_BY_2);
         if(0 != dump) {
-            DUMP_ANALYSIS_SAVE(4,uint16_t,(uint16_t)(_fval + 0.5));
+            DUMP_ANALYSIS_SAVE(4,uint16_t,(uint16_t)(zeroXingDelay + 0.5));
         }
 
         // Store the 120 Hz peak amplitude in beta1
