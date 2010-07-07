@@ -311,17 +311,15 @@ void lightingAnalysis(float scale, uint16_t delay, BufferDump *dump) {
     // in the sampling. At this point, alpha00 contains the number of unclipped samples
     // out of a possible NLIGHTSAMP maximum.
     if(alpha00 < MINUNCLIPPED) {
-        //beta1 = 0;
-        light120Hz = 0xffff;
+        // return zero 120Hz component if we don't have a signal we can use
+        light120Hz = 0;
         if(nzero > NLIGHTSAMPBY2) {
             // underflow
-            //beta0 = 0;
             lightLevel = 0;
         }
         else {
-            // overflow
-            //beta0 = -1;
-            lightLevel = 0xffff;
+            // overflow: treat this like ADC saturation
+            lightLevel = scale*1024;
         }
     }
     else {
