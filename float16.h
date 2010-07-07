@@ -7,8 +7,12 @@
 //
 //   |to_float16(value) - value| <= value/4096
 //
-// Values between 0-1 can also be represented but with a decreasing precision
-// as values approach zero.
+// Values between 0-1 can also be represented but with a logarithmically
+// decreasing precision as values approach zero:
+//
+//   value > 0.243896   ensures frac. error < 0.1%
+//   value > 0.0241699  ensures frac. error < 1%
+//   value > 0.00219727 ensures frac. error < 10%
 //
 // Conversions are round-trip invariant, i.e., the following holds for all
 // possible float16 values:
