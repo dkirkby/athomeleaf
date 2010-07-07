@@ -231,6 +231,7 @@ void dumpBuffer(uint8_t dumpType, BufferDump *dump) {
 static uint8_t cycle,nzero;
 static float sink,cosk,cosSum,sinSum;
 static uint32_t elapsed;
+float zeroXingDelay;
 
 // =====================================================================
 // Analyzes a lighting waveform to determine its mean and 120Hz
@@ -365,7 +366,7 @@ void lightingAnalysis(float scale, uint16_t delay, BufferDump *dump) {
         
         // Calculate the delay (in us) of the 120 Hz zero crossing relative
         // to the voltage zero crossing, modulus a 120 Hz cycle.
-        _fval = fmod(_fval + elapsed - voltagePhase - delay,
+        zeroXingDelay = fmod(_fval + elapsed - voltagePhase - delay,
             POWER_CYCLE_MICROS_BY_2);
         if(0 != dump) {
             DUMP_ANALYSIS_SAVE(4,uint16_t,(uint16_t)(_fval + 0.5));
@@ -403,7 +404,7 @@ void lightingAnalysis(float scale, uint16_t delay, BufferDump *dump) {
 // =====================================================================
 
 uint8_t nClipped,currentComplexity;
-float apparentPower,zeroXingDelay;
+float apparentPower;
 
 static float totalVariance;
 
