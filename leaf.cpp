@@ -54,7 +54,8 @@
 // the high- or low-gain channel for this test depends on LIGHTING_CROSSOVER.
 //#define ARTIFICIAL_THRESHOLD 100
 
-#define LIGHT_SCALE_FACTOR 0.00048828125 // 16/(1<<15)
+#define LIGHT_SCALE_FACTOR_HI 0.0078125 // 1/128
+#define LIGHT_SCALE_FACTOR_LO 3.814697265625e-06 // 1/128 x 16/(1<<15)
 
 // ---------------------------------------------------------------------
 // Power analysis parameters
@@ -343,13 +344,15 @@ void lightingSequence(BufferDump *dump) {
     tick();
 
     // Lookup the floating point high-gain scaling from ADC counts
-    _fval = (float)(config.lightGainHi);
+    _fval = LIGHT_SCALE_FACTOR_HI*(1+config.lightGainHi);
 
     // Analyze the captured waveform
     lightingAnalysis(_fval,config.lightFidShiftHi,dump);
     tick();
     
     // Save the results of the high-gain analysis
+    lightLevelSave = lightLevel;
+    light120HzSave = light120Hz;
     
     _u8val = 0;
     roomIsDark = 0;
@@ -357,11 +360,6 @@ void lightingSequence(BufferDump *dump) {
     if((uint16_t)lightLevel < config.darkThreshold) {
         // the room is dark 
         roomIsDark = 1;
-    }
-    else {
-        // remember the analysis results
-        lightLevelSave = lightLevel;
-        light120HzSave = light120Hz;
     }
     
 /***    
@@ -395,7 +393,7 @@ void lightingSequence(BufferDump *dump) {
     tick();
 
     // Lookup the floating point low-gain scaling from ADC counts
-    _fval = LIGHT_SCALE_FACTOR*config.lightGainHiLoRatio*config.lightGainHi;
+    _fval = LIGHT_SCALE_FACTOR_LO*(1+config.lightGainHi)*config.lightGainHiLoRatio;
 
     // Analyze the captured waveform
     lightingAnalysis(_fval,config.lightFidShiftHi-config.lightFidHiLoDelta,dump);
