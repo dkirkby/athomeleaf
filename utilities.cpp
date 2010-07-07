@@ -388,10 +388,10 @@ void lightingAnalysis(float scale, uint16_t delay, BufferDump *dump) {
         }
         
         // scale beta0 to lightLevel
-        lightLevel = (uint16_t)(scale*beta0+0.5);
+        lightLevel = scale*beta0;
 
         // scale beta1 to light120Hz
-        light120Hz = (uint16_t)(scale*beta1+0.5);
+        light120Hz = scale*beta1;
     }
 }
 
