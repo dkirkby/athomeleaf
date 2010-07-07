@@ -19,12 +19,7 @@ void saveConfig(const Config *config);
 extern void pprint(uint8_t value);
 extern void pprint(uint16_t value);
 extern void pprint(uint32_t value);
-
-#define PRINT_FLOAT(x,m) { floatToPrint = (x); printMultiplier = (m); _printFloat(); }
-
-extern float floatToPrint;
-extern uint32_t multiplier;
-extern void _printFloat(void);
+extern void printFloat(float value, uint32_t multiplier);
 
 // Synchronous sampling
 

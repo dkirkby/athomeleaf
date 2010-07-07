@@ -15,6 +15,7 @@ extern void tick();
 // ---------------------------------------------------------------------
 static uint8_t _u8val;
 static uint16_t _u16val;
+static uint32_t _u32val;
 static float _fval;
 
 // =====================================================================
@@ -93,35 +94,29 @@ void pprint(uint32_t value) {
 // Uses Serial.write() and Serial.print(). Does not emit a newline.
 // =====================================================================
 
-float floatToPrint;
-uint32_t printMultiplier;
-
-void _printFloat() {
-
-    static uint32_t printULong;
-
+void printFloat(float value, uint32_t multiplier) {
     // convert +/-ABC.XYZ to ABCXYZ with rounding
-    if(floatToPrint < 0) {
-        printULong = -floatToPrint*printMultiplier + 0.5;
-        if(printULong) {
+    if(value < 0) {
+        _u32val = -value*multiplier + 0.5;
+        if(_u32val) {
             Serial.write('-');
         }
     }
     else {
-        printULong = floatToPrint*printMultiplier + 0.5;
+        _u32val = value*multiplier + 0.5;
     }
     // emit the integral part ABC
-    Serial.print(printULong/printMultiplier,DEC);
+    Serial.print(_u32val/multiplier,DEC);
     // emit the fractional part .XYZ
     Serial.write('.');
-    printULong %= printMultiplier;
+    _u32val %= multiplier;
     // left pad the fractional part XYZ with zeros if necessary
-    while(printMultiplier > 10) {
-        printMultiplier /= 10;
-        if(printULong >= printMultiplier) break;
+    while(multiplier > 10) {
+        multiplier /= 10;
+        if(_u32val >= multiplier) break;
         Serial.write('0');
     }
-    Serial.print(printULong,DEC);
+    Serial.print(_u32val,DEC);
 }
 
 // ---------------------------------------------------------------------
