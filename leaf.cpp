@@ -56,6 +56,7 @@
 
 #define LIGHT_SCALE_FACTOR_HI 0.0078125 // 1/128
 #define LIGHT_SCALE_FACTOR_LO 3.814697265625e-06 // 1/128 x 16/(1<<15)
+#define LIGHT_SCALE_FACTOR_HILO 0.00048828125 // 16/(1<<15)
 
 // ---------------------------------------------------------------------
 // Power analysis parameters
@@ -329,7 +330,9 @@ void lightingSequence(BufferDump *dump) {
     // prepare to combine the high- and low-gain analysis results
     float lightLevelSave = 0;
     float light120HzSave = 0;
-    
+    float zeroXingDelaySave = 0;
+    uint8_t nClipHi;
+
     // Ensure that all LEDs are off during light measurements
     // although this is normally already taken care of.
     digitalWrite(AMBER_LED_PIN,LOW);
@@ -350,16 +353,18 @@ void lightingSequence(BufferDump *dump) {
     lightingAnalysis(_fval,config.lightFidShiftHi,dump);
     tick();
     
-    // Save the results of the high-gain analysis
-    lightLevelSave = lightLevel;
-    light120HzSave = light120Hz;
-    
-    _u8val = 0;
     roomIsDark = 0;
     // Is there any detectable light present?
-    if((uint16_t)lightLevel < config.darkThreshold) {
+    if(lightLevel < (config.darkThreshold & 0xff)) {
         // the room is dark 
         roomIsDark = 1;
+    }
+    else {
+        // Save the results of the high-gain analysis
+        lightLevelSave = lightLevel;
+        light120HzSave = light120Hz;
+        zeroXingDelaySave = zeroXingDelay;
+        nClipHi = nClipped;        
     }
     
 /***    
@@ -399,19 +404,55 @@ void lightingSequence(BufferDump *dump) {
     lightingAnalysis(_fval,config.lightFidShiftHi-config.lightFidHiLoDelta,dump);
     tick();
     
-/***
-    if(_u8val) {
-        if(light120Hz > lightLevel/config.artificialThreshold) {
-            // artificial light is present
-            if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(AMBER_GLOW);
+    // Is there a light signal detected in the low-gain channel?
+    _fval = LIGHT_SCALE_FACTOR_HILO*config.lightGainHiLoRatio;
+    _u8val = config.darkThreshold >> 8;
+    if(lightLevel > _fval*_u8val) {
+        // combine the high- and low-gain analysis results?
+        if(nClipHi < 200) {
+            lightLevelSave = (20*lightLevelSave + lightLevel)/21.0;
+            light120HzSave = (20*light120HzSave + light120Hz)/21.0;
+            // combine the high- and low-gain delays, taking care of wrap-around
+            if(abs(zeroXingDelaySave - zeroXingDelay) < DELAY_WRAP_AROUND) {
+                zeroXingDelaySave = 0.5*(zeroXingDelaySave + zeroXingDelay);
+            }
+            else {
+                zeroXingDelaySave =
+                    0.5*(zeroXingDelaySave + zeroXingDelay) + DELAY_WRAP_AROUND;
+            }
         }
         else {
-            // no artificial light detected
-            if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(GREEN_GLOW);
+            // defer to the low-gain analysis
+            lightLevelSave = lightLevel;
+            light120HzSave = light120Hz;
+            zeroXingDelaySave = zeroXingDelay;
         }
     }
-***/
+    
+    // Decide if any artificial light is present using the ratio of
+    // the 120Hz amplitude to the average lighting level.
+    _u8val = 0;
+    if(lightLevelSave > 0) {
+        _fval = light120HzSave/lightLevelSave;
+        if(_fval < 1) {
+            _u8val = (uint8_t)(255*_fval+0.5);
+        }
+        else {
+            _u8val = 255;
+        }
+    }
+    if(_u8val > config.artificialThreshold) {
+        // artificial light is present
+        if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(AMBER_GLOW);
+    }
+    else {
+        // no artificial light detected
+        if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(GREEN_GLOW);
+    }
 
+    // Calculate the light factor (will be one if no light detected)
+    _fval = fabs(cos(zeroXingDelaySave*POWER_FACTOR_OMEGA));
+    
     // Periodically dump sample buffer if requested
     if(dump && (config.capabilities & CAPABILITY_LIGHT_DUMP) &&
         connectionState == STATE_CONNECTED &&
@@ -420,7 +461,8 @@ void lightingSequence(BufferDump *dump) {
         tick();
     }
     
-    packet.lighting = to_float16(lightLevel);
+    packet.lighting = to_float16(lightLevelSave);
+    packet.artificial = _u8val;
     
 #ifdef DISPLAY_LIGHTING
     LCDclear();
@@ -428,9 +470,9 @@ void lightingSequence(BufferDump *dump) {
     LCDpos(0,9);
     printFloat(light120HzSave,10);
     LCDpos(1,0);
-    printFloat(lightLevel,10);
-    LCDpos(1,9);
-    printFloat(light120Hz,10);
+    printFloat(_fval,100);
+    LCDpos(1,14);
+    pprint(_u8val);
 #endif
 }
 
