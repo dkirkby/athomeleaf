@@ -72,6 +72,7 @@ float temperature,humidity;
 // Private globals used as shared temporaries to avoid stack locals
 static uint8_t _u8val;
 static uint16_t _u16val;
+static uint32_t _u32val;
 static float _fval;
 
 // =====================================================================
@@ -296,12 +297,14 @@ void loop() {
         Serial.write(' ');
         // Convert float16 values and forward as binary IEEE floats
         _fval = from_float16(data->lighting);
-        Serial.print(BITS(_fval),HEX);
+        _u32val = BITS(_fval);
+        Serial.print(_u32val,HEX);
         Serial.write(' ');
         Serial.print(data->artificial,HEX);
         Serial.write(' ');
         _fval = from_float16(data->power);
-        Serial.print(BITS(_fval),HEX);
+        _u32val = BITS(_fval);
+        Serial.print(BITS(_u32val),HEX);
         Serial.write(' ');
         Serial.print(data->powerFactor,HEX);
         Serial.write(' ');

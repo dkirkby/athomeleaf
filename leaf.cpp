@@ -422,6 +422,8 @@ void lightingSequence(BufferDump *dump) {
         tick();
     }
     
+    packet.lighting = to_float16(lightLevel);
+    
 #ifdef DISPLAY_LIGHTING
     LCDclear();
     printFloat(lightLevelSave,10);
