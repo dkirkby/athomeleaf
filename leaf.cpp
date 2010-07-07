@@ -359,30 +359,13 @@ void lightingSequence(BufferDump *dump) {
         // the room is dark 
         roomIsDark = 1;
     }
-    else {
-        // Save the results of the high-gain analysis
-        lightLevelSave = lightLevel;
-        light120HzSave = light120Hz;
-        zeroXingDelaySave = zeroXingDelay;
-        nClipHi = nClipped;        
-    }
-    
-/***    
-    if(lightLevel < LIGHTING_CROSSOVER) {
-        if(light120Hz > lightLevel/config.artificialThreshold) {
-            // artificial light is present
-            if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(AMBER_GLOW);
-        }
-        else {
-            // no artificial light detected
-            if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(GREEN_GLOW);
-        }
-    }
-    else {
-        _u8val = 1; // signals that we defer to the low-gain analysis
-    }    
-***/
 
+    // Save the results of the high-gain analysis
+    lightLevelSave = lightLevel;
+    light120HzSave = light120Hz;
+    zeroXingDelaySave = zeroXingDelay;
+    nClipHi = nClipped;        
+    
     // Periodically dump sample buffer if requested
     if(dump && (config.capabilities & CAPABILITY_LIGHT_DUMP) &&
         connectionState == STATE_CONNECTED &&
