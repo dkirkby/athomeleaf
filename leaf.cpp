@@ -330,8 +330,8 @@ void tick() {
 void lightingSequence(BufferDump *dump) {
     
     // prepare to combine the high- and low-gain analysis results
-    uint16_t lightLevelSave = 0;
-    uint16_t light120HzSave = 0;
+    float lightLevelSave = 0;
+    float light120HzSave = 0;
     
     // Ensure that all LEDs are off during light measurements
     // although this is normally already taken care of.
@@ -354,16 +354,22 @@ void lightingSequence(BufferDump *dump) {
     tick();
     
     // Save the results of the high-gain analysis
-    lightLevelSave = lightLevel;
-    light120HzSave = light120Hz;
     
     _u8val = 0;
     roomIsDark = 0;
-    if(lightLevel < config.darkThreshold) {
+    // Is there any detectable light present?
+    if((uint16_t)lightLevel < config.darkThreshold) {
         // the room is dark 
         roomIsDark = 1;
     }
-    else if(lightLevel < LIGHTING_CROSSOVER) {
+    else {
+        // remember the analysis results
+        lightLevelSave = lightLevel;
+        light120HzSave = light120Hz;
+    }
+    
+/***    
+    if(lightLevel < LIGHTING_CROSSOVER) {
         if(light120Hz > lightLevel/config.artificialThreshold) {
             // artificial light is present
             if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(AMBER_GLOW);
@@ -376,7 +382,8 @@ void lightingSequence(BufferDump *dump) {
     else {
         _u8val = 1; // signals that we defer to the low-gain analysis
     }    
-    
+***/
+
     // Periodically dump sample buffer if requested
     if(dump && (config.capabilities & CAPABILITY_LIGHT_DUMP) &&
         connectionState == STATE_CONNECTED &&
@@ -398,6 +405,7 @@ void lightingSequence(BufferDump *dump) {
     lightingAnalysis(_fval,config.lightFidShiftHi-config.lightFidHiLoDelta,dump);
     tick();
     
+/***
     if(_u8val) {
         if(light120Hz > lightLevel/config.artificialThreshold) {
             // artificial light is present
@@ -408,7 +416,8 @@ void lightingSequence(BufferDump *dump) {
             if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(GREEN_GLOW);
         }
     }
-    
+***/
+
     // Periodically dump sample buffer if requested
     if(dump && (config.capabilities & CAPABILITY_LIGHT_DUMP) &&
         connectionState == STATE_CONNECTED &&

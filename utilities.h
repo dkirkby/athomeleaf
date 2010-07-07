@@ -60,7 +60,7 @@ extern void unpackSamples(const uint8_t *src, uint16_t *dst);
 
 // Lighting analysis
 
-extern uint16_t lightLevel,light120Hz;
+extern float lightLevel,light120Hz;
 extern void lightingAnalysis(float scale, uint16_t delay, BufferDump *dump);
 
 // Power analysis

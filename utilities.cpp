@@ -239,10 +239,10 @@ static uint32_t elapsed;
 // the ADC input range as long as some 120Hz is visible within the range.
 // This function makes the following math calls: 62*sin, 62*cos, 3*sqrt.
 // The scale factor is used to scale the results from ADC counts
-// to the unsigned short globals lightingMean and lighting120Hz.
+// to the float values lightingMean and lighting120Hz.
 // =====================================================================
 
-uint16_t lightLevel,light120Hz;
+float lightLevel,light120Hz;
 
 void lightingAnalysis(float scale, uint16_t delay, BufferDump *dump) {
     
