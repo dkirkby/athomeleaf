@@ -278,7 +278,7 @@ void printConfig() {
 // ---------------------------------------------------------------------
 void printSample() {
     LCDclear();
-    Serial.print(from_float16(packet.power),1);
+    Serial.print(from_float16(packet.power));
     LCDpos(0,8);
     pprint(packet.powerFactor);
     LCDpos(0,11);
@@ -286,7 +286,7 @@ void printSample() {
     LCDpos(0,14);
     Serial.print((packet.temperature/100)%100,DEC);
     LCDpos(1,0);
-    Serial.print(from_float16(packet.lighting),1);
+    Serial.print(from_float16(packet.lighting));
     LCDpos(1,8);
     pprint(packet.artificial);
     LCDpos(0,11);
