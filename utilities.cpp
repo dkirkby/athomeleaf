@@ -231,6 +231,8 @@ void dumpBuffer(uint8_t dumpType, BufferDump *dump) {
 static uint8_t cycle,nzero;
 static float sink,cosk,cosSum,sinSum;
 static uint32_t elapsed;
+
+uint8_t nClipped;
 float zeroXingDelay;
 
 // =====================================================================
@@ -300,6 +302,9 @@ void lightingAnalysis(float scale, uint16_t delay, BufferDump *dump) {
         }
         tick();
     }
+    
+    // How many samples were clipped?
+    nClipped = (uint8_t)(NLIGHTSAMP - alpha00);
     
     if(0 != dump) {
         /* zero out the dump header */
@@ -403,7 +408,7 @@ void lightingAnalysis(float scale, uint16_t delay, BufferDump *dump) {
 //    the voltage zero crossing in microseconds, modulo a 120 Hz cycle.
 // =====================================================================
 
-uint8_t nClipped,currentComplexity;
+uint8_t currentComplexity;
 float apparentPower;
 
 static float totalVariance;
