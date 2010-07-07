@@ -424,13 +424,13 @@ void lightingSequence(BufferDump *dump) {
     
 #ifdef DISPLAY_LIGHTING
     LCDclear();
-    Serial.print(lightLevelSave,DEC);
+    Serial.print(lightLevelSave,1);
     LCDpos(0,8);
-    Serial.print(light120HzSave,DEC);
+    Serial.print(light120HzSave,1);
     LCDpos(1,0);
-    Serial.print(lightLevel,DEC);
+    Serial.print(lightLevel,1);
     LCDpos(1,8);
-    Serial.print(light120Hz,DEC);
+    Serial.print(light120Hz,1);
 #endif
 }
 
