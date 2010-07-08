@@ -41,19 +41,6 @@
 // ---------------------------------------------------------------------
 // Lighting analysis parameters
 // ---------------------------------------------------------------------
-// If mean lighting level on the high-gain channel is below this threshold
-// we consider the room to be dark
-//#define DARK_THRESHOLD 250
-// If the high-gain mean lighting level is above this value, give preference
-// to the low-gain channel. With a crossover at 10,000, the low-gain mean
-// should be at least 500.
-#define LIGHTING_CROSSOVER 10000
-// Whenever the mean lighting level exceeds the DARK_THRESHOLD, artificial
-// lighting is considered to be present if the ratio of the 120 Hz amplitude
-// to mean lighting level is at least 1/ARTIFICIAL_THRESHOLD. Whether to use
-// the high- or low-gain channel for this test depends on LIGHTING_CROSSOVER.
-//#define ARTIFICIAL_THRESHOLD 100
-
 #define LIGHT_SCALE_FACTOR_HI 0.0078125 // 1/128
 #define LIGHT_SCALE_FACTOR_LO 3.814697265625e-06 // 1/128 x 16/(1<<15)
 #define LIGHT_SCALE_FACTOR_HILO 0.00048828125 // 16/(1<<15)
@@ -63,7 +50,6 @@
 // ---------------------------------------------------------------------
 // Power analysis parameters
 // ---------------------------------------------------------------------
-
 #define HI_GAIN_NO_LOAD_THRESHOLD  100.0 // mW, corresponds to ~0.45 ADC
 #define LO_GAIN_NO_LOAD_THRESHOLD 2000.0 // mW, corresponds to ~0.45 ADC
 
@@ -98,7 +84,7 @@ static float _fval;
 #define STATE_CONNECTING      0x80
 #define STATE_CONNECTED       0x40
 #define DROPPED_PACKETS_MASK  0x3F
-#define MAX_DROPPED_PACKETS   0x14 // corresponds to about one minute
+#define MAX_DROPPED_PACKETS     19 // corresponds to about one minute
 uint8_t connectionState;
 
 // ---------------------------------------------------------------------
