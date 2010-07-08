@@ -58,6 +58,8 @@
 #define LIGHT_SCALE_FACTOR_LO 3.814697265625e-06 // 1/128 x 16/(1<<15)
 #define LIGHT_SCALE_FACTOR_HILO 0.00048828125 // 16/(1<<15)
 
+#define LIGHT_FACTOR_OMEGA 753.98223686155029e-6 // 2pi*120/10^6
+
 // ---------------------------------------------------------------------
 // Power analysis parameters
 // ---------------------------------------------------------------------
@@ -445,7 +447,7 @@ void lightingSequence(BufferDump *dump) {
     }
 
     // Calculate the light factor (will be one if no light detected)
-    _fval = fabs(cos(zeroXingDelaySave*POWER_FACTOR_OMEGA));
+    _fval = fabs(cos(zeroXingDelaySave*LIGHT_FACTOR_OMEGA));
     
     // Periodically dump sample buffer if requested
     if(dump && (config.capabilities & CAPABILITY_LIGHT_DUMP) &&
