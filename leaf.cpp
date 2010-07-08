@@ -309,13 +309,13 @@ void printSample() {
 // =====================================================================
 void tick() {
     nextRandom();
-    delayMicroseconds(250);
+    //delayMicroseconds(250);
     digitalWrite(PIEZO_PIN,
         ((config.capabilities & CAPABILITY_POWER_LEVEL_AUDIO) &&
         (randomValue < clickThreshold)) ? HIGH : LOW);
-    delayMicroseconds(500);
+    delayMicroseconds(400);
     digitalWrite(PIEZO_PIN,LOW);
-    delayMicroseconds(250);    
+    delayMicroseconds(100);
 }
 
 // =====================================================================
