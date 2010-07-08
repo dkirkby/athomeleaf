@@ -384,7 +384,7 @@ void lightingSequence(BufferDump *dump) {
     _fval = LIGHT_SCALE_FACTOR_LO*(1+config.lightGainHi)*config.lightGainHiLoRatio;
 
     // Analyze the captured waveform
-    lightingAnalysis(_fval,config.lightFidShiftHi-config.lightFidHiLoDelta,dump);
+    lightingAnalysis(_fval,config.lightFidShiftHi-config.lightFidHiLoDelta-100,dump);
     tick();
     
     // Is there a light signal detected in the low-gain channel?
@@ -450,10 +450,14 @@ void lightingSequence(BufferDump *dump) {
 #ifdef DISPLAY_LIGHTING
     LCDclear();
     printFloat(lightLevelSave,10);
-    LCDpos(0,9);
+    LCDpos(0,7);
     printFloat(light120HzSave,10);
+    LCDpos(0,13);
+    printFloat(_fval,10);
     LCDpos(1,0);
-    printFloat(_fval,100);
+    printFloat(lightLevel,10);
+    LCDpos(1,7);
+    printFloat(light120Hz,10);
     LCDpos(1,14);
     pprint(_u8val);
 #endif
