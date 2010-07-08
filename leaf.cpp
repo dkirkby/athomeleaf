@@ -153,6 +153,7 @@ uint8_t ledControl;
 
 // Lighting globals
 uint8_t roomIsDark;
+uint8_t lastArtificial = 0;
 
 // Temperature globals
 uint32_t temperatureSum;
@@ -430,10 +431,16 @@ void lightingSequence(BufferDump *dump) {
     if(_u8val > config.artificialThreshold) {
         // artificial light is present
         if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(AMBER_GLOW);
+        lastArtificial = 1;
     }
     else {
         // no artificial light detected
         if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(GREEN_GLOW);
+        // play a cricket chirp if this is a new state
+        if(lastArtificial && (config.capabilities & CAPABILITY_LIGHT_AUDIO)) {
+            cricket();
+        }
+        lastArtificial = 0;
     }
 
     // Calculate the light factor (will be one if no light detected)
