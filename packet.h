@@ -69,7 +69,7 @@ typedef struct { // 32 bytes total
 #define STATUS_GOT_UPDATED_CONFIG 0x20
 #define STATUS_GOT_INVALID_CONFIG 0x40
 
-typedef struct { // 12 bytes total
+typedef struct { // 13 bytes total
     uint8_t networkID;
     uint8_t sequenceNumber;
     uint8_t status;
