@@ -164,6 +164,7 @@ uint32_t temperatureSum;
 float realPower,lastRealPower = -1;
 uint32_t clickThreshold = 0;
 uint8_t complexitySave,lastComplexity;
+uint8_t powerFactorSave,lastPowerFactor;
 
 // ---------------------------------------------------------------------
 // Handles a newly received packet on PIPELINE_CONFIG
@@ -458,7 +459,7 @@ void lightingSequence(BufferDump *dump) {
     // Calculate the light factor (will be one if no light detected)
     _fval = fabs(cos(zeroXingDelaySave*LIGHT_FACTOR_OMEGA));
     
-    // Save the scaled light factor now
+    // Save a low precision value
     packet.lightFactor = (uint8_t)(255*_fval+0.5);
     
     // Periodically dump sample buffer if requested
@@ -494,6 +495,7 @@ void lightingSequence(BufferDump *dump) {
 //  -clickThreshold
 //  -realPower
 //  -complexitySave
+//  -powerFactorSave
 // =====================================================================
 void powerSequence(BufferDump *dump) {
     
@@ -593,6 +595,8 @@ void powerSequence(BufferDump *dump) {
 
     // Calculate the power factor (will be one if no load detected)
     _fval = fabs(cos(zeroXingDelaySave*POWER_FACTOR_OMEGA));
+    // save a low-precision value
+    powerFactorSave = (uint8_t)(255*_fval+0.5);
     tick();
     
     // Calculate the real power
@@ -869,6 +873,7 @@ void loop() {
     //----------------------------------------------------------------------
     powerSequence(0);
     lastRealPower = realPower;
+    lastPowerFactor = powerFactorSave;
     lastComplexity = complexitySave;
     lightingSequence(&dump);
 
@@ -897,6 +902,8 @@ void loop() {
     //----------------------------------------------------------------------
     powerSequence(&dump);
     packet.power = to_float16(0.5e-3*(lastRealPower + realPower));
+    _u16val = (lastPowerFactor + powerFactorSave + 1) >> 1;
+    packet.powerFactor = _u16val;
     _u16val = (lastComplexity + complexitySave + 1) >> 1;
     packet.complexity = _u16val;
     lastRealPower = realPower;
