@@ -163,6 +163,7 @@ uint32_t temperatureSum;
 // Power globals
 float realPower,lastRealPower = -1;
 uint32_t clickThreshold = 0;
+uint8_t complexitySave,lastComplexity;
 
 // ---------------------------------------------------------------------
 // Handles a newly received packet on PIPELINE_CONFIG
@@ -492,13 +493,15 @@ void lightingSequence(BufferDump *dump) {
 // Results are saved in:
 //  -clickThreshold
 //  -realPower
+//  -complexitySave
 // =====================================================================
 void powerSequence(BufferDump *dump) {
     
     // prepare to combine the high- and low-gain analysis results
     float apparentPowerSave = 0;
     float zeroXingDelaySave = 0;
-    uint8_t nClipHi,complexitySave = 0;
+    uint8_t nClipHi;
+    complexitySave = 0;
 
     //----------------------------------------------------------------------
     // Start the power analysis by measuring the AC voltage phase
@@ -866,6 +869,7 @@ void loop() {
     //----------------------------------------------------------------------
     powerSequence(0);
     lastRealPower = realPower;
+    lastComplexity = complexitySave;
     lightingSequence(&dump);
 
     //----------------------------------------------------------------------
@@ -893,6 +897,8 @@ void loop() {
     //----------------------------------------------------------------------
     powerSequence(&dump);
     packet.power = to_float16(0.5e-3*(lastRealPower + realPower));
+    _u16val = (lastComplexity + complexitySave + 1) >> 1;
+    packet.complexity = _u16val;
     lastRealPower = realPower;
     
     //----------------------------------------------------------------------
