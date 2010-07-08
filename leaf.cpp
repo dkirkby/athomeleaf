@@ -392,9 +392,12 @@ void lightingSequence(BufferDump *dump) {
     _u8val = config.darkThreshold >> 8;
     if(lightLevel > _fval*_u8val) {
         // combine the high- and low-gain analysis results?
-        if(nClipHi < 200) {
-            lightLevelSave = (20*lightLevelSave + lightLevel)/21.0;
-            light120HzSave = (20*light120HzSave + light120Hz)/21.0;
+        if(nClipHi < 100) {
+            // weights used here are determined by eyeballing the relative
+            // spreads observed using a 15W bulb that is partly clipped
+            // in the high-gain channel.
+            lightLevelSave = (4*lightLevelSave + lightLevel)/5.0;
+            light120HzSave = (4*light120HzSave + light120Hz)/5.0;
             // combine the high- and low-gain delays, taking care of wrap-around
             if(abs(zeroXingDelaySave - zeroXingDelay) < DELAY_WRAP_AROUND) {
                 zeroXingDelaySave = 0.5*(zeroXingDelaySave + zeroXingDelay);
