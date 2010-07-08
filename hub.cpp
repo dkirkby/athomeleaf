@@ -302,6 +302,8 @@ void loop() {
         Serial.write(' ');
         Serial.print(data->artificial,HEX);
         Serial.write(' ');
+        Serial.print(data->lightFactor,HEX);
+        Serial.write(' ');
         _fval = from_float16(data->power);
         _u32val = BITS(_fval);
         Serial.print(BITS(_u32val),HEX);
