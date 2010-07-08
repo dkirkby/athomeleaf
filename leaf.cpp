@@ -421,8 +421,8 @@ void lightingSequence(BufferDump *dump) {
     _u8val = 0;
     if(lightLevelSave > 0) {
         _fval = light120HzSave/lightLevelSave;
-        if(_fval < 1) {
-            _u8val = (uint8_t)(255*_fval+0.5);
+        if(_fval < 0.5) {
+            _u8val = (uint8_t)(511*_fval+0.5);
         }
         else {
             _u8val = 255;
@@ -437,7 +437,8 @@ void lightingSequence(BufferDump *dump) {
         // no artificial light detected
         if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(GREEN_GLOW);
         // play a cricket chirp if this is a new state
-        if(lastArtificial && (config.capabilities & CAPABILITY_LIGHT_AUDIO)) {
+        if(lastArtificial && !roomIsDark &&
+            (config.capabilities & CAPABILITY_LIGHT_AUDIO)) {
             cricket();
         }
         lastArtificial = 0;
