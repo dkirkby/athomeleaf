@@ -17,7 +17,7 @@
 
 #include "WProgram.h" // arduino header
 
-#define DISPLAY_LIGHTING
+//#define DISPLAY_LIGHTING
 //#define DISPLAY_POWER
 
 // ---------------------------------------------------------------------
@@ -286,17 +286,19 @@ void printSample() {
     printFloat(from_float16(packet.power),10);
     LCDpos(0,8);
     pprint(packet.powerFactor);
-    LCDpos(0,11);
+    LCDpos(0,10);
     pprint(packet.complexity);
-    LCDpos(0,14);
-    Serial.print((packet.temperature/100)%100,DEC);
+    LCDpos(0,13);
+    Serial.print((packet.temperature/10)%1000,DEC);
     LCDpos(1,0);
     printFloat(from_float16(packet.lighting),10);
     LCDpos(1,8);
     pprint(packet.artificial);
-    LCDpos(0,11);
+    LCDpos(1,10);
+    pprint(packet.lightFactor);
+    LCDpos(1,12);
     pprint(packet.status);
-    LCDpos(0,14);
+    LCDpos(1,14);
     pprint(packet.sequenceNumber);
 }
 
@@ -488,7 +490,6 @@ void lightingSequence(BufferDump *dump) {
 // current configuration.
 //
 // Results are saved in:
-//  -packet: powerLoGain, powerHiGain, (acPhase)
 //  -clickThreshold
 //  -realPower
 // =====================================================================
@@ -653,9 +654,6 @@ void powerSequence(BufferDump *dump) {
             }
         }
     }
-
-    // Remember the real power calculated during the sequence
-    lastRealPower = realPower;
 }
 
 // =====================================================================
@@ -867,6 +865,7 @@ void loop() {
     // Measure the power and lighting conditions (but don't dump power)
     //----------------------------------------------------------------------
     powerSequence(0);
+    lastRealPower = realPower;
     lightingSequence(&dump);
 
     //----------------------------------------------------------------------
@@ -889,9 +888,12 @@ void loop() {
     }
     
     //----------------------------------------------------------------------
-    // Measure the power consumption
+    // Measure the power consumption and save the combined results of
+    // this sequence with the previous sequence (converting from mW to W)
     //----------------------------------------------------------------------
     powerSequence(&dump);
+    packet.power = to_float16(0.5e-3*(lastRealPower + realPower));
+    lastRealPower = realPower;
     
     //----------------------------------------------------------------------
     // Ramp the glowing LEDs down while measuring temperature and giving
@@ -939,7 +941,7 @@ void loop() {
     //----------------------------------------------------------------------
     // Display readings on the optional LCD
     //----------------------------------------------------------------------
-    // printSample();
+    printSample();
 }
 
 int main(void) {
