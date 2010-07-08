@@ -325,7 +325,7 @@ void tick() {
 //
 // Results are saved in:
 //  -roomIsDark: 0/1
-//  -packet: lightLevelHiGain, lightLevelLoGain, light120HzHiGain, light120HzLoGain
+//  -packet: lighting, artificial, lightFactor
 //  -ledControl: enables GREEN/AMBER_GLOW if lightingFeedback capability is set
 // =====================================================================
 void lightingSequence(BufferDump *dump) {
@@ -418,6 +418,9 @@ void lightingSequence(BufferDump *dump) {
         }
     }
     
+    // Save the combined-analysis lighting level now
+    packet.lighting = to_float16(lightLevelSave);
+
     // Decide if any artificial light is present using the ratio of
     // the 120Hz amplitude to the average lighting level.
     _u8val = 0;
@@ -446,8 +449,14 @@ void lightingSequence(BufferDump *dump) {
         lastArtificial = 0;
     }
 
+    // Save the scaled 120Hz level now
+    packet.artificial = _u8val;
+
     // Calculate the light factor (will be one if no light detected)
     _fval = fabs(cos(zeroXingDelaySave*LIGHT_FACTOR_OMEGA));
+    
+    // Save the scaled light factor now
+    packet.lightFactor = (uint8_t)(255*_fval+0.5);
     
     // Periodically dump sample buffer if requested
     if(dump && (config.capabilities & CAPABILITY_LIGHT_DUMP) &&
@@ -456,9 +465,6 @@ void lightingSequence(BufferDump *dump) {
         dumpBuffer(DUMP_BUFFER_LIGHT_LO,dump);
         tick();
     }
-    
-    packet.lighting = to_float16(lightLevelSave);
-    packet.artificial = _u8val;
     
 #ifdef DISPLAY_LIGHTING
     LCDclear();
