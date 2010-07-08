@@ -75,6 +75,7 @@ typedef struct { // 12 bytes total
     uint8_t status;
     float16 lighting;
     uint8_t artificial;
+    uint8_t lightFactor;
     float16 power;
     uint8_t powerFactor;
     uint8_t complexity;
