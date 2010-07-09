@@ -814,6 +814,8 @@ void setup() {
             tone(1500,15);
         }
     }
+    LCDpos(0,8);
+    Serial.print(LAM.status,BIN);
 
     // copy our serial number from EEPROM to our LAM packet
     LAM.serialNumber = serialNumber();
@@ -946,6 +948,8 @@ void loop() {
 #include <avr/wdt.h>
 
 int main(void) {
+    // record the reason we just started in our LAM packet
+    LAM.status |= MCUSR;
     // prevent infinite watchdog timer reset loops
     MCUSR = 0;
     wdt_disable();
