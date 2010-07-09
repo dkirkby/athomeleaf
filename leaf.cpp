@@ -814,7 +814,7 @@ void setup() {
             tone(1500,15);
         }
     }
-    LCDpos(0,8);
+    LCDpos(0,11);
     Serial.print(LAM.status,BIN);
 
     // copy our serial number from EEPROM to our LAM packet

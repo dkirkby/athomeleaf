@@ -45,5 +45,7 @@ except OSError,e:
 
 # format the results as C initializers
 
+status = modified << 4
+
 print "%d, { %s }, %d" % (
-    timestamp,','.join(["0x%02x" % b for b in hashData]),modified)
+    timestamp,','.join(["0x%02x" % b for b in hashData]),status)
