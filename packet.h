@@ -86,7 +86,7 @@ typedef struct { // 29 bytes total
     uint32_t serialNumber;
     uint32_t commitTimestamp;
     uint8_t commitID[20];
-    uint8_t modified;
+    uint8_t status;
 } LookAtMe;
 
 #define DUMP_BUFFER_POWER_LO 0
