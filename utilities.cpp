@@ -304,7 +304,6 @@ void lightingAnalysis(float scale, uint16_t delay, BufferDump *dump) {
     if(0 != dump) {
         /* zero out the dump header */
         for(_u8val = 0; _u8val < 15; _u8val++) dump->packed[_u8val] = 0;
-        DUMP_ANALYSIS_SAVE(0,uint16_t,(uint16_t)(10*alpha00));
     }
 
     // Check for an almost singular matrix which signals an over/under-flow condition
@@ -376,8 +375,12 @@ void lightingAnalysis(float scale, uint16_t delay, BufferDump *dump) {
         // save our analysis results (in rounded 16-bit ADC/10 counts)
         // in case this buffer gets dumped
         if(0 != buffer) {
+            _fval = 0;
+            if(beta0 > 0) _fval = min(2,beta1/beta0);
+            DUMP_ANALYSIS_SAVE(0,uint16_t,(uint16_t)(32767.*_fval+0.5));
             DUMP_ANALYSIS_SAVE(6,uint16_t,(uint16_t)(10*beta0));
             DUMP_ANALYSIS_SAVE(8,uint16_t,(uint16_t)(10*beta1));
+            DUMP_ANALYSIS_SAVE(10,uint8_t,nClipped);
         }
         
         // scale beta0 to lightLevel
