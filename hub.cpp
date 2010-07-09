@@ -402,10 +402,10 @@ int main(void) {
     wdt_disable();
     // run the arduino boot sequence (without any watchdog timeout)
     init();
+    // run our application boot sequence (without any watchdog timeout)
+    setup();
     // enable an 8-second watchdog timer
     wdt_enable(WDTO_8S);
-    // run our application boot sequence
-    setup();
     for (;;) {
         // If the loop takes longer than 8 seconds, we will automatically reset
         loop();
