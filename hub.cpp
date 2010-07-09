@@ -95,7 +95,7 @@ void printLookAtMe(const LookAtMe *lam) {
         Serial.print(_u8val,HEX);
     }
     Serial.write(' ');
-    Serial.println(lam->modified,DEC);    
+    Serial.println(lam->status,DEC);    
 }
 
 // =====================================================================
@@ -392,11 +392,24 @@ void loop() {
     }
 }
 
+#include <avr/wdt.h>
+
 int main(void) {
+    // record the reason we just started in our LAM packet
+    LAM.status |= MCUSR;
+    // prevent infinite watchdog timer reset loops
+    MCUSR = 0;
+    wdt_disable();
+    // run the arduino boot sequence (without any watchdog timeout)
     init();
+    // enable an 8-second watchdog timer
+    wdt_enable(WDTO_8S);
+    // run our application boot sequence
     setup();
     for (;;) {
+        // If the loop takes longer than 8 seconds, we will automatically reset
         loop();
+        wdt_reset();
     }
     return 0;
 }
