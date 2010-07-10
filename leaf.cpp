@@ -324,6 +324,8 @@ void tick() {
 // =====================================================================
 void lightingSequence(BufferDump *dump) {
     
+    static float lastLightLevel = 0;
+    
     // prepare to combine the high- and low-gain analysis results
     float lightLevelSave = 0;
     float light120HzSave = 0;
@@ -424,8 +426,8 @@ void lightingSequence(BufferDump *dump) {
     // Save the combined-analysis lighting level now
     packet.lighting = to_float16(lightLevelSave);
 
-    // Decide if any artificial light is present using the ratio of
-    // the 120Hz amplitude to the average lighting level.
+    // Calculate the ratio of the 120Hz amplitude to the average lighting level
+    // as a test for the presence of artificial light.
     _u8val = 0;
     if(lightLevelSave > 0) {
         _fval = light120HzSave/lightLevelSave;
@@ -436,24 +438,39 @@ void lightingSequence(BufferDump *dump) {
             _u8val = 255;
         }
     }
-    if(_u8val > config.artificialThreshold) {
-        // artificial light is present
-        if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(AMBER_GLOW);
-        lastArtificial = 1;
-    }
-    else {
-        // no artificial light detected
-        if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(GREEN_GLOW);
-        // play a cricket chirp if this is a new state
-        if(lastArtificial && !roomIsDark &&
-            (config.capabilities & CAPABILITY_LIGHT_AUDIO)) {
-            cricket();
-        }
-        lastArtificial = 0;
-    }
-
+    
     // Save the scaled 120Hz level now
     packet.artificial = _u8val;
+    
+    // Decide if there is artificial light present and update the lighting feedback.
+    // The test for artificial light is based on the 120Hz/mean ratio as long
+    // as the high-gain 120Hz amplitude is above its dark threshold.
+    if(!roomIsDark &&
+        (light120HzSave > DARK_120HZ_FRACTION*(config.darkThreshold & 0xff))) {
+        if(_u8val > config.artificialThreshold) {
+            // artificial light is present
+            if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(AMBER_GLOW);
+            lastArtificial = 1;
+        }
+        else {
+            // no artificial light detected
+            if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(GREEN_GLOW);
+            // play a cricket chirp if we previously detected artificial lighting
+            // and the mean lighting level just dropped by at least 15% (this last
+            // test is to prevent repeated chirps when the artificial ratio of a
+            // constant light source is right at the threshold)
+            if(lastArtificial && (lightLevelSave < 0.85*lastLightLevel)
+                && (config.capabilities & CAPABILITY_LIGHT_AUDIO)) {
+                cricket();
+            }
+            lastArtificial = 0;
+        }
+    }
+    else {
+        lastArtificial = 0;
+    }
+    // remember this light level for our audio feedback algorithm to use next time
+    lastLightLevel = lightLevelSave;
 
     // Calculate the light factor (will be one if no light detected)
     _fval = fabs(cos(zeroXingDelaySave*LIGHT_FACTOR_OMEGA));
