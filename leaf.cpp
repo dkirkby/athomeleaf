@@ -47,6 +47,10 @@
 
 #define LIGHT_FACTOR_OMEGA 753.98223686155029e-6 // 2pi*120/10^6
 
+#define MAX_LIGHT_CLIP 100 // don't use high-gain analysis when over-clipped
+
+#define DARK_120HZ_FRACTION 0.1 // ratio of 120Hz to mean-level dark thresholds
+
 // ---------------------------------------------------------------------
 // Power analysis parameters
 // ---------------------------------------------------------------------
@@ -383,14 +387,24 @@ void lightingSequence(BufferDump *dump) {
     // Is there a light signal detected in the low-gain channel?
     _fval = LIGHT_SCALE_FACTOR_HILO*config.lightGainHiLoRatio;
     _u8val = config.darkThreshold >> 8;
-    if(lightLevel > _fval*_u8val) {
+    if(lightLevelSave > _fval*_u8val) {
         // combine the high- and low-gain analysis results?
-        if(nClipHi < 100) {
+        if(nClipHi < MAX_LIGHT_CLIP) {
             // weights used here are determined by eyeballing the relative
             // spreads observed using a 15W bulb that is partly clipped
             // in the high-gain channel.
             lightLevelSave = (4*lightLevelSave + lightLevel)/5.0;
-            light120HzSave = (4*light120HzSave + light120Hz)/5.0;
+        }
+        else {
+            // defer to the low-gain analysis
+            lightLevelSave = lightLevel;
+        }
+    }
+
+    if(light120HzSave > DARK_120HZ_FRACTION*_fval*_u8val) {
+        // combine the high- and low-gain analysis results?
+        if(nClipHi < MAX_LIGHT_CLIP) {
+            light120HzSave = (4*light120HzSave + light120Hz)/5.0;            
             // combine the high- and low-gain delays, taking care of wrap-around
             if(abs(zeroXingDelaySave - zeroXingDelay) < DELAY_WRAP_AROUND) {
                 zeroXingDelaySave = 0.5*(zeroXingDelaySave + zeroXingDelay);
@@ -401,10 +415,9 @@ void lightingSequence(BufferDump *dump) {
             }
         }
         else {
-            // defer to the low-gain analysis
-            lightLevelSave = lightLevel;
+            // defer to the lo-gain analysis
             light120HzSave = light120Hz;
-            zeroXingDelaySave = zeroXingDelay;
+            zeroXingDelaySave = zeroXingDelay;            
         }
     }
     
