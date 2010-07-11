@@ -157,10 +157,11 @@ uint8_t complexitySave,lastComplexity;
 uint8_t powerFactorSave,lastPowerFactor;
 
 // ---------------------------------------------------------------------
-// Handles a newly received packet on PIPELINE_CONFIG
+// Handles a newly received packet on PIPELINE_CONFIG. Returns 1
+// if a new configuration has been loaded.
 // ---------------------------------------------------------------------
 
-void handleConfigUpdate() {
+uint8_t handleConfigUpdate() {
     
     // Because our config address incoporates our serial number, it may
     // have higher error rates (eg, if it is mostly zeros or ones).
@@ -178,7 +179,7 @@ void handleConfigUpdate() {
             tone(750,15);
             tone(1000,15);
         }
-        return;
+        return 0;
     }
     
     // Use the provided networkID to identify our data packets
@@ -210,6 +211,7 @@ void handleConfigUpdate() {
             tone(750,15);
         }
     }
+    return 1;
 }
 
 // ---------------------------------------------------------------------
