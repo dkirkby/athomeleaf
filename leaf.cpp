@@ -919,19 +919,6 @@ void loop() {
     glowSequence();
     
     //----------------------------------------------------------------------
-    // Check for any incoming wireless data
-    //----------------------------------------------------------------------
-    if(getNordic((uint8_t*)&config,sizeof(config)) == PIPELINE_CONFIG) {
-        handleConfigUpdate();
-    }
-    else {
-        // We clobbered our config in RAM above, so restore it from EEPROM now.
-        // (This should never happen since we only have one pipeline active,
-        // but just in case...)
-        loadConfig(&config);
-    }
-    
-    //----------------------------------------------------------------------
     // Measure the power consumption and save the combined results of
     // this sequence with the previous sequence (converting from mW to W)
     //----------------------------------------------------------------------
@@ -942,6 +929,32 @@ void loop() {
     _u16val = (lastComplexity + complexitySave + 1) >> 1;
     packet.complexity = _u16val;
     lastRealPower = realPower;
+    
+    //----------------------------------------------------------------------
+    // Check for any incoming wireless data which could be a configuration
+    // update. We do this in the middle of the cycle to allow a bit of
+    // time since our most recent LAM config request.
+    // 
+    // A new config received here will not affect the sensor readings
+    // sent at the end of this cycle but will influence the visual feedback
+    // delivered during the last part of the cycle. Edge-triggered audio
+    // feedback is disabled during the initial lighting and power sequences
+    // at the start of the next cycle to prevent spurious triggers due
+    // to re-calibration.
+    //----------------------------------------------------------------------
+    if(getNordic((uint8_t*)&config,sizeof(config)) == PIPELINE_CONFIG) {
+        if(handleConfigUpdate()) {
+            // reset our edge-triggered audio feedback state
+            lastArtificial = 0;
+            lastRealPower = -1;
+        }
+    }
+    else {
+        // We clobbered our config in RAM above, so restore it from EEPROM now.
+        // (This should never happen since we only have one pipeline active,
+        // but just in case...)
+        loadConfig(&config);
+    }
     
     //----------------------------------------------------------------------
     // Ramp the glowing LEDs down while measuring temperature and giving
