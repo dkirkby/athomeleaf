@@ -442,28 +442,43 @@ void lightingSequence(BufferDump *dump) {
     // Save the scaled 120Hz level now
     packet.artificial = _u8val;
     
-    // Decide if there is artificial light present and update the lighting feedback.
-    // The test for artificial light is based on the 120Hz/mean ratio as long
-    // as the high-gain 120Hz amplitude is above its dark threshold.
-    if(!roomIsDark &&
-        (light120HzSave > DARK_120HZ_FRACTION*(config.darkThreshold & 0xff))) {
+    // calculate the minimum 120Hz amplitude that must be measured at
+    // low light level to be sure that artificial light is present.
+    _fval = DARK_120HZ_FRACTION*(config.darkThreshold & 0xff);
+
+    // Decide if there is artificial light present and update the lighting feedback
+    if(!roomIsDark) {
+        // Is the 120Hz / mean ratio above the threshold?
         if(_u8val > config.artificialThreshold) {
-            // artificial light is present
-            if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(AMBER_GLOW);
-            lastArtificial = 1;
+            // In addtion to the ratio cut, we must have enough 120 Hz
+            // component to reliably measure.
+            if(light120HzSave > _fval) {
+                if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(AMBER_GLOW);
+                lastArtificial = 1;
+            }
+            else {
+                lastArtificial = 0;
+            }
         }
         else {
-            // no artificial light detected
-            if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(GREEN_GLOW);
-            // play a cricket chirp if we previously detected artificial lighting
-            // and the mean lighting level just dropped by at least 15% (this last
-            // test is to prevent repeated chirps when the artificial ratio of a
-            // constant light source is right at the threshold)
-            if(lastArtificial && (lightLevelSave < 0.85*lastLightLevel)
-                && (config.capabilities & CAPABILITY_LIGHT_AUDIO)) {
-                cricket();
+            // In addition to the ratio cut, we must have enough light to be
+            // sure that the absence of 120Hz reliably indicates natural light.
+            _fval /= (1+config.artificialThreshold)/511.0;
+            if(lightLevelSave > _fval) {
+                if(config.capabilities & CAPABILITY_LIGHT_FEEDBACK) LED_ENABLE(GREEN_GLOW);
+                // play a cricket chirp if we previously detected artificial lighting
+                // and the mean lighting level just dropped by at least 15% (this last
+                // test is to prevent repeated chirps when the artificial ratio of a
+                // constant light source is right at the threshold)
+                if(lastArtificial && (lightLevelSave < 0.85*lastLightLevel)
+                    && (config.capabilities & CAPABILITY_LIGHT_AUDIO)) {
+                    cricket();
+                }
+                lastArtificial = 0;
             }
-            lastArtificial = 0;
+            else {
+                lastArtificial = 0;
+            }
         }
     }
     else {
